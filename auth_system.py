@@ -435,5 +435,25 @@ def owner_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def super_admin_required(f):
+    """超级管理员权限验证装饰器 - 只允许username='admin'的用户访问"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('请先登录', 'warning')
+            return redirect(url_for('login'))
+        
+        if session.get('user_type') != 'admin':
+            flash('需要管理员权限', 'error')
+            return redirect(url_for('dashboard'))
+        
+        # 检查是否为超级管理员（username='admin'）
+        if session.get('username') != 'admin':
+            flash('此功能仅限超级管理员访问', 'error')
+            return redirect(url_for('dashboard'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
 # 全局认证系统实例
 auth_system = AuthSystem() 

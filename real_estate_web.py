@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('APP_SECRET_KEY', 'default-secret-key-change-in-production')
 
 # 导入认证系统
-from auth_system import auth_system, login_required, admin_required, owner_required
+from auth_system import auth_system, login_required, admin_required, owner_required, super_admin_required
 
 # 导入用户注册系统
 from user_registration import registration_system
@@ -19,11 +19,35 @@ from user_registration import registration_system
 # 导入密码管理系统
 from password_manager import password_manager
 
+# 导入多语言系统
+from language_manager import language_manager, get_text, get_current_language, is_chinese, is_english
+
 # 注册模板函数
 @app.template_filter('format_fee')
 def format_fee_filter(rate, fee_type=None):
     """模板过滤器：格式化管理费显示"""
     return format_management_fee(rate, fee_type)
+
+# 注册多语言模板函数
+@app.template_global()
+def _(key, language=None):
+    """模板中的翻译函数"""
+    return get_text(key, language)
+
+@app.template_global()
+def get_lang():
+    """获取当前语言"""
+    return get_current_language()
+
+@app.template_global()
+def is_zh():
+    """判断是否为中文"""
+    return is_chinese()
+
+@app.template_global()
+def is_en():
+    """判断是否为英文"""
+    return is_english()
 
 # 从配置加载器导入数据库配置
 from config_loader import DB_CONFIG, CA_CERTIFICATE
@@ -180,7 +204,7 @@ def register():
 # ==================== 管理员审核路由 ====================
 
 @app.route('/admin/registrations')
-@admin_required
+@super_admin_required
 def admin_registrations():
     """管理员查看注册申请列表"""
     page = request.args.get('page', 1, type=int)
@@ -208,7 +232,7 @@ def admin_registrations():
                          total_count=total_count)
 
 @app.route('/admin/registration/<int:registration_id>')
-@admin_required
+@super_admin_required
 def registration_detail(registration_id):
     """查看注册申请详情"""
     conn = registration_system.get_db_connection()
@@ -244,7 +268,7 @@ def registration_detail(registration_id):
         conn.close()
 
 @app.route('/admin/review_registration', methods=['POST'])
-@admin_required
+@super_admin_required
 def review_registration():
     """审核注册申请"""
     registration_id = request.form.get('registration_id')
@@ -311,7 +335,7 @@ def dashboard():
             cursor.execute("SELECT COUNT(DISTINCT state) as count FROM properties")
             stats['states_count'] = cursor.fetchone()['count']
             
-            return render_template('dashboard.html', 
+            return render_template('dashboard_multilang.html', 
                                  stats=stats,
                                  current_date=datetime.now().strftime('%Y年%m月%d日'),
                                  recent_activities=[])
@@ -347,7 +371,7 @@ def dashboard():
                 'active_properties': active_properties
             }
             
-            return render_template('dashboard.html',
+            return render_template('dashboard_multilang.html',
                                  owner_info=owner_info,
                                  owner_stats=owner_stats,
                                  current_date=datetime.now().strftime('%Y年%m月%d日'),
@@ -787,6 +811,19 @@ def api_stats():
         cursor.close()
         conn.close()
         return jsonify({'error': str(e)})
+
+# ==================== 语言切换路由 ====================
+
+@app.route('/set_language/<language>')
+def set_language(language):
+    """设置语言"""
+    if language_manager.set_language(language):
+        flash(get_text('language_changed', language), 'success')
+    else:
+        flash('Unsupported language / 不支持的语言', 'error')
+    
+    # 返回到之前的页面或仪表板
+    return redirect(request.referrer or url_for('dashboard'))
 
 # ==================== 密码管理路由 ====================
 
