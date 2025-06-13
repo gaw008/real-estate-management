@@ -14,15 +14,29 @@ def format_fee_filter(rate, fee_type=None):
     return format_management_fee(rate, fee_type)
 
 # 从配置加载器导入数据库配置
-from config_loader import DB_CONFIG
+from config_loader import DB_CONFIG, CA_CERTIFICATE
 
 def get_db_connection():
     """获取数据库连接"""
     try:
-        connection = mysql.connector.connect(**DB_CONFIG)
+        # 为Aiven MySQL配置SSL连接
+        ssl_config = {
+            'ssl_disabled': False,
+            'ssl_ca': None,  # 使用系统CA证书
+            'ssl_verify_cert': True,
+            'ssl_verify_identity': True
+        }
+        
+        # 合并配置
+        config = {**DB_CONFIG, **ssl_config}
+        
+        print(f"尝试连接数据库: {config['host']}:{config['port']}")
+        connection = mysql.connector.connect(**config)
+        print("✅ 数据库连接成功")
         return connection
     except Exception as e:
-        print(f"数据库连接错误: {e}")
+        print(f"❌ 数据库连接错误: {e}")
+        print(f"配置信息: host={DB_CONFIG.get('host')}, port={DB_CONFIG.get('port')}, database={DB_CONFIG.get('database')}, user={DB_CONFIG.get('user')}")
         return None
 
 def format_management_fee(rate, fee_type):

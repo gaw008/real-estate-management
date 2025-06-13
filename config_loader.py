@@ -22,8 +22,6 @@ def load_database_config() -> Dict[str, Any]:
     config['database'] = os.getenv('DB_DATABASE', 'defaultdb')
     config['user'] = os.getenv('DB_USER', 'root')
     config['password'] = os.getenv('DB_PASSWORD', '')
-    config['ssl_disabled'] = os.getenv('DB_SSL_DISABLED', 'False').lower() == 'true'
-    config['ssl_verify_cert'] = os.getenv('DB_SSL_VERIFY_CERT', 'True').lower() == 'true'
     config['charset'] = os.getenv('DB_CHARSET', 'utf8mb4')
     config['use_unicode'] = os.getenv('DB_USE_UNICODE', 'True').lower() == 'true'
     config['autocommit'] = os.getenv('DB_AUTOCOMMIT', 'False').lower() == 'true'
