@@ -639,6 +639,44 @@ if __name__ == '__main__':
     if test_conn:
         print("✅ 启动时数据库连接测试成功")
         test_conn.close()
+        
+        # 自动初始化用户认证系统
+        print("🔧 初始化用户认证系统...")
+        try:
+            # 创建用户表
+            if auth_system.create_users_table():
+                print("✅ 用户表创建/检查完成")
+                
+                # 创建默认管理员账户
+                admin_created = auth_system.create_admin_user(
+                    username="admin",
+                    email="admin@company.com", 
+                    password="admin123",
+                    full_name="系统管理员"
+                )
+                
+                if admin_created:
+                    print("✅ 默认管理员账户创建成功")
+                    print("   用户名: admin")
+                    print("   密码: admin123")
+                else:
+                    print("ℹ️  管理员账户已存在")
+                
+                # 为现有业主创建用户账户
+                if auth_system.create_owner_users_from_existing():
+                    print("✅ 业主用户账户创建/更新完成")
+                else:
+                    print("⚠️  业主用户账户创建失败")
+                
+                # 调试用户表状态
+                print("\n📋 用户表状态:")
+                auth_system.debug_users_table()
+                    
+            else:
+                print("❌ 用户表创建失败")
+                
+        except Exception as e:
+            print(f"❌ 用户系统初始化失败: {e}")
     else:
         print("❌ 启动时数据库连接测试失败")
     

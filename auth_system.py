@@ -41,7 +41,7 @@ class AuthSystem:
         cursor = conn.cursor()
         
         try:
-            # 创建用户表
+            # 创建用户表（暂时不使用外键约束）
             users_sql = """
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -59,8 +59,7 @@ class AuthSystem:
                 INDEX idx_username (username),
                 INDEX idx_email (email),
                 INDEX idx_user_type (user_type),
-                INDEX idx_owner_id (owner_id),
-                FOREIGN KEY (owner_id) REFERENCES owners_master(owner_id) ON DELETE SET NULL
+                INDEX idx_owner_id (owner_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """
             
@@ -215,11 +214,13 @@ class AuthSystem:
         """用户认证"""
         conn = self.get_db_connection()
         if not conn:
+            print("❌ 认证时数据库连接失败")
             return None
         
         cursor = conn.cursor(dictionary=True)
         
         try:
+            print(f"🔍 尝试认证用户: {username}")
             cursor.execute("""
                 SELECT id, username, email, password_hash, user_type, owner_id, full_name, is_active
                 FROM users 
@@ -228,21 +229,28 @@ class AuthSystem:
             
             user = cursor.fetchone()
             
-            if user and self.verify_password(password, user['password_hash']):
-                # 更新最后登录时间
-                cursor.execute("""
-                    UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = %s
-                """, (user['id'],))
-                conn.commit()
-                
-                return {
-                    'id': user['id'],
-                    'username': user['username'],
-                    'email': user['email'],
-                    'user_type': user['user_type'],
-                    'owner_id': user['owner_id'],
-                    'full_name': user['full_name']
-                }
+            if user:
+                print(f"✅ 找到用户: {user['username']}, 类型: {user['user_type']}")
+                if self.verify_password(password, user['password_hash']):
+                    print("✅ 密码验证成功")
+                    # 更新最后登录时间
+                    cursor.execute("""
+                        UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = %s
+                    """, (user['id'],))
+                    conn.commit()
+                    
+                    return {
+                        'id': user['id'],
+                        'username': user['username'],
+                        'email': user['email'],
+                        'user_type': user['user_type'],
+                        'owner_id': user['owner_id'],
+                        'full_name': user['full_name']
+                    }
+                else:
+                    print("❌ 密码验证失败")
+            else:
+                print(f"❌ 未找到用户: {username}")
             
             return None
             
@@ -339,6 +347,49 @@ class AuthSystem:
         except Exception as e:
             print(f"❌ 登出失败: {e}")
             return False
+        finally:
+            cursor.close()
+            conn.close()
+    
+    def debug_users_table(self):
+        """调试用户表状态"""
+        conn = self.get_db_connection()
+        if not conn:
+            print("❌ 调试时数据库连接失败")
+            return
+        
+        cursor = conn.cursor(dictionary=True)
+        
+        try:
+            # 检查用户表是否存在
+            cursor.execute("SHOW TABLES LIKE 'users'")
+            table_exists = cursor.fetchone()
+            
+            if table_exists:
+                print("✅ users表存在")
+                
+                # 查看用户数量
+                cursor.execute("SELECT COUNT(*) as count FROM users")
+                user_count = cursor.fetchone()['count']
+                print(f"📊 用户总数: {user_count}")
+                
+                # 查看管理员用户
+                cursor.execute("SELECT username, user_type, is_active FROM users WHERE user_type = 'admin'")
+                admin_users = cursor.fetchall()
+                print(f"👑 管理员用户: {len(admin_users)}")
+                for admin in admin_users:
+                    print(f"   - {admin['username']} (活跃: {admin['is_active']})")
+                
+                # 查看业主用户数量
+                cursor.execute("SELECT COUNT(*) as count FROM users WHERE user_type = 'owner'")
+                owner_count = cursor.fetchone()['count']
+                print(f"🏠 业主用户: {owner_count}")
+                
+            else:
+                print("❌ users表不存在")
+                
+        except Exception as e:
+            print(f"❌ 调试失败: {e}")
         finally:
             cursor.close()
             conn.close()
