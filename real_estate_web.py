@@ -25,9 +25,8 @@ def get_db_connection():
         # 为Aiven MySQL配置SSL连接
         ssl_config = {
             'ssl_disabled': False,
-            'ssl_ca': None,  # 使用系统CA证书
-            'ssl_verify_cert': True,
-            'ssl_verify_identity': True
+            'ssl_verify_cert': False,  # 禁用证书验证以解决自签名证书问题
+            'ssl_verify_identity': False
         }
         
         # 合并配置
