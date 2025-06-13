@@ -48,7 +48,7 @@ class AuthSystem:
                 username VARCHAR(50) UNIQUE NOT NULL,
                 email VARCHAR(100) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
-                user_type ENUM('admin', 'owner') NOT NULL,
+                user_type ENUM('admin', 'property_manager', 'sales', 'accounting', 'owner') NOT NULL,
                 owner_id VARCHAR(20) NULL,
                 full_name VARCHAR(100) NOT NULL,
                 is_active BOOLEAN DEFAULT TRUE,
@@ -454,6 +454,87 @@ def super_admin_required(f):
         
         return f(*args, **kwargs)
     return decorated_function
+
+# 新增的员工角色权限装饰器
+def property_manager_required(f):
+    """需要房产经理权限"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('请先登录', 'error')
+            return redirect(url_for('login'))
+        
+        allowed_roles = ['admin', 'property_manager']
+        if session.get('user_type') not in allowed_roles:
+            flash('需要房产经理权限', 'error')
+            return redirect(url_for('dashboard'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+def sales_required(f):
+    """需要销售权限"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('请先登录', 'error')
+            return redirect(url_for('login'))
+        
+        allowed_roles = ['admin', 'sales']
+        if session.get('user_type') not in allowed_roles:
+            flash('需要销售权限', 'error')
+            return redirect(url_for('dashboard'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+def accounting_required(f):
+    """需要会计权限"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('请先登录', 'error')
+            return redirect(url_for('login'))
+        
+        allowed_roles = ['admin', 'accounting']
+        if session.get('user_type') not in allowed_roles:
+            flash('需要会计权限', 'error')
+            return redirect(url_for('dashboard'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+def staff_required(f):
+    """需要员工权限（任何内部员工角色）"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('请先登录', 'error')
+            return redirect(url_for('login'))
+        
+        staff_roles = ['admin', 'property_manager', 'sales', 'accounting']
+        if session.get('user_type') not in staff_roles:
+            flash('需要员工权限', 'error')
+            return redirect(url_for('dashboard'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+def has_module_access(module_name):
+    """检查当前用户是否有访问指定模块的权限"""
+    user_type = session.get('user_type')
+    
+    # 模块权限映射
+    module_permissions = {
+        'property_info': ['admin', 'property_manager', 'sales', 'accounting'],
+        'customer_progress': ['admin', 'sales'],
+        'maintenance_records': ['admin', 'property_manager'],
+        'cleaning_records': ['admin', 'property_manager'],
+        'financial_records': ['admin', 'accounting'],
+        'owner_info': ['admin', 'sales', 'accounting']
+    }
+    
+    return user_type in module_permissions.get(module_name, [])
 
 # 全局认证系统实例
 auth_system = AuthSystem() 
