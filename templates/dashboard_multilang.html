@@ -414,8 +414,8 @@
                         <a href="{{ url_for('admin_reset_password') }}" class="action-btn">
                             <i class="fas fa-unlock-alt"></i> {{ _('reset_user_password') if is_en() else '重置用户密码' }}
                         </a>
-                        <a href="#" class="action-btn">
-                            <i class="fas fa-chart-bar"></i> {{ _('financial_reports') if is_en() else '财务报表' }}
+                        <a href="{{ url_for('admin_financial_reports') }}" class="action-btn">
+                            <i class="fas fa-chart-line"></i> {{ _('财务报表管理') }}
                         </a>
                         <a href="#" class="action-btn">
                             <i class="fas fa-plus"></i> {{ _('add_new_property') if is_en() else '添加新房产' }}
@@ -434,8 +434,8 @@
                         <a href="#" class="action-btn">
                             <i class="fas fa-chart-line"></i> {{ _('income_trends') if is_en() else '收入趋势' }}
                         </a>
-                        <a href="#" class="action-btn">
-                            <i class="fas fa-file-invoice"></i> {{ _('financial_reports') if is_en() else '财务报告' }}
+                        <a href="{{ url_for('owner_financial_reports') }}" class="action-btn">
+                            <i class="fas fa-file-invoice"></i> {{ _('我的财务报表') }}
                         </a>
                         <a href="#" class="action-btn">
                             <i class="fas fa-cog"></i> {{ _('account_settings') if is_en() else '账户设置' }}

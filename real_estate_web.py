@@ -22,6 +22,9 @@ from password_manager import password_manager
 # 导入多语言系统
 from language_manager import language_manager, get_text, get_current_language, is_chinese, is_english
 
+# 导入财务报表系统
+from financial_reports import financial_reports_manager
+
 # 注册模板函数
 @app.template_filter('format_fee')
 def format_fee_filter(rate, fee_type=None):
@@ -962,6 +965,127 @@ def api_search_users():
         cursor.close()
         conn.close()
 
+# ==================== 财务报表路由 ====================
+
+@app.route('/admin/financial_reports', methods=['GET', 'POST'])
+@admin_required
+def admin_financial_reports():
+    """管理员财务报表管理"""
+    if request.method == 'POST':
+        # 添加财务报表
+        owner_id = request.form.get('owner_id')
+        report_year = int(request.form.get('report_year'))
+        report_month = int(request.form.get('report_month'))
+        report_title = request.form.get('report_title')
+        onedrive_link = request.form.get('onedrive_link')
+        notes = request.form.get('notes', '')
+        
+        # 验证输入
+        if not all([owner_id, report_year, report_month, report_title, onedrive_link]):
+            flash('请填写所有必填字段', 'error')
+        else:
+            success, message = financial_reports_manager.add_financial_report(
+                owner_id=owner_id,
+                report_year=report_year,
+                report_month=report_month,
+                report_title=report_title,
+                onedrive_link=onedrive_link,
+                uploaded_by=session['user_id'],
+                notes=notes
+            )
+            
+            if success:
+                flash(message, 'success')
+            else:
+                flash(message, 'error')
+        
+        return redirect(url_for('admin_financial_reports'))
+    
+    # GET请求 - 显示管理页面
+    # 获取筛选参数
+    year = request.args.get('year')
+    month = request.args.get('month')
+    owner_id = request.args.get('owner_id')
+    
+    # 获取报表列表
+    reports, total_count = financial_reports_manager.get_all_reports(
+        year=int(year) if year else None,
+        month=int(month) if month else None,
+        owner_id=owner_id,
+        page=1,
+        per_page=50
+    )
+    
+    # 获取业主列表
+    owners = financial_reports_manager.get_owners_list()
+    
+    # 获取统计信息
+    stats = financial_reports_manager.get_report_stats()
+    
+    # 当前年月
+    current_year = datetime.now().year
+    current_month = datetime.now().month
+    
+    return render_template('admin_financial_reports.html',
+                         reports=reports,
+                         total_count=total_count,
+                         owners=owners,
+                         stats=stats,
+                         current_year=current_year,
+                         current_month=current_month)
+
+@app.route('/admin/delete_financial_report', methods=['POST'])
+@admin_required
+def delete_financial_report():
+    """删除财务报表"""
+    report_id = request.form.get('report_id')
+    
+    if not report_id:
+        flash('报表ID不能为空', 'error')
+    else:
+        success, message = financial_reports_manager.delete_report(
+            report_id=int(report_id),
+            admin_id=session['user_id']
+        )
+        
+        if success:
+            flash(message, 'success')
+        else:
+            flash(message, 'error')
+    
+    return redirect(url_for('admin_financial_reports'))
+
+@app.route('/owner/financial_reports')
+@owner_required
+def owner_financial_reports():
+    """房东查看财务报表"""
+    # 获取筛选参数
+    year = request.args.get('year')
+    
+    # 获取当前业主的报表
+    reports = financial_reports_manager.get_owner_reports(
+        owner_id=session['owner_id'],
+        year=int(year) if year else None,
+        limit=50
+    )
+    
+    # 获取可用年份列表
+    available_years = []
+    if reports:
+        years_set = set()
+        for report in reports:
+            years_set.add(report['report_year'])
+        available_years = sorted(list(years_set), reverse=True)
+    
+    # 当前年份
+    current_year = datetime.now().year
+    
+    return render_template('owner_financial_reports.html',
+                         reports=reports,
+                         available_years=available_years,
+                         selected_year=year,
+                         current_year=current_year)
+
 if __name__ == '__main__':
     import os
     
@@ -988,6 +1112,14 @@ if __name__ == '__main__':
             print("🔧 初始化密码管理系统...")
             if password_manager.create_password_tables():
                 print("✅ 密码管理表创建/检查完成")
+                
+                # 初始化财务报表系统
+                print("🔧 初始化财务报表系统...")
+                # 导入财务报表系统
+                if financial_reports_manager.create_reports_table():
+                    print("✅ 财务报表表创建/检查完成")
+                else:
+                    print("❌ 财务报表表创建失败")
                 
                 # 创建默认管理员账户
                 admin_created = auth_system.create_admin_user(

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="{{ get_lang() }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ _('财务报表管理') }} - {{ _('房地产管理系统') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .report-card {
+            transition: transform 0.2s;
+        }
+        .report-card:hover {
+            transform: translateY(-2px);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .onedrive-link {
+            word-break: break-all;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="fas fa-building"></i> {{ _('房地产管理系统') }}
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/dashboard">
+                    <i class="fas fa-arrow-left"></i> {{ _('返回仪表板') }}
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 页面标题和统计 -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2><i class="fas fa-chart-line"></i> {{ _('财务报表管理') }}</h2>
+                <p class="text-muted">{{ _('管理业主的月度财务报表') }}</p>
+            </div>
+            <div class="col-md-4">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <h5>{{ _('报表统计') }}</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <h3>{{ stats.total_reports or 0 }}</h3>
+                                <small>{{ _('总报表数') }}</small>
+                            </div>
+                            <div class="col-6">
+                                <h3>{{ stats.current_month_reports or 0 }}</h3>
+                                <small>{{ _('本月报表') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加报表表单 -->
+        <div class="form-section">
+            <h4><i class="fas fa-plus-circle"></i> {{ _('添加财务报表') }}</h4>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="/admin/financial_reports">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">{{ _('选择业主') }}</label>
+                        <select name="owner_id" class="form-select" required>
+                            <option value="">{{ _('请选择业主') }}</option>
+                            {% for owner in owners %}
+                                <option value="{{ owner.owner_id }}">{{ owner.name }} ({{ owner.owner_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ _('年份') }}</label>
+                        <select name="report_year" class="form-select" required>
+                            {% for year in range(2020, 2030) %}
+                                <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ _('月份') }}</label>
+                        <select name="report_month" class="form-select" required>
+                            {% for month in range(1, 13) %}
+                                <option value="{{ month }}" {% if month == current_month %}selected{% endif %}>{{ month }}{{ _('月') }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ _('报表标题') }}</label>
+                        <input type="text" name="report_title" class="form-control" placeholder="{{ _('例如：月度财务报表') }}" required>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <label class="form-label">{{ _('OneDrive链接') }}</label>
+                        <input type="url" name="onedrive_link" class="form-control" placeholder="https://..." required>
+                        <div class="form-text">{{ _('请输入完整的OneDrive分享链接') }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ _('备注') }}</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="{{ _('可选备注信息') }}"></textarea>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> {{ _('添加报表') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 筛选和搜索 -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-2">
+                        <select name="year" class="form-select">
+                            <option value="">{{ _('所有年份') }}</option>
+                            {% for year in range(2020, 2030) %}
+                                <option value="{{ year }}" {% if year|string == request.args.get('year') %}selected{% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="month" class="form-select">
+                            <option value="">{{ _('所有月份') }}</option>
+                            {% for month in range(1, 13) %}
+                                <option value="{{ month }}" {% if month|string == request.args.get('month') %}selected{% endif %}>{{ month }}{{ _('月') }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="owner_id" class="form-select">
+                            <option value="">{{ _('所有业主') }}</option>
+                            {% for owner in owners %}
+                                <option value="{{ owner.owner_id }}" {% if owner.owner_id == request.args.get('owner_id') %}selected{% endif %}>{{ owner.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-search"></i> {{ _('筛选') }}
+                        </button>
+                        <a href="/admin/financial_reports" class="btn btn-outline-secondary">
+                            <i class="fas fa-refresh"></i> {{ _('重置') }}
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 报表列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> {{ _('财务报表列表') }} ({{ total_count }} {{ _('条记录') }})</h5>
+            </div>
+            <div class="card-body">
+                {% if reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{{ _('业主') }}</th>
+                                    <th>{{ _('报表期间') }}</th>
+                                    <th>{{ _('报表标题') }}</th>
+                                    <th>{{ _('OneDrive链接') }}</th>
+                                    <th>{{ _('上传时间') }}</th>
+                                    <th>{{ _('上传者') }}</th>
+                                    <th>{{ _('操作') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ report.owner_name or report.owner_id }}</strong>
+                                            {% if report.owner_email %}
+                                                <br><small class="text-muted">{{ report.owner_email }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ report.report_date_str }}</span>
+                                        </td>
+                                        <td>{{ report.report_title }}</td>
+                                        <td>
+                                            <div class="onedrive-link">
+                                                <a href="{{ report.onedrive_link }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-external-link-alt"></i> {{ _('查看') }}
+                                                </a>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <small>{{ report.upload_date_str }}</small>
+                                        </td>
+                                        <td>{{ report.uploaded_by_name }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteReport({{ report.id }}, '{{ report.report_date_str }}', '{{ report.owner_name or report.owner_id }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">{{ _('暂无财务报表') }}</h5>
+                        <p class="text-muted">{{ _('请使用上方表单添加第一个财务报表') }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ _('确认删除') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>{{ _('确定要删除以下财务报表吗？') }}</p>
+                    <div id="deleteInfo"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('取消') }}</button>
+                    <form method="POST" action="/admin/delete_financial_report" style="display: inline;">
+                        <input type="hidden" name="report_id" id="deleteReportId">
+                        <button type="submit" class="btn btn-danger">{{ _('确认删除') }}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function deleteReport(reportId, reportDate, ownerName) {
+            document.getElementById('deleteReportId').value = reportId;
+            document.getElementById('deleteInfo').innerHTML = 
+                '<strong>{{ _("业主") }}:</strong> ' + ownerName + '<br>' +
+                '<strong>{{ _("报表期间") }}:</strong> ' + reportDate;
+            
+            var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+    </script>
+</body>
+</html> 
