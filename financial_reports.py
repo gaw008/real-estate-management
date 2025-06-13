@@ -41,7 +41,7 @@ class FinancialReportsManager:
             reports_sql = """
             CREATE TABLE IF NOT EXISTS financial_reports (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                owner_id VARCHAR(20) NOT NULL,
+                username VARCHAR(50) NOT NULL,
                 report_year INT NOT NULL,
                 report_month INT NOT NULL,
                 report_title VARCHAR(200) NOT NULL,
@@ -53,11 +53,12 @@ class FinancialReportsManager:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 
-                UNIQUE KEY unique_owner_month (owner_id, report_year, report_month),
-                INDEX idx_owner_id (owner_id),
+                UNIQUE KEY unique_username_month (username, report_year, report_month),
+                INDEX idx_username (username),
                 INDEX idx_report_date (report_year, report_month),
                 INDEX idx_upload_date (upload_date),
-                FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE RESTRICT
+                FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE RESTRICT,
+                FOREIGN KEY (username) REFERENCES users(username) ON DELETE RESTRICT
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """
             
@@ -74,7 +75,7 @@ class FinancialReportsManager:
             cursor.close()
             conn.close()
     
-    def add_financial_report(self, owner_id, report_year, report_month, report_title, onedrive_link, uploaded_by, notes=None):
+    def add_financial_report(self, username, report_year, report_month, report_title, onedrive_link, uploaded_by, notes=None):
         """添加财务报表"""
         conn = self.get_db_connection()
         if not conn:
@@ -86,9 +87,9 @@ class FinancialReportsManager:
             # 检查是否已存在该月份的报表
             check_sql = """
                 SELECT id FROM financial_reports 
-                WHERE owner_id = %s AND report_year = %s AND report_month = %s AND is_active = TRUE
+                WHERE username = %s AND report_year = %s AND report_month = %s AND is_active = TRUE
             """
-            cursor.execute(check_sql, (owner_id, report_year, report_month))
+            cursor.execute(check_sql, (username, report_year, report_month))
             existing = cursor.fetchone()
             
             if existing:
@@ -97,17 +98,17 @@ class FinancialReportsManager:
                     UPDATE financial_reports 
                     SET report_title = %s, onedrive_link = %s, uploaded_by = %s, notes = %s, 
                         upload_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-                    WHERE owner_id = %s AND report_year = %s AND report_month = %s AND is_active = TRUE
+                    WHERE username = %s AND report_year = %s AND report_month = %s AND is_active = TRUE
                 """
-                cursor.execute(update_sql, (report_title, onedrive_link, uploaded_by, notes, owner_id, report_year, report_month))
+                cursor.execute(update_sql, (report_title, onedrive_link, uploaded_by, notes, username, report_year, report_month))
                 message = f"{report_year}年{report_month}月财务报表已更新"
             else:
                 # 插入新报表
                 insert_sql = """
-                    INSERT INTO financial_reports (owner_id, report_year, report_month, report_title, onedrive_link, uploaded_by, notes)
+                    INSERT INTO financial_reports (username, report_year, report_month, report_title, onedrive_link, uploaded_by, notes)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """
-                cursor.execute(insert_sql, (owner_id, report_year, report_month, report_title, onedrive_link, uploaded_by, notes))
+                cursor.execute(insert_sql, (username, report_year, report_month, report_title, onedrive_link, uploaded_by, notes))
                 message = f"{report_year}年{report_month}月财务报表添加成功"
             
             conn.commit()
@@ -124,7 +125,7 @@ class FinancialReportsManager:
             cursor.close()
             conn.close()
     
-    def get_owner_reports(self, owner_id, year=None, limit=None):
+    def get_owner_reports(self, username, year=None, limit=None):
         """获取业主的财务报表"""
         conn = self.get_db_connection()
         if not conn:
@@ -134,8 +135,8 @@ class FinancialReportsManager:
         
         try:
             # 构建查询条件
-            where_conditions = ["fr.owner_id = %s", "fr.is_active = TRUE"]
-            params = [owner_id]
+            where_conditions = ["fr.username = %s", "fr.is_active = TRUE"]
+            params = [username]
             
             if year:
                 where_conditions.append("fr.report_year = %s")
@@ -146,10 +147,10 @@ class FinancialReportsManager:
             # 查询报表
             query_sql = f"""
                 SELECT fr.*, u.full_name as uploaded_by_name,
-                       om.name as owner_name
+                       u2.full_name as owner_name
                 FROM financial_reports fr
                 LEFT JOIN users u ON fr.uploaded_by = u.id
-                LEFT JOIN owners_master om ON fr.owner_id = om.owner_id
+                LEFT JOIN users u2 ON fr.username = u2.username
                 WHERE {where_clause}
                 ORDER BY fr.report_year DESC, fr.report_month DESC
             """
@@ -174,7 +175,7 @@ class FinancialReportsManager:
             cursor.close()
             conn.close()
     
-    def get_all_reports(self, year=None, month=None, owner_id=None, page=1, per_page=20):
+    def get_all_reports(self, year=None, month=None, username=None, page=1, per_page=20):
         """获取所有财务报表（管理员用）"""
         conn = self.get_db_connection()
         if not conn:
@@ -195,9 +196,9 @@ class FinancialReportsManager:
                 where_conditions.append("fr.report_month = %s")
                 params.append(month)
             
-            if owner_id:
-                where_conditions.append("fr.owner_id = %s")
-                params.append(owner_id)
+            if username:
+                where_conditions.append("fr.username = %s")
+                params.append(username)
             
             where_clause = " AND ".join(where_conditions)
             
@@ -214,10 +215,10 @@ class FinancialReportsManager:
             offset = (page - 1) * per_page
             query_sql = f"""
                 SELECT fr.*, u.full_name as uploaded_by_name,
-                       om.name as owner_name, om.email as owner_email
+                       u2.full_name as owner_name, u2.email as owner_email
                 FROM financial_reports fr
                 LEFT JOIN users u ON fr.uploaded_by = u.id
-                LEFT JOIN owners_master om ON fr.owner_id = om.owner_id
+                LEFT JOIN users u2 ON fr.username = u2.username
                 WHERE {where_clause}
                 ORDER BY fr.report_year DESC, fr.report_month DESC, fr.upload_date DESC
                 LIMIT %s OFFSET %s
@@ -272,7 +273,7 @@ class FinancialReportsManager:
             conn.close()
     
     def get_owners_list(self):
-        """获取业主列表"""
+        """获取业主用户列表"""
         conn = self.get_db_connection()
         if not conn:
             return []
@@ -281,9 +282,10 @@ class FinancialReportsManager:
         
         try:
             query_sql = """
-                SELECT owner_id, name, email, phone
-                FROM owners_master
-                ORDER BY name
+                SELECT username, full_name, email, owner_id
+                FROM users
+                WHERE user_type = 'owner' AND is_active = TRUE
+                ORDER BY full_name
             """
             cursor.execute(query_sql)
             owners = cursor.fetchall()
@@ -323,7 +325,7 @@ class FinancialReportsManager:
             
             # 涉及业主数
             cursor.execute("""
-                SELECT COUNT(DISTINCT owner_id) as owners_count 
+                SELECT COUNT(DISTINCT username) as owners_count 
                 FROM financial_reports 
                 WHERE is_active = TRUE
             """)

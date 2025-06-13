@@ -973,7 +973,7 @@ def admin_financial_reports():
     """管理员财务报表管理"""
     if request.method == 'POST':
         # 添加财务报表
-        owner_id = request.form.get('owner_id')
+        username = request.form.get('username')
         report_year = int(request.form.get('report_year'))
         report_month = int(request.form.get('report_month'))
         report_title = request.form.get('report_title')
@@ -981,11 +981,11 @@ def admin_financial_reports():
         notes = request.form.get('notes', '')
         
         # 验证输入
-        if not all([owner_id, report_year, report_month, report_title, onedrive_link]):
+        if not all([username, report_year, report_month, report_title, onedrive_link]):
             flash('请填写所有必填字段', 'error')
         else:
             success, message = financial_reports_manager.add_financial_report(
-                owner_id=owner_id,
+                username=username,
                 report_year=report_year,
                 report_month=report_month,
                 report_title=report_title,
@@ -1005,13 +1005,13 @@ def admin_financial_reports():
     # 获取筛选参数
     year = request.args.get('year')
     month = request.args.get('month')
-    owner_id = request.args.get('owner_id')
+    username = request.args.get('username')
     
     # 获取报表列表
     reports, total_count = financial_reports_manager.get_all_reports(
         year=int(year) if year else None,
         month=int(month) if month else None,
-        owner_id=owner_id,
+        username=username,
         page=1,
         per_page=50
     )
@@ -1064,7 +1064,7 @@ def owner_financial_reports():
     
     # 获取当前业主的报表
     reports = financial_reports_manager.get_owner_reports(
-        owner_id=session['owner_id'],
+        username=session['username'],
         year=int(year) if year else None,
         limit=50
     )

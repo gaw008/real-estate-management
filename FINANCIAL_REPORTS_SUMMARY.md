@@ -37,7 +37,7 @@ class FinancialReportsManager:
 ```sql
 CREATE TABLE financial_reports (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    owner_id VARCHAR(20) NOT NULL,
+    username VARCHAR(50) NOT NULL,
     report_year INT NOT NULL,
     report_month INT NOT NULL,
     report_title VARCHAR(200) NOT NULL,
@@ -49,10 +49,16 @@ CREATE TABLE financial_reports (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    UNIQUE KEY unique_owner_month (owner_id, report_year, report_month),
-    FOREIGN KEY (uploaded_by) REFERENCES users(id)
+    UNIQUE KEY unique_username_month (username, report_year, report_month),
+    FOREIGN KEY (uploaded_by) REFERENCES users(id),
+    FOREIGN KEY (username) REFERENCES users(username)
 );
 ```
+
+**重要更新**：财务报表系统使用`username`而不是`owner_id`来关联用户，确保：
+- Admin选择业主时显示的是用户名（如：owner_001）
+- 房东登录后能正确看到自己的报表
+- 数据关联准确，避免权限混乱
 
 ### 3. 前端模板
 - **Admin页面** (`templates/admin_financial_reports.html`)
