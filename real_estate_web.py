@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import mysql.connector
 import ssl
 import os
@@ -9,6 +9,9 @@ app = Flask(__name__)
 
 # 设置Flask配置
 app.secret_key = os.environ.get('APP_SECRET_KEY', 'default-secret-key-change-in-production')
+
+# 导入认证系统
+from auth_system import auth_system, login_required, admin_required, owner_required
 
 # 注册模板函数
 @app.template_filter('format_fee')
@@ -54,9 +57,231 @@ def format_management_fee(rate, fee_type):
     
     return f"{rate}%"
 
+# ==================== 认证路由 ====================
+
 @app.route('/')
 def index():
-    """主页 - 显示数据库概览"""
+    """主页 - 重定向到登录或仪表板"""
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """用户登录"""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user_type = request.form.get('user_type', 'admin')
+        
+        if not username or not password:
+            flash('请输入用户名和密码', 'error')
+            return render_template('login.html')
+        
+        # 验证用户
+        user = auth_system.authenticate_user(username, password)
+        
+        if user:
+            # 检查用户类型是否匹配
+            if user['user_type'] != user_type:
+                flash('用户类型不匹配', 'error')
+                return render_template('login.html')
+            
+            # 创建会话
+            session_id = auth_system.create_session(
+                user['id'], 
+                request.remote_addr, 
+                request.headers.get('User-Agent')
+            )
+            
+            if session_id:
+                # 设置会话信息
+                session['user_id'] = user['id']
+                session['username'] = user['username']
+                session['user_type'] = user['user_type']
+                session['owner_id'] = user['owner_id']
+                session['full_name'] = user['full_name']
+                session['session_id'] = session_id
+                
+                flash(f'欢迎回来，{user["full_name"]}！', 'success')
+                return redirect(url_for('dashboard'))
+            else:
+                flash('会话创建失败，请重试', 'error')
+        else:
+            flash('用户名或密码错误', 'error')
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    """用户登出"""
+    if 'session_id' in session:
+        auth_system.logout_user(session['session_id'])
+    
+    session.clear()
+    flash('您已成功退出登录', 'info')
+    return redirect(url_for('login'))
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """用户仪表板"""
+    conn = get_db_connection()
+    if not conn:
+        return render_template('error.html', error="数据库连接失败")
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        if session['user_type'] == 'admin':
+            # 管理员统计
+            stats = {}
+            
+            # 房产总数
+            cursor.execute("SELECT COUNT(*) as count FROM properties")
+            stats['properties_count'] = cursor.fetchone()['count']
+            
+            # 业主总数
+            cursor.execute("SELECT COUNT(*) as count FROM owners_master")
+            stats['owners_count'] = cursor.fetchone()['count']
+            
+            # 城市数量
+            cursor.execute("SELECT COUNT(DISTINCT city) as count FROM properties")
+            stats['cities_count'] = cursor.fetchone()['count']
+            
+            # 州数量
+            cursor.execute("SELECT COUNT(DISTINCT state) as count FROM properties")
+            stats['states_count'] = cursor.fetchone()['count']
+            
+            return render_template('dashboard.html', 
+                                 stats=stats,
+                                 current_date=datetime.now().strftime('%Y年%m月%d日'),
+                                 recent_activities=[])
+        
+        else:
+            # 业主统计
+            owner_id = session['owner_id']
+            
+            # 获取业主信息
+            cursor.execute("SELECT * FROM owners_master WHERE owner_id = %s", (owner_id,))
+            owner_info = cursor.fetchone()
+            
+            # 业主房产统计
+            cursor.execute("""
+                SELECT COUNT(*) as property_count
+                FROM property_owners 
+                WHERE owner_id = %s
+            """, (owner_id,))
+            property_count = cursor.fetchone()['property_count']
+            
+            # 活跃房产数量
+            cursor.execute("""
+                SELECT COUNT(*) as active_properties
+                FROM property_owners po
+                JOIN properties p ON po.property_id = p.id
+                WHERE po.owner_id = %s AND p.is_active = TRUE
+            """, (owner_id,))
+            active_properties = cursor.fetchone()['active_properties']
+            
+            owner_stats = {
+                'property_count': property_count,
+                'total_revenue': 0,  # 这里可以后续添加收入计算
+                'active_properties': active_properties
+            }
+            
+            return render_template('dashboard.html',
+                                 owner_info=owner_info,
+                                 owner_stats=owner_stats,
+                                 current_date=datetime.now().strftime('%Y年%m月%d日'),
+                                 recent_activities=[])
+    
+    except Exception as e:
+        print(f"仪表板数据加载错误: {e}")
+        return render_template('error.html', error="数据加载失败")
+    finally:
+        cursor.close()
+        conn.close()
+
+# ==================== 业主专用路由 ====================
+
+@app.route('/owner/properties')
+@owner_required
+def owner_properties():
+    """业主房产列表"""
+    conn = get_db_connection()
+    if not conn:
+        return render_template('error.html', error="数据库连接失败")
+    
+    cursor = conn.cursor(dictionary=True)
+    owner_id = session['owner_id']
+    
+    try:
+        # 获取业主的房产
+        cursor.execute("""
+            SELECT p.*, f.cleaning_fee, f.management_fee_rate, f.management_fee_type
+            FROM property_owners po
+            JOIN properties p ON po.property_id = p.id
+            LEFT JOIN finance f ON p.id = f.property_id
+            WHERE po.owner_id = %s
+            ORDER BY p.name
+        """, (owner_id,))
+        
+        properties = cursor.fetchall()
+        
+        return render_template('owner_properties.html', 
+                             properties=properties,
+                             format_management_fee=format_management_fee)
+    
+    except Exception as e:
+        print(f"业主房产查询错误: {e}")
+        return render_template('error.html', error="房产数据加载失败")
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/owner/income')
+@owner_required
+def owner_income():
+    """业主收入明细"""
+    conn = get_db_connection()
+    if not conn:
+        return render_template('error.html', error="数据库连接失败")
+    
+    cursor = conn.cursor(dictionary=True)
+    owner_id = session['owner_id']
+    
+    try:
+        # 获取业主的财务信息
+        cursor.execute("""
+            SELECT p.name as property_name, p.city, p.state,
+                   f.cleaning_fee, f.management_fee_rate, f.management_fee_type,
+                   f.contract_signed_date, f.listing_date, f.first_booking_date
+            FROM property_owners po
+            JOIN properties p ON po.property_id = p.id
+            LEFT JOIN finance f ON p.id = f.property_id
+            WHERE po.owner_id = %s
+            ORDER BY p.name
+        """, (owner_id,))
+        
+        income_data = cursor.fetchall()
+        
+        return render_template('owner_income.html', 
+                             income_data=income_data,
+                             format_management_fee=format_management_fee)
+    
+    except Exception as e:
+        print(f"业主收入查询错误: {e}")
+        return render_template('error.html', error="收入数据加载失败")
+    finally:
+        cursor.close()
+        conn.close()
+
+# ==================== 原有路由（添加权限控制） ====================
+
+@app.route('/admin')
+@admin_required
+def admin_index():
+    """管理员主页 - 显示数据库概览"""
     conn = get_db_connection()
     if not conn:
         return render_template('error.html', error="数据库连接失败")
@@ -111,6 +336,7 @@ def index():
                          format_management_fee=format_management_fee)
 
 @app.route('/properties')
+@admin_required
 def properties():
     """房产列表页面"""
     conn = get_db_connection()
@@ -190,6 +416,7 @@ def properties():
                          format_management_fee=format_management_fee)
 
 @app.route('/property/<property_id>')
+@admin_required
 def property_detail(property_id):
     """房产详情页面"""
     conn = get_db_connection()
@@ -230,6 +457,7 @@ def property_detail(property_id):
                          format_management_fee=format_management_fee)
 
 @app.route('/owners')
+@admin_required
 def owners():
     """业主列表页面"""
     conn = get_db_connection()
@@ -300,6 +528,7 @@ def owners():
                          format_management_fee=format_management_fee)
 
 @app.route('/owner/<owner_id>')
+@admin_required
 def owner_detail(owner_id):
     """业主详情页面"""
     conn = get_db_connection()
