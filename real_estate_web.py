@@ -7,6 +7,9 @@ import json
 
 app = Flask(__name__)
 
+# 设置Flask配置
+app.secret_key = os.environ.get('APP_SECRET_KEY', 'default-secret-key-change-in-production')
+
 # 注册模板函数
 @app.template_filter('format_fee')
 def format_fee_filter(rate, fee_type=None):
@@ -401,6 +404,16 @@ def api_stats():
 
 if __name__ == '__main__':
     import os
+    
+    # 启动时测试数据库连接
+    print("🔍 启动时测试数据库连接...")
+    test_conn = get_db_connection()
+    if test_conn:
+        print("✅ 启动时数据库连接测试成功")
+        test_conn.close()
+    else:
+        print("❌ 启动时数据库连接测试失败")
+    
     port = int(os.environ.get('PORT', 8888))
     debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     app.run(debug=debug, host='0.0.0.0', port=port) 
