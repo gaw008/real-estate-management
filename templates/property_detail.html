@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.property_name or '房产详情' }} - 房地产管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- 返回按钮 -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <a href="{{ url_for('properties') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>返回房产列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 房产标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5 text-primary mb-2">
+                        <span class="badge bg-secondary me-3">#{{ property.property_id }}</span>
+                        {{ property.property_name or '未命名房产' }}
+                    </h1>
+                    <p class="lead text-muted mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        {{ property.address or '地址未知' }}, {{ property.city }}, {{ property.state }}
+                    </p>
+                </div>
+                {% if property.wifi_available %}
+                <div class="text-end">
+                    <span class="badge bg-success fs-6">
+                        <i class="fas fa-wifi me-1"></i>WiFi可用
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 左侧：房产信息 -->
+        <div class="col-lg-8">
+            <!-- 基本信息卡片 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>基本信息
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-circle bg-primary text-white me-3">
+                                    <i class="fas fa-bed"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">卧室数量</h6>
+                                    <p class="text-muted mb-0">{{ property.bedrooms or '未知' }}间</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-circle bg-info text-white me-3">
+                                    <i class="fas fa-bath"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">浴室数量</h6>
+                                    <p class="text-muted mb-0">{{ property.bathrooms or '未知' }}间</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% if property.square_feet %}
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-circle bg-warning text-white me-3">
+                                    <i class="fas fa-ruler-combined"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">建筑面积</h6>
+                                    <p class="text-muted mb-0">{{ property.square_feet }} 平方英尺</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if property.capacity %}
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-circle bg-success text-white me-3">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">容纳人数</h6>
+                                    <p class="text-muted mb-0">{{ property.capacity }} 人</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if property.layout %}
+                        <div class="col-md-12 mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-circle bg-secondary text-white me-3">
+                                    <i class="fas fa-home"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">房型布局</h6>
+                                    <p class="text-muted mb-0">{{ property.layout }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 财务信息卡片 -->
+            {% if property.cleaning_fee or property.management_fee_percentage or property.management_fee_type or property.contract_date %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-dollar-sign me-2"></i>财务信息
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if property.cleaning_fee %}
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="mb-0">清洁费</h6>
+                                    <small class="text-muted">每次清洁费用</small>
+                                </div>
+                                <div class="text-end">
+                                    <h5 class="text-success mb-0">${{ property.cleaning_fee }}</h5>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if property.management_fee_percentage %}
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="mb-0">管理费率</h6>
+                                    <small class="text-muted">{{ property.management_fee_type or '管理费用' }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <h5 class="text-info mb-0">{{ property.management_fee_percentage }}%</h5>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if property.contract_date %}
+                        <div class="col-md-12 mb-3">
+                            <div class="d-flex align-items-center p-3 bg-light rounded">
+                                <div class="icon-circle bg-primary text-white me-3">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">合同日期</h6>
+                                    <p class="text-muted mb-0">{{ property.contract_date.strftime('%Y年%m月%d日') if property.contract_date else '未设置' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 业主信息卡片 -->
+            {% if owners %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>业主信息 ({{ owners|length }}位)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for owner in owners %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="avatar-circle bg-primary text-white me-3">
+                                            {{ owner.owner_name[0] if owner.owner_name else 'U' }}
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{ owner.owner_name or '未知业主' }}</h6>
+                                            <small class="text-muted">业主ID: #{{ owner.owner_id }}</small>
+                                        </div>
+                                    </div>
+                                    {% if owner.phone %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-phone text-muted me-2"></i>
+                                        <span>{{ owner.phone }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if owner.email %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-envelope text-muted me-2"></i>
+                                        <span>{{ owner.email }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if owner.preferred_strategy %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-strategy text-muted me-2"></i>
+                                        <span class="badge bg-info">{{ owner.preferred_strategy }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="mt-3">
+                                        <a href="{{ url_for('owner_detail', owner_id=owner.owner_id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-user me-1"></i>查看详情
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 右侧：快速信息 -->
+        <div class="col-lg-4">
+            <!-- 快速统计 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>快速统计
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="border-end">
+                                <h4 class="text-primary mb-1">{{ owners|length }}</h4>
+                                <small class="text-muted">业主数量</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h4 class="text-success mb-1">
+                                {% if property.bedrooms and property.bathrooms %}
+                                    {{ property.bedrooms }}B{{ property.bathrooms }}B
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </h4>
+                            <small class="text-muted">房型</small>
+                        </div>
+                        {% if property.square_feet %}
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h4 class="text-info mb-1">{{ property.square_feet }}</h4>
+                                <small class="text-muted">平方英尺</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if property.capacity %}
+                        <div class="col-6">
+                            <h4 class="text-warning mb-1">{{ property.capacity }}</h4>
+                            <small class="text-muted">容纳人数</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 位置信息 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>位置信息
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>完整地址:</strong>
+                        <p class="text-muted mb-0">{{ property.address or '地址未知' }}</p>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>城市:</strong>
+                            <p class="text-muted mb-0">{{ property.city }}</p>
+                        </div>
+                        <div class="col-6">
+                            <strong>州:</strong>
+                            <p class="text-muted mb-0">{{ property.state }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('properties') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list me-1"></i>返回房产列表
+                        </a>
+                        {% if owners %}
+                        <a href="{{ url_for('owners') }}" class="btn btn-outline-success">
+                            <i class="fas fa-users me-1"></i>查看所有业主
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.icon-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+</style>
+{% endblock %} 

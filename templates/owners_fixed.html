@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}业主列表{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>业主列表</h2>
+            <p class="text-muted">共找到 {{ total_count }} 个业主</p>
+        </div>
+    </div>
+
+    <!-- 筛选表单 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">搜索</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ filters.search }}" placeholder="姓名、邮箱或电话">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="strategy" class="form-label">偏好策略</label>
+                            <select class="form-select" id="strategy" name="strategy">
+                                <option value="">所有策略</option>
+                                {% for strategy in strategies %}
+                                <option value="{{ strategy }}" {% if filters.strategy == strategy %}selected{% endif %}>
+                                    {{ strategy }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">搜索</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 业主列表 -->
+    <div class="row">
+        {% for owner in owners %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ owner.name }}</h5>
+                    <p class="card-text">
+                        <i class="fas fa-phone"></i> {{ owner.phone or '未提供' }}<br>
+                        <i class="fas fa-envelope"></i> {{ owner.email or '未提供' }}
+                    </p>
+                    {% if owner.preferences_strategy %}
+                    <p class="card-text">
+                        <small class="text-muted">
+                            <i class="fas fa-chart-line"></i> 策略: {{ owner.preferences_strategy }}
+                        </small>
+                    </p>
+                    {% endif %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary">{{ owner.property_count }} 个房产</span>
+                        <a href="{{ url_for('owner_detail', owner_id=owner.owner_id) }}" 
+                           class="btn btn-outline-primary btn-sm">查看详情</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 分页 -->
+    {% if total_pages > 1 %}
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="业主列表分页">
+                <ul class="pagination justify-content-center">
+                    {% if current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ current_page - 1 }}&search={{ filters.search }}&strategy={{ filters.strategy }}">上一页</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in range(1, total_pages + 1) %}
+                        {% if page_num == current_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% elif page_num <= current_page + 2 and page_num >= current_page - 2 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_num }}&search={{ filters.search }}&strategy={{ filters.strategy }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if current_page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ current_page + 1 }}&search={{ filters.search }}&strategy={{ filters.strategy }}">下一页</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}房地产管理系统 - 首页{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.properties_count }}</h4>
+                            <p class="card-text">房产总数</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-home fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.owners_count }}</h4>
+                            <p class="card-text">业主总数</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.cities_count }}</h4>
+                            <p class="card-text">城市数量</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-map-marker-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.states_count }}</h4>
+                            <p class="card-text">州数量</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-flag fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 最新房产 -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">最新房产</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_properties %}
+                        <div class="list-group list-group-flush">
+                            {% for property in recent_properties %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ property.name or '未命名房产' }}</h6>
+                                    <p class="mb-1 text-muted">{{ property.city }}, {{ property.state }}</p>
+                                    <small>{{ property.beds or '未知' }}室 | {{ property.property_size or '未知' }}平方英尺</small>
+                                </div>
+                                <a href="{{ url_for('property_detail', property_id=property.id) }}" class="btn btn-sm btn-outline-primary">查看</a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">暂无房产数据</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 城市分布图表 -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">城市分布</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="cityChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据可视化图表 -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">州分布</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="stateChart" width="300" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">房产类型</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="typeChart" width="300" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">管理费分布</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="feeChart" width="300" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 城市分布图表
+const cityData = {{ city_distribution | tojson }};
+const cityCtx = document.getElementById('cityChart').getContext('2d');
+new Chart(cityCtx, {
+    type: 'bar',
+    data: {
+        labels: cityData.map(item => item.city),
+        datasets: [{
+            label: '房产数量',
+            data: cityData.map(item => item.count),
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 加载其他图表数据
+fetch('/api/stats')
+    .then(response => response.json())
+    .then(data => {
+        // 州分布图表
+        const stateCtx = document.getElementById('stateChart').getContext('2d');
+        new Chart(stateCtx, {
+            type: 'pie',
+            data: {
+                labels: data.state_distribution.map(item => item.state),
+                datasets: [{
+                    data: data.state_distribution.map(item => item.count),
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+
+        // 房产类型图表
+        const typeCtx = document.getElementById('typeChart').getContext('2d');
+        new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: data.type_distribution.map(item => item.type + '室'),
+                datasets: [{
+                    data: data.type_distribution.map(item => item.count),
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF',
+                        '#FF9F40',
+                        '#FF6384',
+                        '#C9CBCF',
+                        '#4BC0C0',
+                        '#FF6384'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+
+        // 管理费分布图表
+        const feeCtx = document.getElementById('feeChart').getContext('2d');
+        new Chart(feeCtx, {
+            type: 'bar',
+            data: {
+                labels: data.fee_distribution.map(item => item.fee_range),
+                datasets: [{
+                    label: '数量',
+                    data: data.fee_distribution.map(item => item.count),
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    })
+    .catch(error => console.error('Error loading chart data:', error));
+</script>
+{% endblock %} 

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}房产列表{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>房产列表</h2>
+            <p class="text-muted">共找到 {{ total_count }} 个房产</p>
+        </div>
+    </div>
+
+    <!-- 筛选表单 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">搜索</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ filters.search }}" placeholder="房产名称或地址">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="state" class="form-label">州</label>
+                            <select class="form-select" id="state" name="state">
+                                <option value="">所有州</option>
+                                {% for state in states %}
+                                <option value="{{ state }}" {% if filters.state == state %}selected{% endif %}>
+                                    {{ state }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="city" class="form-label">城市</label>
+                            <input type="text" class="form-control" id="city" name="city" 
+                                   value="{{ filters.city }}" placeholder="城市名称">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">搜索</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 房产列表 -->
+    <div class="row">
+        {% for property in properties %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ property.name or '未命名房产' }}</h5>
+                    <p class="card-text">
+                        <i class="fas fa-map-marker-alt"></i> {{ property.street_address or '地址未知' }}<br>
+                        <small class="text-muted">{{ property.city }}, {{ property.state }}</small>
+                    </p>
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <strong>{{ property.beds or '未知' }}</strong><br>
+                            <small>卧室</small>
+                        </div>
+                        <div class="col-4">
+                            <strong>{{ property.property_size or '未知' }}</strong><br>
+                            <small>平方英尺</small>
+                        </div>
+                        <div class="col-4">
+                            <strong>${{ property.cleaning_fee or '未设置' }}</strong><br>
+                            <small>清洁费</small>
+                        </div>
+                    </div>
+                    {% if property.management_fee_rate %}
+                    <p class="card-text">
+                        <small class="text-muted">管理费率: {{ format_management_fee(property.management_fee_rate, property.management_fee_type) }}</small>
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('property_detail', property_id=property.id) }}" 
+                       class="btn btn-primary btn-sm">查看详情</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 分页 -->
+    {% if total_pages > 1 %}
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="房产列表分页">
+                <ul class="pagination justify-content-center">
+                    {% if current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ current_page - 1 }}&search={{ filters.search }}&state={{ filters.state }}&city={{ filters.city }}">上一页</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in range(1, total_pages + 1) %}
+                        {% if page_num == current_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% elif page_num <= current_page + 2 and page_num >= current_page - 2 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_num }}&search={{ filters.search }}&state={{ filters.state }}&city={{ filters.city }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if current_page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ current_page + 1 }}&search={{ filters.search }}&state={{ filters.state }}&city={{ filters.city }}">下一页</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

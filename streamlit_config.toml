@@ -1,0 +1,30 @@
+[server]
+# 允许局域网访问
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+
+# 网络配置
+address = "0.0.0.0"  # 监听所有网络接口
+port = 8501
+
+# 文件监控
+fileWatcherType = "auto"
+
+# 性能优化
+maxUploadSize = 200
+maxMessageSize = 200
+
+[browser]
+# 启动时不自动打开浏览器
+gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501
+
+[theme]
+# 主题配置
+primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+font = "sans serif" 
