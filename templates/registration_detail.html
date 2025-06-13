@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册申请详情 - 房地产管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .detail-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .card-header h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .status-pending {
+            background: rgba(255, 243, 205, 0.3);
+            color: #fff3cd;
+            border: 1px solid rgba(255, 243, 205, 0.5);
+        }
+
+        .status-approved {
+            background: rgba(212, 237, 218, 0.3);
+            color: #d4edda;
+            border: 1px solid rgba(212, 237, 218, 0.5);
+        }
+
+        .status-rejected {
+            background: rgba(248, 215, 218, 0.3);
+            color: #f8d7da;
+            border: 1px solid rgba(248, 215, 218, 0.5);
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        .info-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #333;
+            font-size: 16px;
+            word-break: break-word;
+        }
+
+        .user-type-badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .type-admin {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .type-owner {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .action-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .btn-approve {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-back:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .review-form {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .container {
+                padding: 20px 15px;
+            }
+
+            .card-body {
+                padding: 20px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>注册申请详情</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('admin_registrations') }}">返回列表</a>
+                <a href="{{ url_for('dashboard') }}">返回首页</a>
+                <a href="{{ url_for('logout') }}">退出登录</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if message %}
+            <div class="alert {{ 'alert-success' if success else 'alert-error' }}">
+                {{ message }}
+            </div>
+        {% endif %}
+
+        <div class="detail-card">
+            <div class="card-header">
+                <h2>{{ registration.full_name }} 的注册申请</h2>
+                <span class="status-badge status-{{ registration.status }}">
+                    {% if registration.status == 'pending' %}待审核
+                    {% elif registration.status == 'approved' %}已通过
+                    {% elif registration.status == 'rejected' %}已拒绝
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="card-body">
+                <!-- 基本信息 -->
+                <div class="info-section">
+                    <h3 class="section-title">基本信息</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">申请时间</div>
+                            <div class="info-value">{{ registration.created_at.strftime('%Y年%m月%d日 %H:%M') }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">用户名</div>
+                            <div class="info-value">{{ registration.username }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">真实姓名</div>
+                            <div class="info-value">{{ registration.full_name }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">邮箱地址</div>
+                            <div class="info-value">{{ registration.email }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">用户类型</div>
+                            <div class="info-value">
+                                <span class="user-type-badge {{ 'type-admin' if registration.user_type == 'admin' else 'type-owner' }}">
+                                    {{ '公司员工' if registration.user_type == 'admin' else '房产业主' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 详细信息 -->
+                {% if registration.user_type == 'admin' %}
+                <div class="info-section">
+                    <h3 class="section-title">员工信息</h3>
+                    <div class="info-grid">
+                        {% if registration.job_title %}
+                        <div class="info-item">
+                            <div class="info-label">职位</div>
+                            <div class="info-value">{{ registration.job_title }}</div>
+                        </div>
+                        {% endif %}
+                        {% if registration.department %}
+                        <div class="info-item">
+                            <div class="info-label">部门</div>
+                            <div class="info-value">{{ registration.department }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="info-section">
+                    <h3 class="section-title">业主信息</h3>
+                    <div class="info-grid">
+                        {% if registration.property_address %}
+                        <div class="info-item">
+                            <div class="info-label">房产地址</div>
+                            <div class="info-value">{{ registration.property_address }}</div>
+                        </div>
+                        {% endif %}
+                        {% if registration.phone %}
+                        <div class="info-item">
+                            <div class="info-label">联系电话</div>
+                            <div class="info-value">{{ registration.phone }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 审核信息 -->
+                {% if registration.status != 'pending' %}
+                <div class="info-section">
+                    <h3 class="section-title">审核信息</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">审核状态</div>
+                            <div class="info-value">
+                                <span class="status-badge status-{{ registration.status }}">
+                                    {% if registration.status == 'approved' %}已通过
+                                    {% elif registration.status == 'rejected' %}已拒绝
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% if registration.reviewed_by_username %}
+                        <div class="info-item">
+                            <div class="info-label">审核人</div>
+                            <div class="info-value">{{ registration.reviewed_by_username }}</div>
+                        </div>
+                        {% endif %}
+                        {% if registration.reviewed_at %}
+                        <div class="info-item">
+                            <div class="info-label">审核时间</div>
+                            <div class="info-value">{{ registration.reviewed_at.strftime('%Y年%m月%d日 %H:%M') }}</div>
+                        </div>
+                        {% endif %}
+                        {% if registration.admin_notes %}
+                        <div class="info-item" style="grid-column: 1 / -1;">
+                            <div class="info-label">审核备注</div>
+                            <div class="info-value">{{ registration.admin_notes }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 操作区域 -->
+        {% if registration.status == 'pending' %}
+        <div class="action-section">
+            <h3 style="text-align: center; margin-bottom: 20px; color: #333;">审核操作</h3>
+            
+            <!-- 快速审核 -->
+            <div class="action-buttons">
+                <form method="POST" action="{{ url_for('review_registration') }}" style="display: inline;">
+                    <input type="hidden" name="registration_id" value="{{ registration.id }}">
+                    <input type="hidden" name="action" value="approve">
+                    <button type="submit" class="btn btn-approve" onclick="return confirm('确认通过此申请？')">
+                        ✓ 通过申请
+                    </button>
+                </form>
+                
+                <button type="button" class="btn btn-reject" onclick="showRejectForm()">
+                    ✗ 拒绝申请
+                </button>
+            </div>
+
+            <!-- 拒绝表单 -->
+            <div id="rejectForm" class="review-form" style="display: none;">
+                <form method="POST" action="{{ url_for('review_registration') }}">
+                    <input type="hidden" name="registration_id" value="{{ registration.id }}">
+                    <input type="hidden" name="action" value="reject">
+                    
+                    <div class="form-group">
+                        <label for="admin_notes">拒绝理由 <span style="color: #dc3545;">*</span></label>
+                        <textarea id="admin_notes" name="admin_notes" required 
+                                  placeholder="请详细说明拒绝此申请的理由..."></textarea>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button type="button" class="btn btn-back" onclick="hideRejectForm()">取消</button>
+                        <button type="submit" class="btn btn-reject">确认拒绝</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 返回按钮 -->
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ url_for('admin_registrations') }}" class="btn btn-back">
+                ← 返回申请列表
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function showRejectForm() {
+            document.getElementById('rejectForm').style.display = 'block';
+            document.getElementById('admin_notes').focus();
+        }
+
+        function hideRejectForm() {
+            document.getElementById('rejectForm').style.display = 'none';
+            document.getElementById('admin_notes').value = '';
+        }
+    </script>
+</body>
+</html> 

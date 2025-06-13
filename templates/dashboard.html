@@ -152,6 +152,7 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog"></i> 个人设置</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('change_password') }}"><i class="fas fa-key"></i> 修改密码</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
                     </ul>
@@ -298,6 +299,12 @@
                         </a>
                         <a href="{{ url_for('owners') }}" class="action-btn">
                             <i class="fas fa-users"></i> 查看所有业主
+                        </a>
+                        <a href="{{ url_for('admin_registrations') }}" class="action-btn">
+                            <i class="fas fa-user-check"></i> 用户注册审核
+                        </a>
+                        <a href="{{ url_for('admin_reset_password') }}" class="action-btn">
+                            <i class="fas fa-unlock-alt"></i> 重置用户密码
                         </a>
                         <a href="#" class="action-btn">
                             <i class="fas fa-chart-bar"></i> 财务报表

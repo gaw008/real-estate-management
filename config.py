@@ -1,26 +1,31 @@
-# 数据库配置示例
-# 复制此文件为 config.py 并填入您的实际数据库信息
+import os
+
+# 数据库配置 - 使用环境变量存储敏感信息
+# 设置环境变量示例:
+# export DB_HOST="your-host"
+# export DB_PASSWORD="your-password"
 
 DB_CONFIG = {
-    'host': 'your-mysql-host.com',
-    'port': 3306,  # 或您的MySQL端口
-    'database': 'your-database-name',
-    'user': 'your-username',
-    'password': 'your-password',
-    'ssl_disabled': False,  # 如果需要SSL连接
-    'ssl_ca': 'path/to/ca-certificate.crt'  # SSL证书路径(如果需要)
+    'host': os.environ.get('DB_HOST', 'localhost'),
+    'port': int(os.environ.get('DB_PORT', '3306')),
+    'database': os.environ.get('DB_NAME', 'real_estate'),
+    'user': os.environ.get('DB_USER', 'root'),
+    'password': os.environ.get('DB_PASSWORD', ''),
+    'ssl_disabled': False,
+    'ssl_verify_cert': False,
+    'ssl_verify_identity': False
 }
 
 # Flask应用配置
 FLASK_CONFIG = {
-    'debug': True,  # 生产环境请设置为False
-    'host': '0.0.0.0',
-    'port': 8888
+    'debug': os.environ.get('FLASK_DEBUG', 'False').lower() == 'true',
+    'host': os.environ.get('FLASK_HOST', '0.0.0.0'),
+    'port': int(os.environ.get('FLASK_PORT', '8888'))
 }
 
 # 其他配置
 APP_CONFIG = {
-    'secret_key': 'your-secret-key-here',  # 用于session加密
-    'per_page': 12,  # 每页显示的记录数
-    'max_search_results': 1000  # 最大搜索结果数
+    'secret_key': os.environ.get('APP_SECRET_KEY', 'dev-secret-key-change-in-production'),
+    'per_page': int(os.environ.get('APP_PER_PAGE', '12')),
+    'max_search_results': int(os.environ.get('APP_MAX_SEARCH_RESULTS', '1000'))
 } 

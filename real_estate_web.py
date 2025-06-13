@@ -13,6 +13,12 @@ app.secret_key = os.environ.get('APP_SECRET_KEY', 'default-secret-key-change-in-
 # 导入认证系统
 from auth_system import auth_system, login_required, admin_required, owner_required
 
+# 导入用户注册系统
+from user_registration import registration_system
+
+# 导入密码管理系统
+from password_manager import password_manager
+
 # 注册模板函数
 @app.template_filter('format_fee')
 def format_fee_filter(rate, fee_type=None):
@@ -121,6 +127,158 @@ def logout():
     session.clear()
     flash('您已成功退出登录', 'info')
     return redirect(url_for('login'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """用户注册"""
+    if request.method == 'POST':
+        # 收集表单数据
+        registration_data = {
+            'username': request.form.get('username'),
+            'email': request.form.get('email'),
+            'password': request.form.get('password'),
+            'full_name': request.form.get('full_name'),
+            'user_type': request.form.get('user_type'),
+        }
+        
+        # 验证必填字段
+        required_fields = ['username', 'email', 'password', 'full_name', 'user_type']
+        for field in required_fields:
+            if not registration_data.get(field):
+                return render_template('register.html', 
+                                     message=f'请填写{field}', 
+                                     success=False)
+        
+        # 验证密码确认
+        if request.form.get('password') != request.form.get('confirm_password'):
+            return render_template('register.html', 
+                                 message='两次输入的密码不一致', 
+                                 success=False)
+        
+        # 根据用户类型收集额外信息
+        if registration_data['user_type'] == 'admin':
+            registration_data['job_title'] = request.form.get('job_title')
+            registration_data['department'] = request.form.get('department')
+        else:  # owner
+            registration_data['property_address'] = request.form.get('property_address')
+            registration_data['phone'] = request.form.get('phone')
+        
+        # 提交注册申请
+        success, message = registration_system.submit_registration(registration_data)
+        
+        if success:
+            return render_template('register.html', 
+                                 message='注册申请已提交，请等待管理员审核。审核通过后您将收到邮件通知。', 
+                                 success=True)
+        else:
+            return render_template('register.html', 
+                                 message=message, 
+                                 success=False)
+    
+    return render_template('register.html')
+
+# ==================== 管理员审核路由 ====================
+
+@app.route('/admin/registrations')
+@admin_required
+def admin_registrations():
+    """管理员查看注册申请列表"""
+    page = request.args.get('page', 1, type=int)
+    status = request.args.get('status', '')
+    per_page = 20
+    
+    # 获取注册申请列表
+    registrations, total_count = registration_system.get_all_registrations(
+        status=status if status else None,
+        page=page,
+        per_page=per_page
+    )
+    
+    # 获取统计信息
+    stats = registration_system.get_registration_stats()
+    
+    # 计算分页信息
+    total_pages = (total_count + per_page - 1) // per_page
+    
+    return render_template('admin_registrations.html',
+                         registrations=registrations,
+                         stats=stats,
+                         current_page=page,
+                         total_pages=total_pages,
+                         total_count=total_count)
+
+@app.route('/admin/registration/<int:registration_id>')
+@admin_required
+def registration_detail(registration_id):
+    """查看注册申请详情"""
+    conn = registration_system.get_db_connection()
+    if not conn:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('admin_registrations'))
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # 获取注册申请详情
+        cursor.execute("""
+            SELECT ur.*, u.username as reviewed_by_username
+            FROM user_registrations ur
+            LEFT JOIN users u ON ur.reviewed_by = u.id
+            WHERE ur.id = %s
+        """, (registration_id,))
+        
+        registration = cursor.fetchone()
+        
+        if not registration:
+            flash('注册申请不存在', 'error')
+            return redirect(url_for('admin_registrations'))
+        
+        return render_template('registration_detail.html', registration=registration)
+        
+    except Exception as e:
+        print(f"获取注册详情失败: {e}")
+        flash('获取注册详情失败', 'error')
+        return redirect(url_for('admin_registrations'))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/admin/review_registration', methods=['POST'])
+@admin_required
+def review_registration():
+    """审核注册申请"""
+    registration_id = request.form.get('registration_id')
+    action = request.form.get('action')
+    admin_notes = request.form.get('admin_notes', '')
+    
+    if not registration_id or not action:
+        flash('参数错误', 'error')
+        return redirect(url_for('admin_registrations'))
+    
+    admin_id = session['user_id']
+    
+    if action == 'approve':
+        success, message = registration_system.approve_registration(
+            registration_id, admin_id, admin_notes
+        )
+    elif action == 'reject':
+        if not admin_notes.strip():
+            flash('拒绝申请时必须填写拒绝理由', 'error')
+            return redirect(url_for('registration_detail', registration_id=registration_id))
+        
+        success, message = registration_system.reject_registration(
+            registration_id, admin_id, admin_notes
+        )
+    else:
+        flash('无效的操作', 'error')
+        return redirect(url_for('admin_registrations'))
+    
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'error')
+    
+    return redirect(url_for('admin_registrations'))
 
 @app.route('/dashboard')
 @login_required
@@ -630,6 +788,142 @@ def api_stats():
         conn.close()
         return jsonify({'error': str(e)})
 
+# ==================== 密码管理路由 ====================
+
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """用户修改密码"""
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # 验证输入
+        if not all([current_password, new_password, confirm_password]):
+            return render_template('change_password.html', 
+                                 message='请填写所有字段', 
+                                 success=False)
+        
+        if new_password != confirm_password:
+            return render_template('change_password.html', 
+                                 message='两次输入的新密码不一致', 
+                                 success=False)
+        
+        if len(new_password) < 8:
+            return render_template('change_password.html', 
+                                 message='新密码长度至少8位', 
+                                 success=False)
+        
+        # 修改密码
+        success, message = password_manager.change_password(
+            user_id=session['user_id'],
+            old_password=current_password,
+            new_password=new_password,
+            changed_by=session['user_id'],
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        if success:
+            # 获取密码修改历史
+            password_history = password_manager.get_password_change_history(session['user_id'], 5)
+            return render_template('change_password.html', 
+                                 message='密码修改成功！', 
+                                 success=True,
+                                 password_history=password_history)
+        else:
+            return render_template('change_password.html', 
+                                 message=message, 
+                                 success=False)
+    
+    # GET请求 - 显示修改密码页面
+    password_history = password_manager.get_password_change_history(session['user_id'], 5)
+    return render_template('change_password.html', password_history=password_history)
+
+@app.route('/admin/reset_password', methods=['GET', 'POST'])
+@admin_required
+def admin_reset_password():
+    """管理员重置用户密码"""
+    if request.method == 'POST':
+        target_user_id = request.form.get('target_user_id')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        reset_notes = request.form.get('reset_notes', '')
+        
+        # 验证输入
+        if not all([target_user_id, new_password, confirm_password]):
+            return render_template('admin_reset_password.html', 
+                                 message='请填写所有必填字段', 
+                                 success=False)
+        
+        if new_password != confirm_password:
+            return render_template('admin_reset_password.html', 
+                                 message='两次输入的密码不一致', 
+                                 success=False)
+        
+        if len(new_password) < 8:
+            return render_template('admin_reset_password.html', 
+                                 message='新密码长度至少8位', 
+                                 success=False)
+        
+        # 重置密码
+        success, message = password_manager.admin_reset_password(
+            admin_id=session['user_id'],
+            target_user_id=int(target_user_id),
+            new_password=new_password,
+            notes=reset_notes,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        return render_template('admin_reset_password.html', 
+                             message=message, 
+                             success=success)
+    
+    return render_template('admin_reset_password.html')
+
+@app.route('/api/search_users')
+@admin_required
+def api_search_users():
+    """API: 搜索用户（用于管理员重置密码功能）"""
+    query = request.args.get('q', '').strip()
+    
+    if len(query) < 2:
+        return jsonify({'users': []})
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'error': '数据库连接失败'}), 500
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # 搜索用户（排除当前管理员）
+        search_sql = """
+            SELECT id, username, email, user_type, full_name,
+                   DATE_FORMAT(created_at, '%Y-%m-%d') as created_at
+            FROM users 
+            WHERE (username LIKE %s OR email LIKE %s OR full_name LIKE %s)
+            AND id != %s
+            AND user_type != 'admin'
+            ORDER BY username
+            LIMIT 10
+        """
+        
+        search_pattern = f'%{query}%'
+        cursor.execute(search_sql, (search_pattern, search_pattern, search_pattern, session['user_id']))
+        users = cursor.fetchall()
+        
+        return jsonify({'users': users})
+        
+    except Exception as e:
+        print(f"❌ 搜索用户失败: {e}")
+        return jsonify({'error': '搜索失败'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 if __name__ == '__main__':
     import os
     
@@ -646,6 +940,16 @@ if __name__ == '__main__':
             # 创建用户表
             if auth_system.create_users_table():
                 print("✅ 用户表创建/检查完成")
+            
+            # 初始化用户注册系统
+            print("🔧 初始化用户注册系统...")
+            if registration_system.create_registration_tables():
+                print("✅ 用户注册表创建/检查完成")
+            
+            # 初始化密码管理系统
+            print("🔧 初始化密码管理系统...")
+            if password_manager.create_password_tables():
+                print("✅ 密码管理表创建/检查完成")
                 
                 # 创建默认管理员账户
                 admin_created = auth_system.create_admin_user(
