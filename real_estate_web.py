@@ -386,4 +386,7 @@ def api_stats():
         return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8888) 
+    import os
+    port = int(os.environ.get('PORT', 8888))
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug, host='0.0.0.0', port=port) 
