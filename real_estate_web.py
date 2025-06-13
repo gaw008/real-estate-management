@@ -105,8 +105,8 @@ def login():
         user_type = request.form.get('user_type', 'admin')
         
         if not username or not password:
-            flash('请输入用户名和密码', 'error')
-            return render_template('login.html')
+            flash(get_text('please_enter_username_password') if get_current_language() == 'en' else '请输入用户名和密码', 'error')
+            return render_template('login_multilang.html')
         
         # 验证用户
         user = auth_system.authenticate_user(username, password)
@@ -114,8 +114,8 @@ def login():
         if user:
             # 检查用户类型是否匹配
             if user['user_type'] != user_type:
-                flash('用户类型不匹配', 'error')
-                return render_template('login.html')
+                flash(get_text('user_type_mismatch') if get_current_language() == 'en' else '用户类型不匹配', 'error')
+                return render_template('login_multilang.html')
             
             # 创建会话
             session_id = auth_system.create_session(
@@ -133,14 +133,15 @@ def login():
                 session['full_name'] = user['full_name']
                 session['session_id'] = session_id
                 
-                flash(f'欢迎回来，{user["full_name"]}！', 'success')
+                welcome_msg = f'Welcome back, {user["full_name"]}!' if get_current_language() == 'en' else f'欢迎回来，{user["full_name"]}！'
+                flash(welcome_msg, 'success')
                 return redirect(url_for('dashboard'))
             else:
-                flash('会话创建失败，请重试', 'error')
+                flash(get_text('session_creation_failed') if get_current_language() == 'en' else '会话创建失败，请重试', 'error')
         else:
-            flash('用户名或密码错误', 'error')
+            flash(get_text('invalid_credentials'), 'error')
     
-    return render_template('login.html')
+    return render_template('login_multilang.html')
 
 @app.route('/logout')
 def logout():

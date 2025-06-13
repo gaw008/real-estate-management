@@ -173,6 +173,22 @@ class LanguageManager:
             'income_details': '收入明细',
             'income_trends': '收入趋势',
             'account_settings': '账户设置',
+            
+            # 登录页面
+            'please_select_user_type_and_login': '请选择用户类型并登录',
+            'company_internal': '公司内部',
+            'property_owner': '房屋业主',
+            'no_account_yet': '还没有账号？',
+            'register_now': '立即注册',
+            'login_help': '登录帮助',
+            'admin_login_help': '公司内部员工请选择"公司内部"',
+            'owner_login_help': '房屋业主请选择"房屋业主"',
+            'default_admin_account': '默认管理员账号: admin / admin123',
+            
+            # 登录消息
+            'please_enter_username_password': '请输入用户名和密码',
+            'user_type_mismatch': '用户类型不匹配',
+            'session_creation_failed': '会话创建失败，请重试',
         }
         
         # 英文翻译
@@ -330,6 +346,22 @@ class LanguageManager:
             'income_details': 'Income Details',
             'income_trends': 'Income Trends',
             'account_settings': 'Account Settings',
+            
+            # Login page
+            'please_select_user_type_and_login': 'Please select user type and login',
+            'company_internal': 'Company Internal',
+            'property_owner': 'Property Owner',
+            'no_account_yet': "Don't have an account yet?",
+            'register_now': 'Register Now',
+            'login_help': 'Login Help',
+            'admin_login_help': 'Company employees please select "Company Internal"',
+            'owner_login_help': 'Property owners please select "Property Owner"',
+            'default_admin_account': 'Default admin account: admin / admin123',
+            
+            # Login message
+            'please_enter_username_password': 'Please enter username and password',
+            'user_type_mismatch': 'User type mismatch',
+            'session_creation_failed': 'Session creation failed, please try again',
         }
     
     def get_current_language(self):
