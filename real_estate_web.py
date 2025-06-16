@@ -462,6 +462,37 @@ def owner_income():
         cursor.close()
         conn.close()
 
+@app.route('/owner/financial_reports')
+@owner_required
+def owner_financial_reports():
+    """房东查看财务报表"""
+    # 获取筛选参数
+    year = request.args.get('year')
+    
+    # 获取当前业主的报表（基于分配的房产）
+    reports = financial_reports_manager.get_owner_reports(
+        owner_id=session['owner_id'],
+        year=int(year) if year else None,
+        limit=50
+    )
+    
+    # 获取可用年份列表
+    available_years = []
+    if reports:
+        years_set = set()
+        for report in reports:
+            years_set.add(report['report_year'])
+        available_years = sorted(list(years_set), reverse=True)
+    
+    # 当前年份
+    current_year = datetime.now().year
+    
+    return render_template('owner_financial_reports.html',
+                         reports=reports,
+                         available_years=available_years,
+                         selected_year=year,
+                         current_year=current_year)
+
 # ==================== 原有路由（添加权限控制） ====================
 
 @app.route('/admin')
@@ -973,7 +1004,7 @@ def admin_financial_reports():
     """管理员财务报表管理"""
     if request.method == 'POST':
         # 添加财务报表
-        username = request.form.get('username')
+        property_id = request.form.get('property_id')
         report_year = int(request.form.get('report_year'))
         report_month = int(request.form.get('report_month'))
         report_title = request.form.get('report_title')
@@ -981,11 +1012,11 @@ def admin_financial_reports():
         notes = request.form.get('notes', '')
         
         # 验证输入
-        if not all([username, report_year, report_month, report_title, onedrive_link]):
+        if not all([property_id, report_year, report_month, report_title, onedrive_link]):
             flash('请填写所有必填字段', 'error')
         else:
             success, message = financial_reports_manager.add_financial_report(
-                username=username,
+                property_id=property_id,
                 report_year=report_year,
                 report_month=report_month,
                 report_title=report_title,
@@ -1005,19 +1036,19 @@ def admin_financial_reports():
     # 获取筛选参数
     year = request.args.get('year')
     month = request.args.get('month')
-    username = request.args.get('username')
+    property_id = request.args.get('property_id')
     
     # 获取报表列表
     reports, total_count = financial_reports_manager.get_all_reports(
         year=int(year) if year else None,
         month=int(month) if month else None,
-        username=username,
+        property_id=property_id,
         page=1,
         per_page=50
     )
     
-    # 获取业主列表
-    owners = financial_reports_manager.get_owners_list()
+    # 获取房产列表
+    properties = financial_reports_manager.get_properties_list()
     
     # 获取统计信息
     stats = financial_reports_manager.get_report_stats()
@@ -1029,7 +1060,7 @@ def admin_financial_reports():
     return render_template('admin_financial_reports.html',
                          reports=reports,
                          total_count=total_count,
-                         owners=owners,
+                         properties=properties,
                          stats=stats,
                          current_year=current_year,
                          current_month=current_month)
@@ -1055,36 +1086,117 @@ def delete_financial_report():
     
     return redirect(url_for('admin_financial_reports'))
 
-@app.route('/owner/financial_reports')
-@owner_required
-def owner_financial_reports():
-    """房东查看财务报表"""
-    # 获取筛选参数
-    year = request.args.get('year')
+# ==================== 房产分配管理路由 ====================
+
+@app.route('/admin/property_assignments', methods=['GET', 'POST'])
+@admin_required
+def admin_property_assignments():
+    """管理员房产分配管理"""
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'assign':
+            # 分配房产给业主
+            property_id = request.form.get('property_id')
+            owner_id = request.form.get('owner_id')
+            notes = request.form.get('notes', '')
+            
+            if not all([property_id, owner_id]):
+                flash('请选择房产和业主', 'error')
+            else:
+                success, message = financial_reports_manager.assign_property_to_owner(
+                    property_id=property_id,
+                    owner_id=owner_id,
+                    assigned_by=session['user_id'],
+                    notes=notes
+                )
+                
+                if success:
+                    flash(message, 'success')
+                else:
+                    flash(message, 'error')
+        
+        elif action == 'remove':
+            # 移除房产分配
+            property_id = request.form.get('property_id')
+            owner_id = request.form.get('owner_id')
+            
+            if not all([property_id, owner_id]):
+                flash('参数不完整', 'error')
+            else:
+                success, message = financial_reports_manager.remove_property_assignment(
+                    property_id=property_id,
+                    owner_id=owner_id,
+                    removed_by=session['user_id']
+                )
+                
+                if success:
+                    flash(message, 'success')
+                else:
+                    flash(message, 'error')
+        
+        return redirect(url_for('admin_property_assignments'))
     
-    # 获取当前业主的报表
-    reports = financial_reports_manager.get_owner_reports(
-        username=session['username'],
-        year=int(year) if year else None,
-        limit=50
+    # GET请求 - 显示管理页面
+    # 获取筛选参数
+    property_id = request.args.get('property_id')
+    owner_id = request.args.get('owner_id')
+    
+    # 获取分配记录
+    assignments = financial_reports_manager.get_property_assignments(
+        property_id=property_id,
+        owner_id=owner_id
     )
     
-    # 获取可用年份列表
-    available_years = []
-    if reports:
-        years_set = set()
-        for report in reports:
-            years_set.add(report['report_year'])
-        available_years = sorted(list(years_set), reverse=True)
+    # 获取房产和业主列表
+    properties = financial_reports_manager.get_properties_list()
+    owners = financial_reports_manager.get_owners_list()
     
-    # 当前年份
-    current_year = datetime.now().year
+    return render_template('admin_property_assignments.html',
+                         assignments=assignments,
+                         properties=properties,
+                         owners=owners,
+                         selected_property_id=property_id,
+                         selected_owner_id=owner_id)
+
+@app.route('/admin/property_assignments/bulk_assign', methods=['POST'])
+@admin_required
+def bulk_assign_properties():
+    """批量分配房产"""
+    owner_id = request.form.get('owner_id')
+    property_ids = request.form.getlist('property_ids')
+    notes = request.form.get('notes', '')
     
-    return render_template('owner_financial_reports.html',
-                         reports=reports,
-                         available_years=available_years,
-                         selected_year=year,
-                         current_year=current_year)
+    if not owner_id or not property_ids:
+        flash('请选择业主和至少一个房产', 'error')
+        return redirect(url_for('admin_property_assignments'))
+    
+    success_count = 0
+    error_messages = []
+    
+    for property_id in property_ids:
+        success, message = financial_reports_manager.assign_property_to_owner(
+            property_id=property_id,
+            owner_id=owner_id,
+            assigned_by=session['user_id'],
+            notes=notes
+        )
+        
+        if success:
+            success_count += 1
+        else:
+            error_messages.append(f"房产 {property_id}: {message}")
+    
+    if success_count > 0:
+        flash(f'成功分配 {success_count} 个房产', 'success')
+    
+    if error_messages:
+        for error in error_messages[:5]:  # 只显示前5个错误
+            flash(error, 'error')
+        if len(error_messages) > 5:
+            flash(f'还有 {len(error_messages) - 5} 个其他错误', 'warning')
+    
+    return redirect(url_for('admin_property_assignments'))
 
 if __name__ == '__main__':
     import os

@@ -27,6 +27,14 @@
             word-break: break-all;
             max-width: 300px;
         }
+        .property-info {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .assigned-owners {
+            font-size: 0.85em;
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
@@ -36,6 +44,9 @@
                 <i class="fas fa-building"></i> {{ _('房地产管理系统') }}
             </a>
             <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/admin/property_assignments">
+                    <i class="fas fa-link"></i> {{ _('房产分配管理') }}
+                </a>
                 <a class="nav-link" href="/dashboard">
                     <i class="fas fa-arrow-left"></i> {{ _('返回仪表板') }}
                 </a>
@@ -48,20 +59,24 @@
         <div class="row mb-4">
             <div class="col-md-8">
                 <h2><i class="fas fa-chart-line"></i> {{ _('财务报表管理') }}</h2>
-                <p class="text-muted">{{ _('管理业主的月度财务报表') }}</p>
+                <p class="text-muted">{{ _('管理房产的月度财务报表') }}</p>
             </div>
             <div class="col-md-4">
                 <div class="card stats-card">
                     <div class="card-body text-center">
                         <h5>{{ _('报表统计') }}</h5>
                         <div class="row">
-                            <div class="col-6">
-                                <h3>{{ stats.total_reports or 0 }}</h3>
+                            <div class="col-4">
+                                <h4>{{ stats.total_reports or 0 }}</h4>
                                 <small>{{ _('总报表数') }}</small>
                             </div>
-                            <div class="col-6">
-                                <h3>{{ stats.current_month_reports or 0 }}</h3>
-                                <small>{{ _('本月报表') }}</small>
+                            <div class="col-4">
+                                <h4>{{ stats.properties_with_reports or 0 }}</h4>
+                                <small>{{ _('涉及房产') }}</small>
+                            </div>
+                            <div class="col-4">
+                                <h4>{{ stats.total_assignments or 0 }}</h4>
+                                <small>{{ _('房产分配') }}</small>
                             </div>
                         </div>
                     </div>
@@ -87,11 +102,17 @@
             <form method="POST" action="/admin/financial_reports">
                 <div class="row">
                     <div class="col-md-4">
-                        <label class="form-label">{{ _('选择业主') }}</label>
-                        <select name="username" class="form-select" required>
-                            <option value="">{{ _('请选择业主') }}</option>
-                            {% for owner in owners %}
-                                <option value="{{ owner.username }}">{{ owner.full_name }} ({{ owner.username }})</option>
+                        <label class="form-label">{{ _('选择房产') }}</label>
+                        <select name="property_id" class="form-select" required>
+                            <option value="">{{ _('请选择房产') }}</option>
+                            {% for property in properties %}
+                                <option value="{{ property.id }}">
+                                    {{ property.name or property.id }} 
+                                    {% if property.address %}({{ property.address }}){% endif %}
+                                    {% if property.assigned_owners_count > 0 %}
+                                        - {{ property.assigned_owners_count }}位业主
+                                    {% endif %}
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -139,39 +160,49 @@
 
         <!-- 筛选和搜索 -->
         <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-filter"></i> {{ _('筛选报表') }}</h5>
+            </div>
             <div class="card-body">
-                <form method="GET" class="row g-3">
-                    <div class="col-md-2">
-                        <select name="year" class="form-select">
-                            <option value="">{{ _('所有年份') }}</option>
-                            {% for year in range(2020, 2030) %}
-                                <option value="{{ year }}" {% if year|string == request.args.get('year') %}selected{% endif %}>{{ year }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select name="month" class="form-select">
-                            <option value="">{{ _('所有月份') }}</option>
-                            {% for month in range(1, 13) %}
-                                <option value="{{ month }}" {% if month|string == request.args.get('month') %}selected{% endif %}>{{ month }}{{ _('月') }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select name="username" class="form-select">
-                            <option value="">{{ _('所有业主') }}</option>
-                            {% for owner in owners %}
-                                <option value="{{ owner.username }}" {% if owner.username == request.args.get('username') %}selected{% endif %}>{{ owner.full_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-outline-primary">
-                            <i class="fas fa-search"></i> {{ _('筛选') }}
-                        </button>
-                        <a href="/admin/financial_reports" class="btn btn-outline-secondary">
-                            <i class="fas fa-refresh"></i> {{ _('重置') }}
-                        </a>
+                <form method="GET" action="/admin/financial_reports">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">{{ _('年份') }}</label>
+                            <select name="year" class="form-select">
+                                <option value="">{{ _('所有年份') }}</option>
+                                {% for year in range(2020, 2030) %}
+                                    <option value="{{ year }}" {% if request.args.get('year') == year|string %}selected{% endif %}>{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ _('月份') }}</label>
+                            <select name="month" class="form-select">
+                                <option value="">{{ _('所有月份') }}</option>
+                                {% for month in range(1, 13) %}
+                                    <option value="{{ month }}" {% if request.args.get('month') == month|string %}selected{% endif %}>{{ month }}{{ _('月') }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ _('房产') }}</label>
+                            <select name="property_id" class="form-select">
+                                <option value="">{{ _('所有房产') }}</option>
+                                {% for property in properties %}
+                                    <option value="{{ property.id }}" {% if request.args.get('property_id') == property.id %}selected{% endif %}>
+                                        {{ property.name or property.id }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i> {{ _('筛选') }}
+                            </button>
+                            <a href="/admin/financial_reports" class="btn btn-outline-secondary">
+                                <i class="fas fa-refresh"></i> {{ _('重置') }}
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -188,7 +219,8 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>{{ _('业主') }}</th>
+                                    <th>{{ _('房产信息') }}</th>
+                                    <th>{{ _('分配业主') }}</th>
                                     <th>{{ _('报表期间') }}</th>
                                     <th>{{ _('报表标题') }}</th>
                                     <th>{{ _('OneDrive链接') }}</th>
@@ -201,9 +233,18 @@
                                 {% for report in reports %}
                                     <tr>
                                         <td>
-                                            <strong>{{ report.owner_name or report.username }}</strong>
-                                            {% if report.owner_email %}
-                                                <br><small class="text-muted">{{ report.owner_email }}</small>
+                                            <div class="property-info">
+                                                <strong>{{ report.property_name or report.property_id }}</strong><br>
+                                                <small class="text-muted">{{ report.property_address or '地址未设置' }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if report.assigned_owners %}
+                                                <div class="assigned-owners">
+                                                    <i class="fas fa-users"></i> {{ report.assigned_owners }}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">未分配</span>
                                             {% endif %}
                                         </td>
                                         <td>
@@ -220,9 +261,12 @@
                                         <td>
                                             <small>{{ report.upload_date_str }}</small>
                                         </td>
-                                        <td>{{ report.uploaded_by_name }}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-danger" onclick="deleteReport({{ report.id }}, '{{ report.report_date_str }}', '{{ report.owner_name or report.owner_id }}')">
+                                            <small>{{ report.uploaded_by_name or '未知' }}</small>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="confirmDelete('{{ report.id }}', '{{ report.property_name or report.property_id }}', '{{ report.report_date_str }}')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -267,14 +311,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function deleteReport(reportId, reportDate, ownerName) {
+        function confirmDelete(reportId, propertyName, reportDate) {
             document.getElementById('deleteReportId').value = reportId;
             document.getElementById('deleteInfo').innerHTML = 
-                '<strong>{{ _("业主") }}:</strong> ' + ownerName + '<br>' +
-                '<strong>{{ _("报表期间") }}:</strong> ' + reportDate;
+                '<strong>房产:</strong> ' + propertyName + '<br>' +
+                '<strong>报表期间:</strong> ' + reportDate;
             
-            var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            modal.show();
+            var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            deleteModal.show();
         }
     </script>
 </body>
