@@ -264,7 +264,7 @@ class FinancialReportsManager:
             
             # 查询报表
             query_sql = f"""
-                SELECT fr.*, p.name as property_name, p.address as property_address,
+                SELECT fr.*, p.name as property_name, p.street_address as property_address,
                        u.full_name as uploaded_by_name, pa.assigned_date
                 FROM property_assignments pa
                 JOIN financial_reports fr ON pa.property_id = fr.property_id
@@ -299,7 +299,13 @@ class FinancialReportsManager:
         """获取所有财务报表（管理员用）"""
         conn = self.get_db_connection()
         if not conn:
-            return [], 0
+            return {
+                'reports': [],
+                'total_count': 0,
+                'current_page': page,
+                'per_page': per_page,
+                'total_pages': 0
+            }
         
         cursor = conn.cursor(dictionary=True)
         
@@ -335,7 +341,7 @@ class FinancialReportsManager:
             offset = (page - 1) * per_page
             query_sql = f"""
                 SELECT fr.*, u.full_name as uploaded_by_name,
-                       p.name as property_name, p.address as property_address,
+                       p.name as property_name, p.street_address as property_address,
                        GROUP_CONCAT(CONCAT(om.name, ' (', om.owner_id, ')') SEPARATOR ', ') as assigned_owners
                 FROM financial_reports fr
                 LEFT JOIN users u ON fr.uploaded_by = u.id
@@ -356,11 +362,23 @@ class FinancialReportsManager:
                 report['report_date_str'] = f"{report['report_year']}年{report['report_month']}月"
                 report['upload_date_str'] = report['upload_date'].strftime('%Y-%m-%d %H:%M')
             
-            return reports, total_count
+            return {
+                'reports': reports,
+                'total_count': total_count,
+                'current_page': page,
+                'per_page': per_page,
+                'total_pages': (total_count + per_page - 1) // per_page
+            }
             
         except Exception as e:
             print(f"❌ 获取所有财务报表失败: {e}")
-            return [], 0
+            return {
+                'reports': [],
+                'total_count': 0,
+                'current_page': page,
+                'per_page': per_page,
+                'total_pages': 0
+            }
         finally:
             cursor.close()
             conn.close()
@@ -486,7 +504,7 @@ class FinancialReportsManager:
             where_clause = " AND ".join(where_conditions)
             
             query_sql = f"""
-                SELECT pa.*, p.name as property_name, p.address as property_address,
+                SELECT pa.*, p.name as property_name, p.street_address as property_address,
                        om.name as owner_name, om.phone as owner_phone, om.email as owner_email,
                        u.full_name as assigned_by_name
                 FROM property_assignments pa
