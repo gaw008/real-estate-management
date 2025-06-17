@@ -1039,13 +1039,15 @@ def admin_financial_reports():
     property_id = request.args.get('property_id')
     
     # 获取报表列表
-    reports, total_count = financial_reports_manager.get_all_reports(
+    reports_data = financial_reports_manager.get_all_reports(
         year=int(year) if year else None,
         month=int(month) if month else None,
         property_id=property_id,
         page=1,
         per_page=50
     )
+    reports = reports_data['reports']
+    total_count = reports_data['total_count']
     
     # 获取房产列表
     properties = financial_reports_manager.get_properties_list()
