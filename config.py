@@ -7,7 +7,7 @@ import os
 
 DB_CONFIG = {
     'host': os.environ.get('DB_HOST', 'gng-4d77d5e-gngvacation-8888.f.aivencloud.com'),
-    'port': int(os.environ.get('DB_PORT', '28888')),
+    'port': int(os.environ.get('DB_PORT', '21192')),
     'database': os.environ.get('DB_NAME', 'defaultdb'),
     'user': os.environ.get('DB_USER', 'avnadmin'),
     'password': os.environ.get('DB_PASSWORD', ''),

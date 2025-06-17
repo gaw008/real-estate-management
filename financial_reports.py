@@ -412,12 +412,12 @@ class FinancialReportsManager:
 
         try:
             query_sql = """
-                SELECT p.id, p.name, p.address, p.city, p.state,
+                SELECT p.id, p.name, p.street_address as address, p.city, p.state,
                        COUNT(pa.id) as assigned_owners_count
                 FROM properties p
                 LEFT JOIN property_assignments pa ON p.id = pa.property_id AND pa.is_active = TRUE
                 GROUP BY p.id
-                ORDER BY p.name, p.address
+                ORDER BY p.name, p.street_address
             """
             cursor.execute(query_sql)
             properties = cursor.fetchall()
