@@ -105,12 +105,20 @@ class TestSuite:
             
             property_id = properties[0]['id']
             
-            # 测试保存报表
+            # 先清理可能存在的测试数据
+            existing_reports = financial_reports_manager.get_all_reports()
+            for report in existing_reports['reports']:
+                if report['report_title'] == "自动化测试报表":
+                    financial_reports_manager.delete_report(report['id'], 1)
+            
+            # 测试保存报表（使用唯一时间戳避免重复）
+            import time
+            timestamp = int(time.time())
             success, message = financial_reports_manager.add_financial_report(
                 property_id=property_id,
-                report_year=2024,
-                report_month=12,
-                report_title="自动化测试报表",
+                report_year=2023,  # 使用不同年份避免冲突
+                report_month=11,   # 使用不同月份避免冲突
+                report_title=f"自动化测试报表_{timestamp}",
                 onedrive_link="https://test.onedrive.com/test",
                 uploaded_by=1,  # 假设用户ID为1
                 notes="自动化测试"
@@ -119,7 +127,7 @@ class TestSuite:
             if success:
                 # 验证报表已保存
                 reports_data = financial_reports_manager.get_all_reports()
-                test_reports = [r for r in reports_data['reports'] if r['report_title'] == "自动化测试报表"]
+                test_reports = [r for r in reports_data['reports'] if f"自动化测试报表_{timestamp}" in r['report_title']]
                 
                 if test_reports:
                     # 清理测试数据
