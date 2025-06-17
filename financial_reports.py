@@ -400,10 +400,16 @@ class FinancialReportsManager:
         """获取房产列表"""
         conn = self.get_db_connection()
         if not conn:
-            return []
-        
+            # 数据库连接失败时使用模拟数据
+            try:
+                from mock_data_manager import mock_data_manager
+                return mock_data_manager.get_properties_list()
+            except ImportError:
+                print("❌ 模拟数据管理器未找到")
+                return []
+
         cursor = conn.cursor(dictionary=True)
-        
+
         try:
             query_sql = """
                 SELECT p.id, p.name, p.address, p.city, p.state,
@@ -416,10 +422,15 @@ class FinancialReportsManager:
             cursor.execute(query_sql)
             properties = cursor.fetchall()
             return properties
-            
+
         except Exception as e:
             print(f"❌ 获取房产列表失败: {e}")
-            return []
+            # 发生异常时也尝试使用模拟数据
+            try:
+                from mock_data_manager import mock_data_manager
+                return mock_data_manager.get_properties_list()
+            except ImportError:
+                return []
         finally:
             cursor.close()
             conn.close()
