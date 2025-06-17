@@ -177,32 +177,32 @@ class FinancialReportsManager:
             if not property_data:
                 return False, "房产不存在"
             
-            # 检查业主是否存在
-            cursor.execute("SELECT owner_id, name FROM owners_master WHERE owner_id = %s", (owner_id,))
-            owner_data = cursor.fetchone()
-            if not owner_data:
-                return False, "业主不存在"
+            # 检查用户是否存在（新系统使用users表）
+            cursor.execute("SELECT id, full_name, username FROM users WHERE id = %s AND is_active = TRUE", (owner_id,))
+            user_data = cursor.fetchone()
+            if not user_data:
+                return False, "用户不存在或未激活"
             
-            # 检查是否已经分配
+            # 检查是否已经分配（使用user_id字段）
             check_sql = """
                 SELECT id FROM property_assignments 
-                WHERE property_id = %s AND owner_id = %s AND is_active = TRUE
+                WHERE property_id = %s AND user_id = %s AND is_active = TRUE
             """
             cursor.execute(check_sql, (property_id, owner_id))
             existing = cursor.fetchone()
             
             if existing:
-                return False, f"房产 {property_id} 已经分配给业主 {owner_data[1]}"
+                return False, f"房产 {property_id} 已经分配给用户 {user_data[1] or user_data[2]}"
             
-            # 插入分配记录
+            # 插入分配记录（使用user_id字段）
             insert_sql = """
-                INSERT INTO property_assignments (property_id, owner_id, assigned_by, notes)
+                INSERT INTO property_assignments (property_id, user_id, assigned_by, notes)
                 VALUES (%s, %s, %s, %s)
             """
             cursor.execute(insert_sql, (property_id, owner_id, assigned_by, notes))
             conn.commit()
             
-            return True, f"房产 {property_data[1] or property_id} 成功分配给业主 {owner_data[1]}"
+            return True, f"房产 {property_data[1] or property_id} 成功分配给用户 {user_data[1] or user_data[2]}"
             
         except Exception as e:
             print(f"❌ 房产分配失败: {e}")
@@ -221,13 +221,13 @@ class FinancialReportsManager:
         cursor = conn.cursor()
         
         try:
-            # 软删除分配记录
+            # 软删除分配记录（支持user_id和owner_id）
             update_sql = """
                 UPDATE property_assignments 
                 SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
-                WHERE property_id = %s AND owner_id = %s AND is_active = TRUE
+                WHERE property_id = %s AND (user_id = %s OR owner_id = %s) AND is_active = TRUE
             """
-            cursor.execute(update_sql, (property_id, owner_id))
+            cursor.execute(update_sql, (property_id, owner_id, owner_id))
             
             if cursor.rowcount > 0:
                 conn.commit()
