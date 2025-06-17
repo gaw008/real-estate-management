@@ -7,7 +7,7 @@ Financial Reports Management System
 
 import mysql.connector
 from datetime import datetime, date
-from config_loader import DB_CONFIG
+from config_loader import DB_CONFIG, CA_CERTIFICATE
 
 class FinancialReportsManager:
     def __init__(self):
@@ -16,13 +16,25 @@ class FinancialReportsManager:
     def get_db_connection(self):
         """获取数据库连接"""
         try:
+            # 设置SSL证书
+            import tempfile
+            ca_cert_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.pem')
+            ca_cert_file.write(CA_CERTIFICATE)
+            ca_cert_file.close()
+            
             ssl_config = {
                 'ssl_disabled': False,
                 'ssl_verify_cert': False,
-                'ssl_verify_identity': False
+                'ssl_verify_identity': False,
+                'ssl_ca': ca_cert_file.name
             }
             config = {**DB_CONFIG, **ssl_config}
             connection = mysql.connector.connect(**config)
+            
+            # 清理临时文件
+            import os
+            os.unlink(ca_cert_file.name)
+            
             return connection
         except Exception as e:
             print(f"数据库连接错误: {e}")

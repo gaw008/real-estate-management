@@ -6,10 +6,10 @@ import os
 # export DB_PASSWORD="your-password"
 
 DB_CONFIG = {
-    'host': os.environ.get('DB_HOST', 'localhost'),
-    'port': int(os.environ.get('DB_PORT', '3306')),
-    'database': os.environ.get('DB_NAME', 'real_estate'),
-    'user': os.environ.get('DB_USER', 'root'),
+    'host': os.environ.get('DB_HOST', 'gng-4d77d5e-gngvacation-8888.f.aivencloud.com'),
+    'port': int(os.environ.get('DB_PORT', '28888')),
+    'database': os.environ.get('DB_NAME', 'defaultdb'),
+    'user': os.environ.get('DB_USER', 'avnadmin'),
     'password': os.environ.get('DB_PASSWORD', ''),
     'ssl_disabled': False,
     'ssl_verify_cert': False,
