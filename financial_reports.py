@@ -295,6 +295,11 @@ class FinancialReportsManager:
             cursor.close()
             conn.close()
     
+    def get_user_reports(self, user_id, year=None, limit=None):
+        """获取指定用户的财务报表（基于用户ID）"""
+        # 这个方法与get_owner_reports功能相同，但名称更清晰表示是基于用户ID
+        return self.get_owner_reports(user_id, year, limit)
+    
     def get_all_reports(self, year=None, month=None, property_id=None, page=1, per_page=20):
         """获取所有财务报表（管理员用）"""
         conn = self.get_db_connection()
@@ -454,7 +459,7 @@ class FinancialReportsManager:
             conn.close()
     
     def get_owners_list(self):
-        """获取业主列表"""
+        """获取业主列表（从owners_master表）"""
         conn = self.get_db_connection()
         if not conn:
             return []
@@ -476,6 +481,35 @@ class FinancialReportsManager:
             
         except Exception as e:
             print(f"❌ 获取业主列表失败: {e}")
+            return []
+        finally:
+            cursor.close()
+            conn.close()
+    
+    def get_users_list(self):
+        """获取已注册用户列表（用于房产分配）"""
+        conn = self.get_db_connection()
+        if not conn:
+            return []
+        
+        cursor = conn.cursor(dictionary=True)
+        
+        try:
+            query_sql = """
+                SELECT u.id, u.username, u.full_name, u.email, u.user_type,
+                       COUNT(pa.id) as assigned_properties_count
+                FROM users u
+                LEFT JOIN property_assignments pa ON u.id = pa.owner_id AND pa.is_active = TRUE
+                WHERE u.is_active = TRUE 
+                GROUP BY u.id
+                ORDER BY u.full_name, u.username
+            """
+            cursor.execute(query_sql)
+            users = cursor.fetchall()
+            return users
+            
+        except Exception as e:
+            print(f"❌ 获取用户列表失败: {e}")
             return []
         finally:
             cursor.close()

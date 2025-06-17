@@ -469,12 +469,22 @@ def owner_financial_reports():
     # 获取筛选参数
     year = request.args.get('year')
     
-    # 获取当前业主的报表（基于分配的房产）
-    reports = financial_reports_manager.get_owner_reports(
-        owner_id=session['owner_id'],
-        year=int(year) if year else None,
-        limit=50
-    )
+    # 获取当前用户的报表（基于分配的房产）
+    # 对于普通用户，使用user_id；对于owner角色，使用owner_id（如果存在）
+    user_id = session.get('user_id')
+    owner_id = session.get('owner_id')
+    
+    # 优先使用user_id，如果没有则使用owner_id
+    lookup_id = user_id if user_id else owner_id
+    
+    if lookup_id:
+        reports = financial_reports_manager.get_user_reports(
+            user_id=lookup_id,
+            year=int(year) if year else None,
+            limit=50
+        )
+    else:
+        reports = []
     
     # 获取可用年份列表
     available_years = []
@@ -1150,14 +1160,14 @@ def admin_property_assignments():
         owner_id=owner_id
     )
     
-    # 获取房产和业主列表
+    # 获取房产和用户列表
     properties = financial_reports_manager.get_properties_list()
-    owners = financial_reports_manager.get_owners_list()
+    users = financial_reports_manager.get_users_list()  # 使用用户列表而不是业主列表
     
     return render_template('admin_property_assignments.html',
                          assignments=assignments,
                          properties=properties,
-                         owners=owners,
+                         users=users,  # 传递用户列表而不是业主列表
                          selected_property_id=property_id,
                          selected_owner_id=owner_id)
 
