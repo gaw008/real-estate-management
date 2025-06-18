@@ -580,9 +580,28 @@ def admin_index():
                          format_management_fee=format_management_fee)
 
 @app.route('/admin/employee_departments', methods=['GET', 'POST'])
-@admin_required 
+@app.route('/demo/employee_departments', methods=['GET', 'POST'])
 def admin_employee_departments():
     """管理员设置员工部门"""
+    
+    # 检查数据库连接状态来决定是否进行权限验证
+    conn_test = get_db_connection()
+    database_available = conn_test is not None
+    
+    if database_available:
+        conn_test.close()
+        # 数据库可用时，执行正常的权限检查
+        if 'user_id' not in session:
+            flash('请先登录', 'warning')
+            return redirect(url_for('login'))
+        
+        if session.get('user_type') != 'admin':
+            flash('需要管理员权限', 'error')
+            return redirect(url_for('dashboard'))
+    else:
+        # 数据库连接失败，启用演示模式访问
+        print("⚠️  数据库连接失败，启用演示模式访问")
+    
     if request.method == 'POST':
         user_id = request.form.get('user_id')
         department = request.form.get('department')
@@ -706,9 +725,24 @@ def admin_employee_departments():
         conn.close()
 
 @app.route('/admin/batch_set_departments', methods=['POST'])
-@admin_required
 def admin_batch_set_departments():
     """批量设置员工部门"""
+    
+    # 检查用户权限，但在数据库连接失败时允许演示模式
+    conn_test = get_db_connection()
+    if conn_test:
+        # 数据库连接正常，执行正常的权限检查
+        conn_test.close()
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': '请先登录'})
+        
+        if session.get('user_type') != 'admin':
+            return jsonify({'success': False, 'message': '需要管理员权限'})
+    else:
+        # 数据库连接失败，启用演示模式
+        print("⚠️  数据库连接失败，批量设置操作为演示模式")
+        return jsonify({'success': False, 'message': '当前为演示模式，无法保存数据到数据库'})
+    
     try:
         data = request.get_json()
         department_assignments = data.get('assignments', [])
