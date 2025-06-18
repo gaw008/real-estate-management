@@ -56,6 +56,26 @@ def is_en():
     """判断是否为英文"""
     return is_english()
 
+@app.template_global()
+def get_department_display_name(department):
+    """获取部门的显示名称（中文或英文）"""
+    if not department:
+        return '未分配' if get_current_language() == 'zh' else 'Unassigned'
+    
+    # 部门名称映射
+    department_mapping = {
+        'Admin': '管理员',
+        'Sales Department': '销售部',
+        'Accounting Department': '财务部',
+        'Property Management Department': '房产管理部'
+    }
+    
+    # 如果是中文环境，返回中文名称，否则返回英文名称
+    if get_current_language() == 'zh':
+        return department_mapping.get(department, department)
+    else:
+        return department
+
 # 从配置加载器导入数据库配置
 from config_loader import DB_CONFIG, CA_CERTIFICATE
 
@@ -687,9 +707,12 @@ def admin_employee_departments():
     # GET请求 - 显示员工部门管理页面
     conn = get_db_connection()
     
-    # 预定义部门列表
+    # 预定义部门列表（使用英文作为标准，与注册系统保持一致）
     departments = [
-        '管理员', '销售', '财务', '房屋管理'
+        'Admin',
+        'Sales Department', 
+        'Accounting Department',
+        'Property Management Department'
     ]
     
     if not conn:
@@ -815,7 +838,7 @@ def demo_employee_departments():
         return redirect(url_for('demo_employee_departments'))
     
     # GET请求 - 尝试从数据库获取真实数据，失败则使用演示数据
-    departments = ['管理员', '销售', '财务', '房屋管理', 'Property Management', 'Sales Department', 'Accounting Department', 'Property Management Department']
+    departments = ['Admin', 'Sales Department', 'Accounting Department', 'Property Management Department']
     
     # 尝试从数据库获取真实员工数据
     employees = []
@@ -865,7 +888,7 @@ def demo_employee_departments():
                 'full_name': '系统管理员', 
                 'email': 'admin@company.com',
                 'user_type': 'admin',
-                'department': '管理员'
+                'department': 'Admin'
             },
             {
                 'id': 2,
@@ -873,7 +896,7 @@ def demo_employee_departments():
                 'full_name': '张销售',
                 'email': 'sales01@company.com', 
                 'user_type': 'property_manager',
-                'department': '销售'
+                'department': 'Sales Department'
             },
             {
                 'id': 3,
@@ -881,7 +904,7 @@ def demo_employee_departments():
                 'full_name': '李财务',
                 'email': 'finance01@company.com',
                 'user_type': 'accounting', 
-                'department': '财务'
+                'department': 'Accounting Department'
             },
             {
                 'id': 4,
@@ -889,7 +912,7 @@ def demo_employee_departments():
                 'full_name': '王房管',
                 'email': 'property01@company.com',
                 'user_type': 'property_manager',
-                'department': '房屋管理'
+                'department': 'Property Management Department'
             },
             {
                 'id': 5,
@@ -897,18 +920,17 @@ def demo_employee_departments():
                 'full_name': 'PM用户',
                 'email': 'pm01@company.com',
                 'user_type': 'property_manager',
-                'department': 'Property Management'
+                'department': 'Property Management Department'
             }
         ]
     
     if not department_stats:
         print("📊 使用演示部门统计")
         department_stats = [
-            {'department': '管理员', 'count': 1},
-            {'department': '销售', 'count': 1}, 
-            {'department': '财务', 'count': 1},
-            {'department': '房屋管理', 'count': 1},
-            {'department': 'Property Management', 'count': 1}
+            {'department': 'Admin', 'count': 1},
+            {'department': 'Sales Department', 'count': 1}, 
+            {'department': 'Accounting Department', 'count': 1},
+            {'department': 'Property Management Department', 'count': 2}
         ]
     
     return render_template('admin_employee_departments.html',
@@ -1180,7 +1202,7 @@ def demo_user_management():
                 'username': 'admin',
                 'full_name': '系统管理员',
                 'user_type': 'admin',
-                'department': '管理员',
+                'department': 'Admin',
                 'email': 'admin@company.com',
                 'created_at': '2024-01-01 10:00:00',
                 'last_login': '2024-01-15 14:30:00'
@@ -1190,7 +1212,7 @@ def demo_user_management():
                 'username': 'pm01',
                 'full_name': 'PM用户',
                 'user_type': 'property_manager',
-                'department': 'Property Management',
+                'department': 'Property Management Department',
                 'email': 'pm01@company.com',
                 'created_at': '2024-01-10 09:15:00',
                 'last_login': '2024-01-12 16:45:00'
@@ -1200,7 +1222,7 @@ def demo_user_management():
                 'username': 'sales01',
                 'full_name': '张销售',
                 'user_type': 'sales',
-                'department': '销售',
+                'department': 'Sales Department',
                 'email': 'sales01@company.com',
                 'created_at': '2024-01-05 11:20:00',
                 'last_login': '2024-01-14 10:15:00'

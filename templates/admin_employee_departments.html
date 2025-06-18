@@ -369,7 +369,7 @@
             <h3>📊 部门分布</h3>
             {% for dept in department_stats %}
             <div class="department-item">
-                <span>{{ dept.department or '未分配' }}</span>
+                                        <span>{{ get_department_display_name(dept.department) }}</span>
                 <span class="department-badge">{{ dept.count }} 人</span>
             </div>
             {% endfor %}
@@ -432,7 +432,7 @@
                         </td>
                         <td>
                             {% if employee.department %}
-                                <span class="department-badge">{{ employee.department }}</span>
+                                <span class="department-badge">{{ get_department_display_name(employee.department) }}</span>
                             {% else %}
                                 <span class="no-department">未分配</span>
                             {% endif %}

@@ -408,11 +408,11 @@
                             </span>
                         </td>
                         <td>
-                            {% if user.department %}
-                                <span class="department-badge">{{ user.department }}</span>
-                            {% else %}
-                                <span class="no-department">未分配</span>
-                            {% endif %}
+                                                          {% if user.department %}
+                                  <span class="department-badge">{{ get_department_display_name(user.department) }}</span>
+                              {% else %}
+                                  <span class="no-department">{{ get_department_display_name('') }}</span>
+                              {% endif %}
                         </td>
                         <td>
                             {% if user.created_at %}
