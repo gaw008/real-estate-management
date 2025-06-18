@@ -187,6 +187,19 @@ def register():
         if registration_data['user_type'] == 'admin':
             registration_data['job_title'] = request.form.get('job_title')
             registration_data['department'] = request.form.get('department')
+            
+            # 验证公司员工必须选择部门
+            if not registration_data['department']:
+                return render_template('register.html', 
+                                     message='公司员工必须选择部门', 
+                                     success=False)
+            
+            # 验证部门是否在允许的列表中
+            allowed_departments = ['Admin', 'Sales Department', 'Accounting Department', 'Property Management Department']
+            if registration_data['department'] not in allowed_departments:
+                return render_template('register.html', 
+                                     message='请选择有效的部门', 
+                                     success=False)
         else:  # owner
             registration_data['property_address'] = request.form.get('property_address')
             registration_data['phone'] = request.form.get('phone')

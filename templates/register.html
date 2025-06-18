@@ -329,9 +329,14 @@
                                placeholder="如：销售经理、财务专员" value="{{ request.form.job_title or '' }}">
                     </div>
                     <div class="form-group">
-                        <label for="department">部门</label>
-                        <input type="text" id="department" name="department" 
-                               placeholder="如：销售部、财务部" value="{{ request.form.department or '' }}">
+                        <label for="department">部门 <span class="required">*</span></label>
+                        <select id="department" name="department" required>
+                            <option value="">请选择部门</option>
+                            <option value="Admin" {{ 'selected' if request.form.department == 'Admin' }}>Admin</option>
+                            <option value="Sales Department" {{ 'selected' if request.form.department == 'Sales Department' }}>Sales Department</option>
+                            <option value="Accounting Department" {{ 'selected' if request.form.department == 'Accounting Department' }}>Accounting Department</option>
+                            <option value="Property Management Department" {{ 'selected' if request.form.department == 'Property Management Department' }}>Property Management Department</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -418,6 +423,7 @@
         // 表单验证
         const form = document.getElementById('registerForm');
         const confirmPasswordInput = document.getElementById('confirm_password');
+        const departmentSelect = document.getElementById('department');
 
         form.addEventListener('submit', function(e) {
             const password = passwordInput.value;
@@ -433,6 +439,14 @@
             if (!adminRadio.checked && !ownerRadio.checked) {
                 e.preventDefault();
                 alert('请选择用户类型！');
+                return;
+            }
+
+            // 如果选择了公司员工，必须选择部门
+            if (adminRadio.checked && !departmentSelect.value) {
+                e.preventDefault();
+                alert('公司员工必须选择部门！');
+                departmentSelect.focus();
                 return;
             }
 
