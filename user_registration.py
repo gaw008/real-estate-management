@@ -107,13 +107,12 @@ class UserRegistrationSystem:
             conn.close()
     
     def hash_password(self, password):
-        """密码哈希"""
-        salt = secrets.token_hex(16)
-        password_hash = hashlib.pbkdf2_hmac('sha256', 
-                                          password.encode('utf-8'), 
-                                          salt.encode('utf-8'), 
-                                          100000)
-        return salt + password_hash.hex()
+        """密码哈希 - 使用bcrypt与认证系统保持一致"""
+        import bcrypt
+        # 生成盐并哈希密码
+        salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return password_hash.decode('utf-8')
     
     def submit_registration(self, registration_data):
         """提交用户注册申请"""
@@ -293,8 +292,8 @@ class UserRegistrationSystem:
             
             # 创建用户账户
             user_insert_sql = """
-            INSERT INTO users (username, email, password_hash, user_type, full_name)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO users (username, email, password_hash, user_type, full_name, is_active)
+            VALUES (%s, %s, %s, %s, %s, %s)
             """
             
             cursor.execute(user_insert_sql, (
@@ -302,7 +301,8 @@ class UserRegistrationSystem:
                 registration['email'],
                 registration['password_hash'],
                 registration['user_type'],
-                registration['full_name']
+                registration['full_name'],
+                1  # 设置为活跃状态
             ))
             
             # 更新注册申请状态

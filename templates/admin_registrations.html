@@ -363,17 +363,8 @@
                             <div class="action-buttons">
                                 <a href="/admin/registration/{{ reg.id }}" class="btn btn-view">查看详情</a>
                                 {% if reg.status == 'pending' %}
-                                <form method="POST" action="/admin/review_registration" style="display: inline;">
-                                    <input type="hidden" name="registration_id" value="{{ reg.id }}">
-                                    <input type="hidden" name="action" value="approve">
-                                    <button type="submit" class="btn btn-approve" onclick="return confirm('确认通过此申请？')">通过</button>
-                                </form>
-                                <form method="POST" action="/admin/review_registration" style="display: inline;">
-                                    <input type="hidden" name="registration_id" value="{{ reg.id }}">
-                                    <input type="hidden" name="action" value="reject">
-                                    <input type="hidden" name="admin_notes" value="管理员拒绝">
-                                    <button type="submit" class="btn btn-reject" onclick="return confirm('确认拒绝此申请？')">拒绝</button>
-                                </form>
+                                <button type="button" class="btn btn-approve" onclick="approveRegistration({{ reg.id }})">通过</button>
+                                <button type="button" class="btn btn-reject" onclick="rejectRegistration({{ reg.id }})">拒绝</button>
                                 {% endif %}
                             </div>
                         </td>
@@ -391,5 +382,60 @@
             {% endif %}
         </div>
     </div>
+
+    <script>
+        function approveRegistration(registrationId) {
+            if (confirm('确认通过此申请？')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/admin/review_registration';
+                
+                const regIdInput = document.createElement('input');
+                regIdInput.type = 'hidden';
+                regIdInput.name = 'registration_id';
+                regIdInput.value = registrationId;
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'approve';
+                
+                form.appendChild(regIdInput);
+                form.appendChild(actionInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function rejectRegistration(registrationId) {
+            const reason = prompt('请输入拒绝理由:', '申请信息不完整或不符合要求');
+            if (reason && reason.trim()) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/admin/review_registration';
+                
+                const regIdInput = document.createElement('input');
+                regIdInput.type = 'hidden';
+                regIdInput.name = 'registration_id';
+                regIdInput.value = registrationId;
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'reject';
+                
+                const notesInput = document.createElement('input');
+                notesInput.type = 'hidden';
+                notesInput.name = 'admin_notes';
+                notesInput.value = reason.trim();
+                
+                form.appendChild(regIdInput);
+                form.appendChild(actionInput);
+                form.appendChild(notesInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
 </body>
 </html> 
