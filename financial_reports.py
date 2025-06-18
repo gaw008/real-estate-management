@@ -252,9 +252,9 @@ class FinancialReportsManager:
         cursor = conn.cursor(dictionary=True)
         
         try:
-            # 构建查询条件
-            where_conditions = ["pa.owner_id = %s", "pa.is_active = TRUE", "fr.is_active = TRUE"]
-            params = [owner_id]
+            # 构建查询条件（支持user_id和owner_id）
+            where_conditions = ["(pa.user_id = %s OR pa.owner_id = %s)", "pa.is_active = TRUE", "fr.is_active = TRUE"]
+            params = [owner_id, owner_id]
             
             if year:
                 where_conditions.append("fr.report_year = %s")
