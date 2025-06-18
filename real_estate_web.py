@@ -65,8 +65,9 @@ def get_db_connection():
         # 为Aiven MySQL配置SSL连接
         ssl_config = {
             'ssl_disabled': False,
-            'ssl_verify_cert': False,  # 禁用证书验证以解决自签名证书问题
-            'ssl_verify_identity': False
+            'ssl_verify_cert': True,  # 启用证书验证
+            'ssl_verify_identity': False,
+            'ssl_ca': CA_CERTIFICATE  # 使用CA证书
         }
         
         # 合并配置
@@ -103,10 +104,7 @@ def index():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-@app.route('/demo')
-def demo_index():
-    """演示模式首页 - 无需登录"""
-    return render_template('demo_index.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -585,27 +583,17 @@ def admin_index():
                          format_management_fee=format_management_fee)
 
 @app.route('/admin/employee_departments', methods=['GET', 'POST'])
-@app.route('/demo/employee_departments', methods=['GET', 'POST'])
 def admin_employee_departments():
     """管理员设置员工部门"""
     
-    # 检查数据库连接状态来决定是否进行权限验证
-    conn_test = get_db_connection()
-    database_available = conn_test is not None
+    # 强制执行权限检查，不允许演示模式
+    if 'user_id' not in session:
+        flash('请先登录', 'warning')
+        return redirect(url_for('login'))
     
-    if database_available:
-        conn_test.close()
-        # 数据库可用时，执行正常的权限检查
-        if 'user_id' not in session:
-            flash('请先登录', 'warning')
-            return redirect(url_for('login'))
-        
-        if session.get('user_type') != 'admin':
-            flash('需要管理员权限', 'error')
-            return redirect(url_for('dashboard'))
-    else:
-        # 数据库连接失败，启用演示模式访问
-        print("⚠️  数据库连接失败，启用演示模式访问")
+    if session.get('user_type') != 'admin':
+        flash('需要管理员权限', 'error')
+        return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
         user_id = request.form.get('user_id')
@@ -653,46 +641,8 @@ def admin_employee_departments():
     ]
     
     if not conn:
-        # 数据库连接失败时，显示演示模式
-        print("⚠️  数据库连接失败，启用演示模式")
-        flash('数据库连接失败，当前为演示模式，无法保存实际数据', 'warning')
-        
-        # 创建演示数据
-        demo_employees = [
-            {
-                'id': 1, 'username': 'admin', 'full_name': '系统管理员', 
-                'user_type': 'admin', 'department': '管理员', 'email': 'admin@company.com',
-                'created_at': '2024-01-01 00:00:00'
-            },
-            {
-                'id': 2, 'username': 'sales01', 'full_name': '张销售', 
-                'user_type': 'sales', 'department': '销售', 'email': 'sales01@company.com',
-                'created_at': '2024-02-01 00:00:00'
-            },
-            {
-                'id': 3, 'username': 'finance01', 'full_name': '李财务', 
-                'user_type': 'accounting', 'department': '财务', 'email': 'finance01@company.com',
-                'created_at': '2024-03-01 00:00:00'
-            },
-            {
-                'id': 4, 'username': 'property01', 'full_name': '王房管', 
-                'user_type': 'property_manager', 'department': '房屋管理', 'email': 'property01@company.com',
-                'created_at': '2024-04-01 00:00:00'
-            }
-        ]
-        
-        demo_department_stats = [
-            {'department': '管理员', 'count': 1},
-            {'department': '销售', 'count': 1},
-            {'department': '财务', 'count': 1},
-            {'department': '房屋管理', 'count': 1}
-        ]
-        
-        return render_template('admin_employee_departments.html',
-                             employees=demo_employees,
-                             departments=departments,
-                             department_stats=demo_department_stats,
-                             demo_mode=True)
+        flash('数据库连接失败，请检查数据库配置', 'error')
+        return redirect(url_for('dashboard'))
     
     cursor = conn.cursor(dictionary=True)
     
@@ -719,8 +669,7 @@ def admin_employee_departments():
         return render_template('admin_employee_departments.html',
                              employees=employees,
                              departments=departments,
-                             department_stats=department_stats,
-                             demo_mode=False)
+                             department_stats=department_stats)
         
     except Exception as e:
         print(f"❌ 获取员工数据失败: {e}")
@@ -734,20 +683,12 @@ def admin_employee_departments():
 def admin_batch_set_departments():
     """批量设置员工部门"""
     
-    # 检查用户权限，但在数据库连接失败时允许演示模式
-    conn_test = get_db_connection()
-    if conn_test:
-        # 数据库连接正常，执行正常的权限检查
-        conn_test.close()
-        if 'user_id' not in session:
-            return jsonify({'success': False, 'message': '请先登录'})
-        
-        if session.get('user_type') != 'admin':
-            return jsonify({'success': False, 'message': '需要管理员权限'})
-    else:
-        # 数据库连接失败，启用演示模式
-        print("⚠️  数据库连接失败，批量设置操作为演示模式")
-        return jsonify({'success': False, 'message': '当前为演示模式，无法保存数据到数据库'})
+    # 强制执行权限检查
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '请先登录'})
+    
+    if session.get('user_type') != 'admin':
+        return jsonify({'success': False, 'message': '需要管理员权限'})
     
     try:
         data = request.get_json()
@@ -874,6 +815,83 @@ def properties():
                          },
                          format_management_fee=format_management_fee)
 
+@app.route('/admin/add_property', methods=['GET', 'POST'])
+@admin_required
+def add_property():
+    """添加新房产"""
+    if request.method == 'POST':
+        # 获取表单数据
+        property_data = {
+            'name': request.form.get('name'),
+            'street_address': request.form.get('street_address'),
+            'city': request.form.get('city'),
+            'state': request.form.get('state'),
+            'zip_code': request.form.get('zip_code'),
+            'bedrooms': request.form.get('bedrooms'),
+            'bathrooms': request.form.get('bathrooms'),
+            'square_feet': request.form.get('square_feet'),
+            'property_type': request.form.get('property_type'),
+            'year_built': request.form.get('year_built'),
+            'monthly_rent': request.form.get('monthly_rent'),
+            'description': request.form.get('description')
+        }
+        
+        # 验证必填字段
+        required_fields = ['name', 'street_address', 'city', 'state', 'zip_code']
+        for field in required_fields:
+            if not property_data.get(field):
+                flash(f'请填写{field}', 'error')
+                return render_template('add_property.html', property_data=property_data)
+        
+        conn = get_db_connection()
+        if not conn:
+            flash('数据库连接失败', 'error')
+            return render_template('add_property.html', property_data=property_data)
+        
+        cursor = conn.cursor()
+        
+        try:
+            # 插入房产数据
+            insert_query = """
+                INSERT INTO properties (
+                    name, street_address, city, state, zip_code, 
+                    bedrooms, bathrooms, square_feet, property_type, 
+                    year_built, monthly_rent, description, created_at
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW()
+                )
+            """
+            
+            cursor.execute(insert_query, (
+                property_data['name'],
+                property_data['street_address'],
+                property_data['city'],
+                property_data['state'],
+                property_data['zip_code'],
+                int(property_data['bedrooms']) if property_data['bedrooms'] else None,
+                float(property_data['bathrooms']) if property_data['bathrooms'] else None,
+                int(property_data['square_feet']) if property_data['square_feet'] else None,
+                property_data['property_type'],
+                int(property_data['year_built']) if property_data['year_built'] else None,
+                float(property_data['monthly_rent']) if property_data['monthly_rent'] else None,
+                property_data['description']
+            ))
+            
+            conn.commit()
+            flash('房产添加成功', 'success')
+            return redirect(url_for('properties'))
+            
+        except Exception as e:
+            print(f"❌ 添加房产失败: {e}")
+            flash('添加房产失败', 'error')
+            return render_template('add_property.html', property_data=property_data)
+        finally:
+            cursor.close()
+            conn.close()
+    
+    # GET请求 - 显示添加表单
+    return render_template('add_property.html')
+
 @app.route('/property/<property_id>')
 @admin_required
 def property_detail(property_id):
@@ -985,6 +1003,79 @@ def owners():
                              'strategy': strategy
                          },
                          format_management_fee=format_management_fee)
+
+@app.route('/admin/add_owner', methods=['GET', 'POST'])
+@admin_required
+def add_owner():
+    """添加新业主"""
+    if request.method == 'POST':
+        # 获取表单数据
+        owner_data = {
+            'name': request.form.get('name'),
+            'email': request.form.get('email'),
+            'phone': request.form.get('phone'),
+            'preferences_strategy': request.form.get('preferences_strategy'),
+            'notes': request.form.get('notes')
+        }
+        
+        # 验证必填字段
+        required_fields = ['name', 'email']
+        for field in required_fields:
+            if not owner_data.get(field):
+                flash(f'请填写{field}', 'error')
+                return render_template('add_owner.html', owner_data=owner_data)
+        
+        conn = get_db_connection()
+        if not conn:
+            flash('数据库连接失败', 'error')
+            return render_template('add_owner.html', owner_data=owner_data)
+        
+        cursor = conn.cursor()
+        
+        try:
+            # 检查邮箱是否已存在
+            cursor.execute("SELECT owner_id FROM owners_master WHERE email = %s", (owner_data['email'],))
+            if cursor.fetchone():
+                flash('该邮箱已被注册', 'error')
+                return render_template('add_owner.html', owner_data=owner_data)
+            
+            # 生成新的owner_id
+            cursor.execute("SELECT MAX(owner_id) as max_id FROM owners_master")
+            result = cursor.fetchone()
+            new_owner_id = (result[0] if result[0] else 0) + 1
+            
+            # 插入业主数据
+            insert_query = """
+                INSERT INTO owners_master (
+                    owner_id, name, email, phone, preferences_strategy, notes, created_at
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, NOW()
+                )
+            """
+            
+            cursor.execute(insert_query, (
+                new_owner_id,
+                owner_data['name'],
+                owner_data['email'],
+                owner_data['phone'],
+                owner_data['preferences_strategy'],
+                owner_data['notes']
+            ))
+            
+            conn.commit()
+            flash('业主添加成功', 'success')
+            return redirect(url_for('owners'))
+            
+        except Exception as e:
+            print(f"❌ 添加业主失败: {e}")
+            flash('添加业主失败', 'error')
+            return render_template('add_owner.html', owner_data=owner_data)
+        finally:
+            cursor.close()
+            conn.close()
+    
+    # GET请求 - 显示添加表单
+    return render_template('add_owner.html')
 
 @app.route('/owner/<owner_id>')
 @admin_required
