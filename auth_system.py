@@ -49,6 +49,7 @@ class AuthSystem:
                 email VARCHAR(100) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
                 user_type ENUM('admin', 'property_manager', 'sales', 'accounting', 'owner') NOT NULL,
+                department VARCHAR(100) NULL,
                 owner_id VARCHAR(20) NULL,
                 full_name VARCHAR(100) NOT NULL,
                 is_active BOOLEAN DEFAULT TRUE,
@@ -59,6 +60,7 @@ class AuthSystem:
                 INDEX idx_username (username),
                 INDEX idx_email (email),
                 INDEX idx_user_type (user_type),
+                INDEX idx_department (department),
                 INDEX idx_owner_id (owner_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """

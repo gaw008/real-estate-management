@@ -579,6 +579,141 @@ def admin_index():
                          city_distribution=city_distribution,
                          format_management_fee=format_management_fee)
 
+@app.route('/admin/employee_departments', methods=['GET', 'POST'])
+@admin_required 
+def admin_employee_departments():
+    """管理员设置员工部门"""
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        department = request.form.get('department')
+        
+        if not user_id or not department:
+            flash('请选择用户和部门', 'error')
+            return redirect(url_for('admin_employee_departments'))
+        
+        conn = get_db_connection()
+        if not conn:
+            flash('数据库连接失败', 'error')
+            return redirect(url_for('admin_employee_departments'))
+        
+        cursor = conn.cursor()
+        
+        try:
+            # 更新用户部门
+            cursor.execute("""
+                UPDATE users SET department = %s, updated_at = NOW()
+                WHERE id = %s AND user_type != 'owner'
+            """, (department, user_id))
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                flash('员工部门设置成功', 'success')
+            else:
+                flash('设置失败，请检查用户是否存在或是否为员工', 'error')
+            
+        except Exception as e:
+            print(f"❌ 设置员工部门失败: {e}")
+            flash('设置失败', 'error')
+        finally:
+            cursor.close()
+            conn.close()
+        
+        return redirect(url_for('admin_employee_departments'))
+    
+    # GET请求 - 显示员工部门管理页面
+    conn = get_db_connection()
+    if not conn:
+        return render_template('error.html', error="数据库连接失败")
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # 获取所有员工用户（非业主）
+        cursor.execute("""
+            SELECT id, username, full_name, user_type, department, email, created_at
+            FROM users 
+            WHERE user_type != 'owner' AND is_active = TRUE
+            ORDER BY user_type, full_name
+        """)
+        employees = cursor.fetchall()
+        
+        # 获取部门统计
+        cursor.execute("""
+            SELECT department, COUNT(*) as count 
+            FROM users 
+            WHERE user_type != 'owner' AND is_active = TRUE AND department IS NOT NULL
+            GROUP BY department 
+            ORDER BY count DESC
+        """)
+        department_stats = cursor.fetchall()
+        
+        # 预定义部门列表
+        departments = [
+            '人事部', '财务部', '销售部', '市场部', '技术部', 
+            '客服部', '法务部', '运营部', '管理部', '其他'
+        ]
+        
+        return render_template('admin_employee_departments.html',
+                             employees=employees,
+                             departments=departments,
+                             department_stats=department_stats)
+        
+    except Exception as e:
+        print(f"❌ 获取员工数据失败: {e}")
+        return render_template('error.html', error="获取员工数据失败")
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/admin/batch_set_departments', methods=['POST'])
+@admin_required
+def admin_batch_set_departments():
+    """批量设置员工部门"""
+    try:
+        data = request.get_json()
+        department_assignments = data.get('assignments', [])
+        
+        if not department_assignments:
+            return jsonify({'success': False, 'message': '没有提供部门分配数据'})
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': '数据库连接失败'})
+        
+        cursor = conn.cursor()
+        
+        success_count = 0
+        for assignment in department_assignments:
+            user_id = assignment.get('user_id')
+            department = assignment.get('department')
+            
+            if user_id and department:
+                try:
+                    cursor.execute("""
+                        UPDATE users SET department = %s, updated_at = NOW()
+                        WHERE id = %s AND user_type != 'owner'
+                    """, (department, user_id))
+                    if cursor.rowcount > 0:
+                        success_count += 1
+                except Exception as e:
+                    print(f"❌ 更新用户 {user_id} 部门失败: {e}")
+        
+        conn.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'成功设置 {success_count} 个员工的部门'
+        })
+        
+    except Exception as e:
+        print(f"❌ 批量设置部门失败: {e}")
+        return jsonify({'success': False, 'message': '批量设置失败'})
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
 @app.route('/properties')
 @admin_required
 def properties():
