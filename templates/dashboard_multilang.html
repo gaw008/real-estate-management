@@ -417,6 +417,9 @@
                         <a href="/demo/employee_departments" class="action-btn">
                             <i class="fas fa-users-cog"></i> {{ _('employee_department_management') if is_en() else '员工部门管理 (演示)' }}
                         </a>
+                        <a href="/demo/user_management" class="action-btn">
+                            <i class="fas fa-user-times"></i> {{ _('user_management') if is_en() else '用户管理 (演示)' }}
+                        </a>
                         <a href="{{ url_for('admin_financial_reports') }}" class="action-btn">
                             <i class="fas fa-chart-line"></i> {{ _('财务报表管理') }}
                         </a>

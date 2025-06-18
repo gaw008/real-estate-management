@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 房地产管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .departments-overview {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .departments-overview h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .department-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .department-item:last-child {
+            border-bottom: none;
+        }
+
+        .employees-section {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h2 {
+            color: #333;
+            font-size: 20px;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .batch-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .user-type-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .type-admin {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .type-property_manager {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .type-sales {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .type-accounting {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .department-select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            width: 120px;
+        }
+
+        .department-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .no-department {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .employee-checkbox {
+            margin-right: 10px;
+        }
+
+        .loading {
+            display: none;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .batch-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>🗑️ 用户管理</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}">仪表板</a>
+                <a href="{{ url_for('admin_registrations') }}">注册审核</a>
+                <a href="{{ url_for('admin_reset_password') }}">重置密码</a>
+                <a href="{{ url_for('logout') }}">退出</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else ('warning' if category == 'warning' else 'error') }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% if demo_mode %}
+        <div class="alert" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>演示模式</strong> - 当前数据库连接失败，显示的是演示数据。在此模式下，部门设置操作将不会保存到数据库。
+        </div>
+        {% endif %}
+
+        <!-- 统计概览 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ users|length }}</div>
+                <div class="stat-label">用户总数</div>
+            </div>
+            {% for stat in user_type_stats %}
+            <div class="stat-card">
+                <div class="stat-number">{{ stat.count }}</div>
+                <div class="stat-label">
+                    {% if stat.user_type == 'admin' %}管理员
+                    {% elif stat.user_type == 'property_manager' %}房产经理
+                    {% elif stat.user_type == 'sales' %}销售专员
+                    {% elif stat.user_type == 'accounting' %}财务会计
+                    {% elif stat.user_type == 'owner' %}业主
+                    {% else %}{{ stat.user_type }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 用户列表 -->
+        <div class="users-section">
+            <div class="section-header">
+                <h2>用户列表</h2>
+                <span>共 {{ users|length }} 个用户</span>
+            </div>
+
+            {% if users %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>用户信息</th>
+                        <th>用户类型</th>
+                        <th>部门</th>
+                        <th>创建时间</th>
+                        <th>最后登录</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <div>
+                                <strong>{{ user.full_name }}</strong>
+                                <br>
+                                <small style="color: #666;">{{ user.username }}</small>
+                                <br>
+                                <small style="color: #999;">{{ user.email }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="user-type-badge type-{{ user.user_type }}">
+                                {% if user.user_type == 'admin' %}管理员
+                                {% elif user.user_type == 'property_manager' %}房产经理
+                                {% elif user.user_type == 'sales' %}销售专员
+                                {% elif user.user_type == 'accounting' %}财务会计
+                                {% elif user.user_type == 'owner' %}业主
+                                {% else %}{{ user.user_type }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if user.department %}
+                                <span class="department-badge">{{ user.department }}</span>
+                            {% else %}
+                                <span class="no-department">未分配</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.created_at %}
+                                {{ user.created_at.strftime('%Y-%m-%d') if user.created_at is not string else user.created_at[:10] }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.last_login %}
+                                {{ user.last_login.strftime('%Y-%m-%d') if user.last_login is not string else user.last_login[:10] }}
+                            {% else %}
+                                <span class="no-department">从未登录</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button onclick="deleteUser('{{ user.id }}', '{{ user.username }}', '{{ user.full_name }}')" 
+                                    class="btn btn-danger"
+                                    {% if user.id == session.user_id %}disabled title="不能删除自己的账号"{% endif %}>
+                                删除
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <p>没有找到用户</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function deleteUser(userId, username, fullName) {
+            const confirmUsername = prompt(`确认删除用户: ${fullName} (${username})\n\n请输入用户名以确认删除:`);
+            
+            if (confirmUsername && confirmUsername === username) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = window.location.pathname.includes('/demo/') 
+                    ? '/demo/delete_user' 
+                    : '/admin/delete_user';
+                
+                const userIdInput = document.createElement('input');
+                userIdInput.type = 'hidden';
+                userIdInput.name = 'user_id';
+                userIdInput.value = userId;
+                
+                const confirmInput = document.createElement('input');
+                confirmInput.type = 'hidden';
+                confirmInput.name = 'confirm_username';
+                confirmInput.value = confirmUsername;
+                
+                form.appendChild(userIdInput);
+                form.appendChild(confirmInput);
+                document.body.appendChild(form);
+                form.submit();
+            } else if (confirmUsername !== null) {
+                alert('用户名不匹配，删除取消');
+            }
+        }
+    </script>
+</body>
+</html> 

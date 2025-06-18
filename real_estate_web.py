@@ -794,52 +794,102 @@ def demo_employee_departments():
         
         return redirect(url_for('demo_employee_departments'))
     
-    # GET请求 - 显示演示数据
-    departments = ['管理员', '销售', '财务', '房屋管理']
+    # GET请求 - 尝试从数据库获取真实数据，失败则使用演示数据
+    departments = ['管理员', '销售', '财务', '房屋管理', 'Property Management', 'Sales Department', 'Accounting Department', 'Property Management Department']
     
-    # 演示员工数据
-    employees = [
-        {
-            'id': 1,
-            'username': 'admin',
-            'full_name': '系统管理员', 
-            'email': 'admin@company.com',
-            'user_type': 'admin',
-            'department': '管理员'
-        },
-        {
-            'id': 2,
-            'username': 'sales01',
-            'full_name': '张销售',
-            'email': 'sales01@company.com', 
-            'user_type': 'property_manager',
-            'department': '销售'
-        },
-        {
-            'id': 3,
-            'username': 'finance01',
-            'full_name': '李财务',
-            'email': 'finance01@company.com',
-            'user_type': 'accounting', 
-            'department': '财务'
-        },
-        {
-            'id': 4,
-            'username': 'property01',
-            'full_name': '王房管',
-            'email': 'property01@company.com',
-            'user_type': 'property_manager',
-            'department': '房屋管理'
-        }
-    ]
+    # 尝试从数据库获取真实员工数据
+    employees = []
+    department_stats = []
     
-    # 部门统计
-    department_stats = [
-        {'department': '管理员', 'count': 1},
-        {'department': '销售', 'count': 1}, 
-        {'department': '财务', 'count': 1},
-        {'department': '房屋管理', 'count': 1}
-    ]
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            
+            # 获取所有员工用户（非业主）
+            cursor.execute("""
+                SELECT id, username, full_name, user_type, department, email, created_at
+                FROM users 
+                WHERE user_type != 'owner' AND is_active = TRUE
+                ORDER BY user_type, full_name
+            """)
+            employees = cursor.fetchall() or []
+            
+            # 获取部门统计
+            cursor.execute("""
+                SELECT department, COUNT(*) as count 
+                FROM users 
+                WHERE user_type != 'owner' AND is_active = TRUE AND department IS NOT NULL
+                GROUP BY department 
+                ORDER BY count DESC
+            """)
+            department_stats = cursor.fetchall() or []
+            
+            print(f"✅ 演示模式成功获取 {len(employees)} 个员工数据")
+            
+        except Exception as e:
+            print(f"⚠️ 演示模式数据库查询失败: {e}")
+            employees = []
+            department_stats = []
+        finally:
+            cursor.close()
+            conn.close()
+    
+    # 如果数据库查询失败，使用演示数据
+    if not employees:
+        print("📋 使用演示员工数据")
+        employees = [
+            {
+                'id': 1,
+                'username': 'admin',
+                'full_name': '系统管理员', 
+                'email': 'admin@company.com',
+                'user_type': 'admin',
+                'department': '管理员'
+            },
+            {
+                'id': 2,
+                'username': 'sales01',
+                'full_name': '张销售',
+                'email': 'sales01@company.com', 
+                'user_type': 'property_manager',
+                'department': '销售'
+            },
+            {
+                'id': 3,
+                'username': 'finance01',
+                'full_name': '李财务',
+                'email': 'finance01@company.com',
+                'user_type': 'accounting', 
+                'department': '财务'
+            },
+            {
+                'id': 4,
+                'username': 'property01',
+                'full_name': '王房管',
+                'email': 'property01@company.com',
+                'user_type': 'property_manager',
+                'department': '房屋管理'
+            },
+            {
+                'id': 5,
+                'username': 'pm01',
+                'full_name': 'PM用户',
+                'email': 'pm01@company.com',
+                'user_type': 'property_manager',
+                'department': 'Property Management'
+            }
+        ]
+    
+    if not department_stats:
+        print("📊 使用演示部门统计")
+        department_stats = [
+            {'department': '管理员', 'count': 1},
+            {'department': '销售', 'count': 1}, 
+            {'department': '财务', 'count': 1},
+            {'department': '房屋管理', 'count': 1},
+            {'department': 'Property Management', 'count': 1}
+        ]
     
     return render_template('admin_employee_departments.html',
                          employees=employees,
@@ -880,6 +930,299 @@ def demo_batch_set_departments():
 def demo_index():
     """演示首页"""
     return render_template('demo_index.html')
+
+# ==================== 用户管理功能 ====================
+
+@app.route('/admin/user_management', methods=['GET'])
+@admin_required
+def admin_user_management():
+    """管理员用户管理页面"""
+    
+    # 获取筛选参数
+    user_type_filter = request.args.get('user_type', '')
+    search_query = request.args.get('search', '')
+    
+    conn = get_db_connection()
+    if not conn:
+        flash('数据库连接失败，请检查数据库配置', 'error')
+        return redirect(url_for('dashboard'))
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # 构建查询条件
+        where_conditions = ["is_active = TRUE"]
+        params = []
+        
+        if user_type_filter:
+            where_conditions.append("user_type = %s")
+            params.append(user_type_filter)
+        
+        if search_query:
+            where_conditions.append("(username LIKE %s OR full_name LIKE %s OR email LIKE %s)")
+            search_pattern = f"%{search_query}%"
+            params.extend([search_pattern, search_pattern, search_pattern])
+        
+        where_clause = " AND ".join(where_conditions)
+        
+        # 获取用户列表
+        cursor.execute(f"""
+            SELECT id, username, full_name, user_type, department, email, created_at, last_login
+            FROM users 
+            WHERE {where_clause}
+            ORDER BY created_at DESC
+        """, params)
+        
+        users = cursor.fetchall()
+        
+        # 获取用户类型统计
+        cursor.execute("""
+            SELECT user_type, COUNT(*) as count
+            FROM users 
+            WHERE is_active = TRUE
+            GROUP BY user_type
+            ORDER BY count DESC
+        """)
+        user_type_stats = cursor.fetchall()
+        
+        return render_template('admin_user_management.html',
+                             users=users,
+                             user_type_stats=user_type_stats,
+                             current_filter=user_type_filter,
+                             current_search=search_query)
+        
+    except Exception as e:
+        print(f"❌ 获取用户管理数据失败: {e}")
+        flash(f'获取用户数据失败: {str(e)}', 'error')
+        return redirect(url_for('dashboard'))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/admin/delete_user', methods=['POST'])
+@admin_required
+def admin_delete_user():
+    """删除用户账号"""
+    
+    user_id = request.form.get('user_id')
+    confirm_username = request.form.get('confirm_username')
+    
+    if not user_id or not confirm_username:
+        flash('请提供完整的删除信息', 'error')
+        return redirect(url_for('admin_user_management'))
+    
+    # 防止删除自己的账号
+    if int(user_id) == session.get('user_id'):
+        flash('不能删除自己的账号', 'error')
+        return redirect(url_for('admin_user_management'))
+    
+    conn = get_db_connection()
+    if not conn:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('admin_user_management'))
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # 获取要删除的用户信息
+        cursor.execute("""
+            SELECT id, username, full_name, user_type
+            FROM users 
+            WHERE id = %s AND is_active = TRUE
+        """, (user_id,))
+        
+        user = cursor.fetchone()
+        
+        if not user:
+            flash('用户不存在或已被删除', 'error')
+            return redirect(url_for('admin_user_management'))
+        
+        # 验证用户名确认
+        if user['username'] != confirm_username:
+            flash('用户名确认不匹配', 'error')
+            return redirect(url_for('admin_user_management'))
+        
+        # 防止删除最后一个管理员
+        if user['user_type'] == 'admin':
+            cursor.execute("""
+                SELECT COUNT(*) as admin_count
+                FROM users 
+                WHERE user_type = 'admin' AND is_active = TRUE
+            """)
+            admin_count = cursor.fetchone()['admin_count']
+            
+            if admin_count <= 1:
+                flash('不能删除最后一个管理员账号', 'error')
+                return redirect(url_for('admin_user_management'))
+        
+        # 软删除用户（将is_active设为FALSE）
+        cursor.execute("""
+            UPDATE users 
+            SET is_active = FALSE, updated_at = NOW()
+            WHERE id = %s
+        """, (user_id,))
+        
+        if cursor.rowcount > 0:
+            conn.commit()
+            flash(f'成功删除用户: {user["full_name"]} ({user["username"]})', 'success')
+            
+            # 记录操作日志
+            print(f"🗑️ 管理员 {session.get('username')} 删除了用户: {user['username']} ({user['full_name']})")
+        else:
+            flash('删除失败', 'error')
+    
+    except Exception as e:
+        print(f"❌ 删除用户失败: {e}")
+        flash('删除用户时发生错误', 'error')
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return redirect(url_for('admin_user_management'))
+
+@app.route('/demo/user_management', methods=['GET'])
+def demo_user_management():
+    """演示模式 - 用户管理"""
+    
+    # 检查权限
+    if 'user_id' not in session:
+        flash('请先登录', 'warning')
+        return redirect(url_for('login'))
+    
+    if session.get('user_type') != 'admin':
+        flash('需要管理员权限', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # 尝试从数据库获取真实数据，失败则使用演示数据
+    users = []
+    user_type_stats = []
+    
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            
+            # 获取筛选参数
+            user_type_filter = request.args.get('user_type', '')
+            search_query = request.args.get('search', '')
+            
+            # 构建查询条件
+            where_conditions = ["is_active = TRUE"]
+            params = []
+            
+            if user_type_filter:
+                where_conditions.append("user_type = %s")
+                params.append(user_type_filter)
+            
+            if search_query:
+                where_conditions.append("(username LIKE %s OR full_name LIKE %s OR email LIKE %s)")
+                search_pattern = f"%{search_query}%"
+                params.extend([search_pattern, search_pattern, search_pattern])
+            
+            where_clause = " AND ".join(where_conditions)
+            
+            # 获取用户列表
+            cursor.execute(f"""
+                SELECT id, username, full_name, user_type, department, email, created_at, last_login
+                FROM users 
+                WHERE {where_clause}
+                ORDER BY created_at DESC
+            """, params)
+            
+            users = cursor.fetchall() or []
+            
+            # 获取用户类型统计
+            cursor.execute("""
+                SELECT user_type, COUNT(*) as count
+                FROM users 
+                WHERE is_active = TRUE
+                GROUP BY user_type
+                ORDER BY count DESC
+            """)
+            user_type_stats = cursor.fetchall() or []
+            
+            print(f"✅ 演示模式成功获取 {len(users)} 个用户数据")
+            
+        except Exception as e:
+            print(f"⚠️ 演示模式用户管理数据库查询失败: {e}")
+            users = []
+            user_type_stats = []
+        finally:
+            cursor.close()
+            conn.close()
+    
+    # 如果数据库查询失败，使用演示数据
+    if not users:
+        print("📋 使用演示用户数据")
+        users = [
+            {
+                'id': 1,
+                'username': 'admin',
+                'full_name': '系统管理员',
+                'user_type': 'admin',
+                'department': '管理员',
+                'email': 'admin@company.com',
+                'created_at': '2024-01-01 10:00:00',
+                'last_login': '2024-01-15 14:30:00'
+            },
+            {
+                'id': 5,
+                'username': 'pm01',
+                'full_name': 'PM用户',
+                'user_type': 'property_manager',
+                'department': 'Property Management',
+                'email': 'pm01@company.com',
+                'created_at': '2024-01-10 09:15:00',
+                'last_login': '2024-01-12 16:45:00'
+            },
+            {
+                'id': 2,
+                'username': 'sales01',
+                'full_name': '张销售',
+                'user_type': 'sales',
+                'department': '销售',
+                'email': 'sales01@company.com',
+                'created_at': '2024-01-05 11:20:00',
+                'last_login': '2024-01-14 10:15:00'
+            }
+        ]
+    
+    if not user_type_stats:
+        print("📊 使用演示用户类型统计")
+        user_type_stats = [
+            {'user_type': 'admin', 'count': 1},
+            {'user_type': 'property_manager', 'count': 1},
+            {'user_type': 'sales', 'count': 1}
+        ]
+    
+    return render_template('admin_user_management.html',
+                         users=users,
+                         user_type_stats=user_type_stats,
+                         current_filter=request.args.get('user_type', ''),
+                         current_search=request.args.get('search', ''))
+
+@app.route('/demo/delete_user', methods=['POST'])
+def demo_delete_user():
+    """演示模式 - 删除用户"""
+    
+    # 检查权限
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '请先登录'})
+    
+    if session.get('user_type') != 'admin':
+        return jsonify({'success': False, 'message': '需要管理员权限'})
+    
+    user_id = request.form.get('user_id')
+    confirm_username = request.form.get('confirm_username')
+    
+    if not user_id or not confirm_username:
+        flash('请提供完整的删除信息', 'error')
+    elif user_id == '1':  # 防止删除admin账号
+        flash('演示模式：不能删除管理员账号', 'error')
+    else:
+        flash(f'演示模式：成功删除用户 {confirm_username}', 'success')
+    
+    return redirect(url_for('demo_user_management'))
 
 @app.route('/properties')
 @admin_required
