@@ -62,21 +62,46 @@ from config_loader import DB_CONFIG, CA_CERTIFICATE
 def get_db_connection():
     """获取数据库连接"""
     try:
-        # 为Aiven MySQL配置SSL连接
-        ssl_config = {
-            'ssl_disabled': False,
-            'ssl_verify_cert': True,  # 启用证书验证
-            'ssl_verify_identity': False,
-            'ssl_ca': CA_CERTIFICATE  # 使用CA证书
-        }
+        # 尝试多种SSL配置方式
+        ssl_configs = [
+            # 方式1：使用CA证书
+            {
+                'ssl_disabled': False,
+                'ssl_verify_cert': True,
+                'ssl_verify_identity': False,
+                'ssl_ca': CA_CERTIFICATE
+            },
+            # 方式2：禁用证书验证
+            {
+                'ssl_disabled': False,
+                'ssl_verify_cert': False,
+                'ssl_verify_identity': False
+            },
+            # 方式3：完全禁用SSL（不推荐，但作为备用）
+            {
+                'ssl_disabled': True
+            }
+        ]
         
-        # 合并配置
-        config = {**DB_CONFIG, **ssl_config}
+        for i, ssl_config in enumerate(ssl_configs, 1):
+            try:
+                config = {**DB_CONFIG, **ssl_config}
+                print(f"尝试连接数据库 (方式{i}): {config['host']}:{config['port']}")
+                connection = mysql.connector.connect(**config)
+                print(f"✅ 数据库连接成功 (方式{i})")
+                
+                # 保存成功的配置供后续使用
+                global _successful_ssl_config
+                _successful_ssl_config = ssl_config
+                return connection
+            except Exception as ssl_e:
+                print(f"❌ 方式{i}连接失败: {ssl_e}")
+                continue
         
-        print(f"尝试连接数据库: {config['host']}:{config['port']}")
-        connection = mysql.connector.connect(**config)
-        print("✅ 数据库连接成功")
-        return connection
+        # 所有方式都失败
+        print("❌ 所有SSL配置方式都失败")
+        return None
+        
     except Exception as e:
         print(f"❌ 数据库连接错误: {e}")
         print(f"配置信息: host={DB_CONFIG.get('host')}, port={DB_CONFIG.get('port')}, database={DB_CONFIG.get('database')}, user={DB_CONFIG.get('user')}")
@@ -119,14 +144,18 @@ def login():
             return render_template('login_multilang.html')
         
         # 验证用户
+        print(f"🔍 尝试登录: {username}, 类型: {user_type}")
         user = auth_system.authenticate_user(username, password)
         
         if user:
+            print(f"✅ 用户认证成功: {user}")
             # 检查用户类型是否匹配
             if user['user_type'] != user_type:
+                print(f"❌ 用户类型不匹配: 期望{user_type}, 实际{user['user_type']}")
                 flash(get_text('user_type_mismatch') if get_current_language() == 'en' else '用户类型不匹配', 'error')
                 return render_template('login_multilang.html')
             
+            print("✅ 用户类型匹配，创建会话...")
             # 创建会话
             session_id = auth_system.create_session(
                 user['id'], 
@@ -135,6 +164,7 @@ def login():
             )
             
             if session_id:
+                print(f"✅ 会话创建成功: {session_id}")
                 # 设置会话信息
                 session['user_id'] = user['id']
                 session['username'] = user['username']
@@ -147,9 +177,11 @@ def login():
                 flash(welcome_msg, 'success')
                 return redirect(url_for('dashboard'))
             else:
+                print("❌ 会话创建失败")
                 flash(get_text('session_creation_failed') if get_current_language() == 'en' else '会话创建失败，请重试', 'error')
         else:
-            flash(get_text('invalid_credentials'), 'error')
+            print("❌ 用户认证失败")
+            flash('用户名或密码错误', 'error')
     
     return render_template('login_multilang.html')
 

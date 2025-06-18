@@ -20,14 +20,38 @@ class AuthSystem:
     def get_db_connection(self):
         """获取数据库连接"""
         try:
-            ssl_config = {
-                'ssl_disabled': False,
-                'ssl_verify_cert': False,
-                'ssl_verify_identity': False
-            }
-            config = {**DB_CONFIG, **ssl_config}
-            connection = mysql.connector.connect(**config)
-            return connection
+            # 尝试多种SSL配置方式，优先使用方式2（禁用证书验证）
+            ssl_configs = [
+                # 方式2：禁用证书验证（根据测试，这个方式成功）
+                {
+                    'ssl_disabled': False,
+                    'ssl_verify_cert': False,
+                    'ssl_verify_identity': False
+                },
+                # 方式1：使用CA证书
+                {
+                    'ssl_disabled': False,
+                    'ssl_verify_cert': True,
+                    'ssl_verify_identity': False,
+                    'ssl_ca': '/tmp/ca-certificate.crt'  # 使用CA证书路径
+                },
+                # 方式3：完全禁用SSL（不推荐，但作为备用）
+                {
+                    'ssl_disabled': True
+                }
+            ]
+            
+            for i, ssl_config in enumerate(ssl_configs, 1):
+                try:
+                    config = {**DB_CONFIG, **ssl_config}
+                    connection = mysql.connector.connect(**config)
+                    return connection
+                except Exception as ssl_e:
+                    if i == len(ssl_configs):  # 最后一次尝试失败
+                        print(f"数据库连接错误: {ssl_e}")
+                    continue
+            
+            return None
         except Exception as e:
             print(f"数据库连接错误: {e}")
             return None
@@ -273,14 +297,20 @@ class AuthSystem:
         
         try:
             session_id = secrets.token_urlsafe(32)
-            expires_at = datetime.now() + timedelta(seconds=self.session_timeout)
+            # 使用UTC时间，然后转换为数据库时区
+            from datetime import timezone
+            now_utc = datetime.now(timezone.utc)
+            expires_at_utc = now_utc + timedelta(seconds=self.session_timeout)
+            
+            print(f"🕒 创建会话时间: {now_utc}, 过期时间: {expires_at_utc}")
             
             cursor.execute("""
                 INSERT INTO user_sessions (session_id, user_id, expires_at, ip_address, user_agent)
                 VALUES (%s, %s, %s, %s, %s)
-            """, (session_id, user_id, expires_at, ip_address, user_agent))
+            """, (session_id, user_id, expires_at_utc, ip_address, user_agent))
             
             conn.commit()
+            print(f"✅ 会话创建成功: {session_id}")
             return session_id
             
         except Exception as e:
@@ -299,21 +329,27 @@ class AuthSystem:
         cursor = conn.cursor(dictionary=True)
         
         try:
+            # 使用UTC时间进行比较
+            from datetime import timezone
+            now_utc = datetime.now(timezone.utc)
+            
             cursor.execute("""
                 SELECT us.user_id, us.expires_at, u.username, u.user_type, u.owner_id, u.full_name
                 FROM user_sessions us
                 JOIN users u ON us.user_id = u.id
-                WHERE us.session_id = %s AND us.expires_at > NOW() AND u.is_active = TRUE
-            """, (session_id,))
+                WHERE us.session_id = %s AND us.expires_at > %s AND u.is_active = TRUE
+            """, (session_id, now_utc))
             
             session_data = cursor.fetchone()
             
+            print(f"🔍 验证会话: {session_id[:20]}..., 当前UTC时间: {now_utc}")
             if session_data:
+                print(f"✅ 找到有效会话，过期时间: {session_data['expires_at']}")
                 # 延长会话时间
-                new_expires_at = datetime.now() + timedelta(seconds=self.session_timeout)
+                new_expires_at_utc = now_utc + timedelta(seconds=self.session_timeout)
                 cursor.execute("""
                     UPDATE user_sessions SET expires_at = %s WHERE session_id = %s
-                """, (new_expires_at, session_id))
+                """, (new_expires_at_utc, session_id))
                 conn.commit()
                 
                 return {
@@ -323,6 +359,8 @@ class AuthSystem:
                     'owner_id': session_data['owner_id'],
                     'full_name': session_data['full_name']
                 }
+            else:
+                print("❌ 未找到有效会话或会话已过期")
             
             return None
             
