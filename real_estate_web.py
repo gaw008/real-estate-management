@@ -122,6 +122,26 @@ def format_management_fee(rate, fee_type):
 
 # ==================== 认证路由 ====================
 
+@app.route('/health')
+def health_check():
+    """健康检查端点 - 用于Render部署监控"""
+    try:
+        db_status = 'connected' if get_db_connection() else 'disconnected'
+        return {
+            'status': 'healthy',
+            'message': '房地产管理系统运行正常',
+            'database': db_status,
+            'mode': 'online' if db_status == 'connected' else 'demo'
+        }, 200
+    except Exception as e:
+        return {
+            'status': 'healthy',
+            'message': '房地产管理系统运行正常',
+            'database': 'disconnected',
+            'mode': 'demo',
+            'error': str(e)
+        }, 200
+
 @app.route('/')
 def index():
     """主页 - 重定向到登录或仪表板"""
@@ -2025,71 +2045,84 @@ def bulk_assign_properties():
 if __name__ == '__main__':
     import os
     
-    # 启动时测试数据库连接
+    # 启动时测试数据库连接（但不因失败而停止启动）
     print("🔍 启动时测试数据库连接...")
-    test_conn = get_db_connection()
-    if test_conn:
-        print("✅ 启动时数据库连接测试成功")
-        test_conn.close()
-        
-        # 自动初始化用户认证系统
-        print("🔧 初始化用户认证系统...")
-        try:
-            # 创建用户表
-            if auth_system.create_users_table():
-                print("✅ 用户表创建/检查完成")
+    try:
+        test_conn = get_db_connection()
+        if test_conn:
+            print("✅ 启动时数据库连接测试成功")
+            test_conn.close()
             
-            # 初始化用户注册系统
-            print("🔧 初始化用户注册系统...")
-            if registration_system.create_registration_tables():
-                print("✅ 用户注册表创建/检查完成")
-            
-            # 初始化密码管理系统
-            print("🔧 初始化密码管理系统...")
-            if password_manager.create_password_tables():
-                print("✅ 密码管理表创建/检查完成")
+            # 自动初始化用户认证系统
+            print("🔧 初始化用户认证系统...")
+            try:
+                # 创建用户表
+                if auth_system.create_users_table():
+                    print("✅ 用户表创建/检查完成")
                 
-                # 初始化财务报表系统
-                print("🔧 初始化财务报表系统...")
-                # 导入财务报表系统
-                if financial_reports_manager.create_reports_table():
-                    print("✅ 财务报表表创建/检查完成")
-                else:
-                    print("❌ 财务报表表创建失败")
+                # 初始化用户注册系统
+                print("🔧 初始化用户注册系统...")
+                if registration_system.create_registration_tables():
+                    print("✅ 用户注册表创建/检查完成")
                 
-                # 创建默认管理员账户
-                admin_created = auth_system.create_admin_user(
-                    username="admin",
-                    email="admin@company.com", 
-                    password="admin123",
-                    full_name="系统管理员"
-                )
-                
-                if admin_created:
-                    print("✅ 默认管理员账户创建成功")
-                    print("   用户名: admin")
-                    print("   密码: admin123")
-                else:
-                    print("ℹ️  管理员账户已存在")
-                
-                # 为现有业主创建用户账户
-                if auth_system.create_owner_users_from_existing():
-                    print("✅ 业主用户账户创建/更新完成")
-                else:
-                    print("⚠️  业主用户账户创建失败")
-                
-                # 调试用户表状态
-                print("\n📋 用户表状态:")
-                auth_system.debug_users_table()
+                # 初始化密码管理系统
+                print("🔧 初始化密码管理系统...")
+                if password_manager.create_password_tables():
+                    print("✅ 密码管理表创建/检查完成")
                     
-            else:
-                print("❌ 用户表创建失败")
-                
-        except Exception as e:
-            print(f"❌ 用户系统初始化失败: {e}")
-    else:
-        print("❌ 启动时数据库连接测试失败")
+                    # 初始化财务报表系统
+                    print("🔧 初始化财务报表系统...")
+                    # 导入财务报表系统
+                    if financial_reports_manager.create_reports_table():
+                        print("✅ 财务报表表创建/检查完成")
+                    else:
+                        print("❌ 财务报表表创建失败")
+                    
+                    # 创建默认管理员账户
+                    admin_created = auth_system.create_admin_user(
+                        username="admin",
+                        email="admin@company.com", 
+                        password="admin123",
+                        full_name="系统管理员"
+                    )
+                    
+                    if admin_created:
+                        print("✅ 默认管理员账户创建成功")
+                        print("   用户名: admin")
+                        print("   密码: admin123")
+                    else:
+                        print("ℹ️  管理员账户已存在")
+                    
+                    # 为现有业主创建用户账户
+                    if auth_system.create_owner_users_from_existing():
+                        print("✅ 业主用户账户创建/更新完成")
+                    else:
+                        print("⚠️  业主用户账户创建失败")
+                    
+                    # 调试用户表状态
+                    print("\n📋 用户表状态:")
+                    auth_system.debug_users_table()
+                        
+                else:
+                    print("❌ 用户表创建失败")
+                    
+            except Exception as e:
+                print(f"❌ 用户系统初始化失败: {e}")
+                print("⚠️  继续启动应用，将使用演示模式")
+        else:
+            print("❌ 启动时数据库连接测试失败")
+            print("⚠️  继续启动应用，将使用演示模式")
+    except Exception as e:
+        print(f"❌ 数据库连接测试异常: {e}")
+        print("⚠️  继续启动应用，将使用演示模式")
     
+    # 无论数据库连接是否成功，都启动Flask应用
+    print("\n🚀 启动Flask应用...")
     port = int(os.environ.get('PORT', 8888))
     debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    print(f"📍 服务器将在端口 {port} 启动")
+    print(f"🔧 调试模式: {debug}")
+    print(f"🌍 访问地址: http://0.0.0.0:{port}")
+    
     app.run(debug=debug, host='0.0.0.0', port=port) 
