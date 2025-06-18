@@ -76,6 +76,12 @@
             border: 1px solid #f5c6cb;
         }
 
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -323,12 +329,19 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">
+                    <div class="alert alert-{{ 'success' if category == 'success' else ('warning' if category == 'warning' else 'error') }}">
                         {{ message }}
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
+        
+        {% if demo_mode %}
+        <div class="alert" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>演示模式</strong> - 当前数据库连接失败，显示的是演示数据。在此模式下，部门设置操作将不会保存到数据库。
+        </div>
+        {% endif %}
 
         <!-- 统计概览 -->
         <div class="stats-grid">

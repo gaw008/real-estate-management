@@ -622,8 +622,52 @@ def admin_employee_departments():
     
     # GET请求 - 显示员工部门管理页面
     conn = get_db_connection()
+    
+    # 预定义部门列表
+    departments = [
+        '人事部', '财务部', '销售部', '市场部', '技术部', 
+        '客服部', '法务部', '运营部', '管理部', '其他'
+    ]
+    
     if not conn:
-        return render_template('error.html', error="数据库连接失败")
+        # 数据库连接失败时，显示演示模式
+        print("⚠️  数据库连接失败，启用演示模式")
+        flash('数据库连接失败，当前为演示模式，无法保存实际数据', 'warning')
+        
+        # 创建演示数据
+        demo_employees = [
+            {
+                'id': 1, 'username': 'admin', 'full_name': '系统管理员', 
+                'user_type': 'admin', 'department': '管理部', 'email': 'admin@company.com',
+                'created_at': '2024-01-01 00:00:00'
+            },
+            {
+                'id': 2, 'username': 'sales01', 'full_name': '张销售', 
+                'user_type': 'sales', 'department': None, 'email': 'sales01@company.com',
+                'created_at': '2024-02-01 00:00:00'
+            },
+            {
+                'id': 3, 'username': 'finance01', 'full_name': '李财务', 
+                'user_type': 'accounting', 'department': '财务部', 'email': 'finance01@company.com',
+                'created_at': '2024-03-01 00:00:00'
+            },
+            {
+                'id': 4, 'username': 'hr01', 'full_name': '王人事', 
+                'user_type': 'property_manager', 'department': None, 'email': 'hr01@company.com',
+                'created_at': '2024-04-01 00:00:00'
+            }
+        ]
+        
+        demo_department_stats = [
+            {'department': '管理部', 'count': 1},
+            {'department': '财务部', 'count': 1}
+        ]
+        
+        return render_template('admin_employee_departments.html',
+                             employees=demo_employees,
+                             departments=departments,
+                             department_stats=demo_department_stats,
+                             demo_mode=True)
     
     cursor = conn.cursor(dictionary=True)
     
@@ -647,20 +691,16 @@ def admin_employee_departments():
         """)
         department_stats = cursor.fetchall()
         
-        # 预定义部门列表
-        departments = [
-            '人事部', '财务部', '销售部', '市场部', '技术部', 
-            '客服部', '法务部', '运营部', '管理部', '其他'
-        ]
-        
         return render_template('admin_employee_departments.html',
                              employees=employees,
                              departments=departments,
-                             department_stats=department_stats)
+                             department_stats=department_stats,
+                             demo_mode=False)
         
     except Exception as e:
         print(f"❌ 获取员工数据失败: {e}")
-        return render_template('error.html', error="获取员工数据失败")
+        flash(f'获取员工数据失败: {str(e)}', 'error')
+        return redirect(url_for('dashboard'))
     finally:
         cursor.close()
         conn.close()
