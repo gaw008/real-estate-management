@@ -767,6 +767,120 @@ def admin_batch_set_departments():
         if 'conn' in locals():
             conn.close()
 
+# ==================== 演示模式路由 ====================
+
+@app.route('/demo/employee_departments', methods=['GET', 'POST'])
+def demo_employee_departments():
+    """演示模式 - 员工部门管理"""
+    
+    # 检查权限 - 只有管理员可以访问
+    if 'user_id' not in session:
+        flash('请先登录', 'warning')
+        return redirect(url_for('login'))
+    
+    if session.get('user_type') != 'admin':
+        flash('需要管理员权限', 'error')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        department = request.form.get('department')
+        
+        if not user_id or not department:
+            flash('请选择用户和部门', 'error')
+        else:
+            # 演示模式 - 模拟成功
+            flash(f'演示模式：已为用户设置部门为 {department}', 'success')
+        
+        return redirect(url_for('demo_employee_departments'))
+    
+    # GET请求 - 显示演示数据
+    departments = ['管理员', '销售', '财务', '房屋管理']
+    
+    # 演示员工数据
+    employees = [
+        {
+            'id': 1,
+            'username': 'admin',
+            'full_name': '系统管理员', 
+            'email': 'admin@company.com',
+            'user_type': 'admin',
+            'department': '管理员'
+        },
+        {
+            'id': 2,
+            'username': 'sales01',
+            'full_name': '张销售',
+            'email': 'sales01@company.com', 
+            'user_type': 'property_manager',
+            'department': '销售'
+        },
+        {
+            'id': 3,
+            'username': 'finance01',
+            'full_name': '李财务',
+            'email': 'finance01@company.com',
+            'user_type': 'accounting', 
+            'department': '财务'
+        },
+        {
+            'id': 4,
+            'username': 'property01',
+            'full_name': '王房管',
+            'email': 'property01@company.com',
+            'user_type': 'property_manager',
+            'department': '房屋管理'
+        }
+    ]
+    
+    # 部门统计
+    department_stats = [
+        {'department': '管理员', 'count': 1},
+        {'department': '销售', 'count': 1}, 
+        {'department': '财务', 'count': 1},
+        {'department': '房屋管理', 'count': 1}
+    ]
+    
+    return render_template('admin_employee_departments.html',
+                         employees=employees,
+                         departments=departments,
+                         department_stats=department_stats)
+
+@app.route('/demo/batch_set_departments', methods=['POST'])
+def demo_batch_set_departments():
+    """演示模式 - 批量设置员工部门"""
+    
+    # 检查权限
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '请先登录'})
+    
+    if session.get('user_type') != 'admin':
+        return jsonify({'success': False, 'message': '需要管理员权限'})
+    
+    try:
+        data = request.get_json()
+        department_assignments = data.get('assignments', [])
+        
+        if not department_assignments:
+            return jsonify({'success': False, 'message': '没有提供部门分配数据'})
+        
+        # 演示模式 - 模拟成功
+        success_count = len(department_assignments)
+        
+        return jsonify({
+            'success': True, 
+            'message': f'演示模式：成功设置 {success_count} 个员工的部门'
+        })
+        
+    except Exception as e:
+        print(f"❌ 演示批量设置部门失败: {e}")
+        return jsonify({'success': False, 'message': '批量设置失败'})
+
+@app.route('/demo')
+def demo_index():
+    """演示首页"""
+    return render_template('demo_index.html')
+
 @app.route('/properties')
 @admin_required
 def properties():

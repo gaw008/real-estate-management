@@ -496,7 +496,12 @@
             // 显示加载状态
             document.getElementById('loading').style.display = 'inline';
             
-            fetch('/admin/batch_set_departments', {
+            // 根据当前路径判断使用哪个API端点
+            const apiEndpoint = window.location.pathname.includes('/demo/') 
+                ? '/demo/batch_set_departments' 
+                : '/admin/batch_set_departments';
+            
+            fetch(apiEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
