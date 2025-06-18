@@ -103,6 +103,11 @@ def index():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
+@app.route('/demo')
+def demo_index():
+    """演示模式首页 - 无需登录"""
+    return render_template('demo_index.html')
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """用户登录"""
@@ -644,8 +649,7 @@ def admin_employee_departments():
     
     # 预定义部门列表
     departments = [
-        '人事部', '财务部', '销售部', '市场部', '技术部', 
-        '客服部', '法务部', '运营部', '管理部', '其他'
+        '管理员', '销售', '财务', '房屋管理'
     ]
     
     if not conn:
@@ -657,29 +661,31 @@ def admin_employee_departments():
         demo_employees = [
             {
                 'id': 1, 'username': 'admin', 'full_name': '系统管理员', 
-                'user_type': 'admin', 'department': '管理部', 'email': 'admin@company.com',
+                'user_type': 'admin', 'department': '管理员', 'email': 'admin@company.com',
                 'created_at': '2024-01-01 00:00:00'
             },
             {
                 'id': 2, 'username': 'sales01', 'full_name': '张销售', 
-                'user_type': 'sales', 'department': None, 'email': 'sales01@company.com',
+                'user_type': 'sales', 'department': '销售', 'email': 'sales01@company.com',
                 'created_at': '2024-02-01 00:00:00'
             },
             {
                 'id': 3, 'username': 'finance01', 'full_name': '李财务', 
-                'user_type': 'accounting', 'department': '财务部', 'email': 'finance01@company.com',
+                'user_type': 'accounting', 'department': '财务', 'email': 'finance01@company.com',
                 'created_at': '2024-03-01 00:00:00'
             },
             {
-                'id': 4, 'username': 'hr01', 'full_name': '王人事', 
-                'user_type': 'property_manager', 'department': None, 'email': 'hr01@company.com',
+                'id': 4, 'username': 'property01', 'full_name': '王房管', 
+                'user_type': 'property_manager', 'department': '房屋管理', 'email': 'property01@company.com',
                 'created_at': '2024-04-01 00:00:00'
             }
         ]
         
         demo_department_stats = [
-            {'department': '管理部', 'count': 1},
-            {'department': '财务部', 'count': 1}
+            {'department': '管理员', 'count': 1},
+            {'department': '销售', 'count': 1},
+            {'department': '财务', 'count': 1},
+            {'department': '房屋管理', 'count': 1}
         ]
         
         return render_template('admin_employee_departments.html',
