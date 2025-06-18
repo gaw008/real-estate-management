@@ -8,6 +8,10 @@ Configuration Loader - Safely load configuration from environment variables or c
 import os
 import sys
 from typing import Dict, Any
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
 
 def load_database_config() -> Dict[str, Any]:
     """

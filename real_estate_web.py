@@ -4,6 +4,10 @@ import ssl
 import os
 from datetime import datetime
 import json
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -994,14 +998,14 @@ def api_search_users():
     cursor = conn.cursor(dictionary=True)
     
     try:
-        # 搜索用户（排除当前管理员）
+        # 搜索用户（排除当前管理员，但包含其他admin用户）
         search_sql = """
             SELECT id, username, email, user_type, full_name,
                    DATE_FORMAT(created_at, '%Y-%m-%d') as created_at
             FROM users 
             WHERE (username LIKE %s OR email LIKE %s OR full_name LIKE %s)
             AND id != %s
-            AND user_type != 'admin'
+            AND is_active = TRUE
             ORDER BY username
             LIMIT 10
         """
