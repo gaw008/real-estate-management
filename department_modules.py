@@ -192,7 +192,7 @@ def generate_department_dashboard_data():
                 'description': module_info.get('description', ''),
                 'icon': module_info.get('icon', '📋'),
                 'color': module_info.get('color', 'primary'),
-                'url': f'/{module.replace("_", "-")}'
+                'url': get_module_url(module)
             })
     
     # 部门信息
@@ -215,11 +215,12 @@ MODULE_ROUTES = {
     'maintenance_records': '/maintenance',
     'cleaning_records': '/cleaning',
     'financial_records': '/admin/financial_reports',
-    'financial_records_view': '/financial-view',
+    'financial_records_view': '/admin/financial_reports',  # 共享财务报表，但只读
     'owner_info': '/owners',
     'user_management': '/admin/user_management',
     'employee_departments': '/admin/employee_departments',
-    'financial_reports': '/admin/financial_reports'
+    'financial_reports': '/admin/financial_reports',
+    'system_settings': '/admin'  # 添加系统设置路由
 }
 
 def get_module_url(module_name):

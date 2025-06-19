@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>清洁记录管理 - 房地产管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .module-header {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .status-scheduled { color: #007bff; }
+        .status-inprogress { color: #ffc107; }
+        .status-completed { color: #28a745; }
+        .service-card {
+            border-left: 4px solid #17a2b8;
+            transition: transform 0.2s;
+        }
+        .service-card:hover {
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-home"></i> 房地产管理系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user"></i> {{ session.get('full_name', session.get('username', '')) }}
+                    {% if session.get('department') %}
+                        <small class="text-muted">({{ get_department_display_name(session.get('department')) }})</small>
+                    {% endif %}
+                </span>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="module-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-broom"></i> 清洁记录管理</h1>
+                    <p class="mb-0">清洁服务、保洁工单、环境维护</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-light btn-lg">
+                        <i class="fas fa-plus"></i> 安排清洁服务
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5>已安排</h5>
+                                <h2>15</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-calendar-check fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5>进行中</h5>
+                                <h2>6</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-spinner fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5>已完成</h5>
+                                <h2>89</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5>本周服务</h5>
+                                <h2>12</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-calendar-week fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 清洁服务列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> 清洁服务记录</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>服务编号</th>
+                                <th>房产地址</th>
+                                <th>服务类型</th>
+                                <th>安排日期</th>
+                                <th>状态</th>
+                                <th>负责人</th>
+                                <th>服务费用</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>CL-2024-001</strong></td>
+                                <td>123 Main St, City A</td>
+                                <td>
+                                    <span class="badge bg-primary">日常清洁</span>
+                                </td>
+                                <td>2024-01-18 10:00</td>
+                                <td><span class="status-scheduled"><i class="fas fa-calendar"></i> 已安排</span></td>
+                                <td>王保洁</td>
+                                <td>$120</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary"><i class="fas fa-eye"></i></button>
+                                        <button class="btn btn-outline-warning"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>CL-2024-002</strong></td>
+                                <td>456 Oak Ave, City B</td>
+                                <td>
+                                    <span class="badge bg-success">深度清洁</span>
+                                </td>
+                                <td>2024-01-17 14:00</td>
+                                <td><span class="status-inprogress"><i class="fas fa-spinner"></i> 进行中</span></td>
+                                <td>李师傅</td>
+                                <td>$280</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary"><i class="fas fa-eye"></i></button>
+                                        <button class="btn btn-outline-warning"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>CL-2024-003</strong></td>
+                                <td>789 Pine St, City C</td>
+                                <td>
+                                    <span class="badge bg-info">窗户清洁</span>
+                                </td>
+                                <td>2024-01-16 09:00</td>
+                                <td><span class="status-completed"><i class="fas fa-check"></i> 已完成</span></td>
+                                <td>张阿姨</td>
+                                <td>$80</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary"><i class="fas fa-eye"></i></button>
+                                        <button class="btn btn-outline-success"><i class="fas fa-star"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 清洁服务类型 -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card service-card">
+                    <div class="card-body">
+                        <h6><i class="fas fa-home"></i> 日常清洁</h6>
+                        <p class="text-muted">基础清洁服务，包括吸尘、拖地、擦拭等</p>
+                        <small>费用：$80-150</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card service-card">
+                    <div class="card-body">
+                        <h6><i class="fas fa-broom"></i> 深度清洁</h6>
+                        <p class="text-muted">全面深度清洁，包括厨房、卫生间深度清理</p>
+                        <small>费用：$200-350</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card service-card">
+                    <div class="card-body">
+                        <h6><i class="fas fa-window-maximize"></i> 窗户清洁</h6>
+                        <p class="text-muted">专业窗户清洁，内外玻璃清洁</p>
+                        <small>费用：$50-100</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能说明 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> 功能说明</h6>
+                    <p class="mb-0">此模块专供 <strong>房产管理部</strong> 使用，用于安排和管理房产清洁服务、跟踪清洁进度、管理保洁人员等。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

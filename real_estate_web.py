@@ -997,7 +997,7 @@ def demo_index():
 # ==================== 用户管理功能 ====================
 
 @app.route('/admin/user_management', methods=['GET'])
-@admin_required
+@module_required('user_management')
 def admin_user_management():
     """管理员用户管理页面"""
     
@@ -1288,7 +1288,7 @@ def demo_delete_user():
     return redirect(url_for('demo_user_management'))
 
 @app.route('/properties')
-@admin_required
+@module_required('property_info')
 def properties():
     """房产列表页面"""
     conn = get_db_connection()
@@ -1486,7 +1486,7 @@ def property_detail(property_id):
                          format_management_fee=format_management_fee)
 
 @app.route('/owners')
-@admin_required
+@module_required('owner_info')
 def owners():
     """业主列表页面"""
     conn = get_db_connection()
@@ -1884,7 +1884,7 @@ def api_search_users():
 # ==================== 财务报表路由 ====================
 
 @app.route('/admin/financial_reports', methods=['GET', 'POST'])
-@admin_required
+@module_required('financial_records')
 def admin_financial_reports():
     """管理员财务报表管理"""
     if request.method == 'POST':
