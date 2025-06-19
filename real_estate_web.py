@@ -16,6 +16,10 @@ app.secret_key = os.environ.get('APP_SECRET_KEY', 'default-secret-key-change-in-
 
 # 导入认证系统
 from auth_system import auth_system, login_required, admin_required, owner_required, super_admin_required
+from department_modules import (
+    module_required, department_required, generate_department_dashboard_data,
+    get_user_accessible_modules, has_module_access, get_module_info
+)
 
 # 导入用户注册系统
 from user_registration import registration_system
@@ -403,7 +407,15 @@ def review_registration():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    """用户仪表板"""
+    """用户仪表板 - 根据用户类型显示不同界面"""
+    user_type = session.get('user_type')
+    user_department = session.get('department', '')
+    
+    # 如果是员工用户且有部门信息，使用部门专用仪表板
+    if user_type == 'admin' or user_department:
+        return redirect(url_for('department_dashboard'))
+    
+    # 业主用户使用原有仪表板
     conn = get_db_connection()
     if not conn:
         return render_template('error.html', error="数据库连接失败")
@@ -411,10 +423,62 @@ def dashboard():
     cursor = conn.cursor(dictionary=True)
     
     try:
-        if session['user_type'] == 'admin':
-            # 管理员统计
-            stats = {}
-            
+        # 业主统计
+        owner_id = session['owner_id']
+        
+        # 获取业主信息
+        cursor.execute("SELECT * FROM owners_master WHERE owner_id = %s", (owner_id,))
+        owner_info = cursor.fetchone()
+        
+        # 业主房产统计
+        cursor.execute("""
+            SELECT COUNT(*) as property_count
+            FROM property_owners 
+            WHERE owner_id = %s
+        """, (owner_id,))
+        property_count = cursor.fetchone()['property_count']
+        
+        # 活跃房产数量
+        cursor.execute("""
+            SELECT COUNT(*) as active_properties
+            FROM property_owners po
+            JOIN properties p ON po.property_id = p.id
+            WHERE po.owner_id = %s AND p.is_active = TRUE
+        """, (owner_id,))
+        active_properties = cursor.fetchone()['active_properties']
+        
+        owner_stats = {
+            'property_count': property_count,
+            'total_revenue': 0,  # 这里可以后续添加收入计算
+            'active_properties': active_properties
+        }
+        
+        return render_template('dashboard_multilang.html',
+                             owner_info=owner_info,
+                             owner_stats=owner_stats,
+                             current_date=datetime.now().strftime('%Y年%m月%d日'),
+                             recent_activities=[])
+    
+    except Exception as e:
+        print(f"仪表板数据加载错误: {e}")
+        return render_template('error.html', error="数据加载失败")
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/department-dashboard')
+@login_required
+def department_dashboard():
+    """部门专用工作台"""
+    # 生成部门专属数据
+    dashboard_data = generate_department_dashboard_data()
+    
+    # 获取统计数据
+    stats = {}
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
             # 房产总数
             cursor.execute("SELECT COUNT(*) as count FROM properties")
             stats['properties_count'] = cursor.fetchone()['count']
@@ -423,62 +487,19 @@ def dashboard():
             cursor.execute("SELECT COUNT(*) as count FROM owners_master")
             stats['owners_count'] = cursor.fetchone()['count']
             
-            # 城市数量
-            cursor.execute("SELECT COUNT(DISTINCT city) as count FROM properties")
-            stats['cities_count'] = cursor.fetchone()['count']
+            # 用户总数
+            cursor.execute("SELECT COUNT(*) as count FROM users")
+            stats['total_users'] = cursor.fetchone()['count']
             
-            # 州数量
-            cursor.execute("SELECT COUNT(DISTINCT state) as count FROM properties")
-            stats['states_count'] = cursor.fetchone()['count']
-            
-            return render_template('dashboard_multilang.html', 
-                                 stats=stats,
-                                 current_date=datetime.now().strftime('%Y年%m月%d日'),
-                                 recent_activities=[])
-        
-        else:
-            # 业主统计
-            owner_id = session['owner_id']
-            
-            # 获取业主信息
-            cursor.execute("SELECT * FROM owners_master WHERE owner_id = %s", (owner_id,))
-            owner_info = cursor.fetchone()
-            
-            # 业主房产统计
-            cursor.execute("""
-                SELECT COUNT(*) as property_count
-                FROM property_owners 
-                WHERE owner_id = %s
-            """, (owner_id,))
-            property_count = cursor.fetchone()['property_count']
-            
-            # 活跃房产数量
-            cursor.execute("""
-                SELECT COUNT(*) as active_properties
-                FROM property_owners po
-                JOIN properties p ON po.property_id = p.id
-                WHERE po.owner_id = %s AND p.is_active = TRUE
-            """, (owner_id,))
-            active_properties = cursor.fetchone()['active_properties']
-            
-            owner_stats = {
-                'property_count': property_count,
-                'total_revenue': 0,  # 这里可以后续添加收入计算
-                'active_properties': active_properties
-            }
-            
-            return render_template('dashboard_multilang.html',
-                                 owner_info=owner_info,
-                                 owner_stats=owner_stats,
-                                 current_date=datetime.now().strftime('%Y年%m月%d日'),
-                                 recent_activities=[])
+        except Exception as e:
+            print(f"统计数据加载错误: {e}")
+        finally:
+            cursor.close()
+            conn.close()
     
-    except Exception as e:
-        print(f"仪表板数据加载错误: {e}")
-        return render_template('error.html', error="数据加载失败")
-    finally:
-        cursor.close()
-        conn.close()
+    return render_template('department_dashboard.html',
+                         stats=stats,
+                         **dashboard_data)
 
 # ==================== 业主专用路由 ====================
 
@@ -1953,6 +1974,86 @@ def delete_financial_report():
     return redirect(url_for('admin_financial_reports'))
 
 # ==================== 房产分配管理路由 ====================
+
+# ==================== 部门模块路由 ====================
+
+@app.route('/customers')
+@module_required('customer_management')
+def customer_management():
+    """客户建档管理 - Property Manager & Sales"""
+    # 演示数据
+    customer_stats = {
+        'total': 45,
+        'active': 32,
+        'potential': 8,
+        'new_this_month': 5
+    }
+    
+    customers = [
+        {
+            'id': 1,
+            'name': '张先生',
+            'company': '科技有限公司',
+            'phone': '138****5678',
+            'email': 'zhang@example.com',
+            'type': '购房客户',
+            'status': 'active',
+            'status_display': '活跃客户',
+            'last_contact': '2024-01-15',
+            'assigned_to': session.get('full_name', '未分配')
+        },
+        {
+            'id': 2,
+            'name': '李女士',
+            'company': '',
+            'phone': '139****8765',
+            'email': 'li@example.com',
+            'type': '租房客户',
+            'status': 'potential',
+            'status_display': '潜在客户',
+            'last_contact': '2024-01-12',
+            'assigned_to': '销售部小王'
+        }
+    ]
+    
+    return render_template('customer_management.html', 
+                         customer_stats=customer_stats,
+                         customers=customers)
+
+@app.route('/maintenance')
+@module_required('maintenance_records')
+def maintenance_management():
+    """维修记录管理 - Property Manager Only"""
+    return render_template('maintenance_management.html')
+
+@app.route('/cleaning')
+@module_required('cleaning_records')
+def cleaning_management():
+    """清洁记录管理 - Property Manager Only"""
+    return render_template('cleaning_management.html')
+
+@app.route('/financial-view')
+@module_required('financial_records_view')
+def financial_records_view():
+    """财务记录查看 - Property Manager (只读)"""
+    return render_template('financial_records_view.html')
+
+# ==================== 部门仪表板模板辅助函数 ====================
+
+@app.template_global()
+def get_accessible_modules():
+    """获取当前用户可访问的模块"""
+    return get_user_accessible_modules()
+
+@app.template_global()
+def check_module_access(module_name):
+    """检查模块访问权限"""
+    return has_module_access(module_name)
+
+@app.template_global()
+def get_module_display_info(module_name):
+    """获取模块显示信息"""
+    return get_module_info(module_name)
 
 @app.route('/admin/property_assignments', methods=['GET', 'POST'])
 @admin_required
