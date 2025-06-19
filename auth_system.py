@@ -340,7 +340,9 @@ class AuthSystem:
         """创建用户会话"""
         conn = self.get_db_connection()
         if not conn:
-            return None
+            # 演示模式：返回演示会话ID
+            print("🔄 数据库连接失败，创建演示模式会话")
+            return f"demo_session_{user_id}_{secrets.token_hex(8)}"
         
         cursor = conn.cursor()
         
