@@ -18,7 +18,7 @@ DEPARTMENT_PERMISSIONS = {
     },
     'Property Management Department': {
         'modules': ['property_info', 'customer_management', 'maintenance_records', 
-                   'cleaning_records', 'financial_records_view'],
+                   'cleaning_records', 'financial_records_view', 'employee_departments'],
         'description': '房产管理部 - 房产运营核心'
     },
     'Sales Department': {

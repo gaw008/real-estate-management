@@ -89,8 +89,14 @@
                     {% endif %}
                 </div>
                 <div class="card-footer">
-                    <a href="{{ url_for('property_detail', property_id=property.id) }}" 
-                       class="btn btn-primary btn-sm">查看详情</a>
+                    <div class="btn-group w-100" role="group">
+                        <a href="{{ url_for('property_detail', property_id=property.id) }}" 
+                           class="btn btn-outline-primary btn-sm">查看详情</a>
+                        {% if session.get('user_type') == 'admin' or session.get('department') in ['Property Management Department'] %}
+                        <button class="btn btn-outline-warning btn-sm" onclick="editProperty({{ property.id }})">编辑</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteProperty({{ property.id }}, '{{ property.name }}')">删除</button>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -132,4 +138,36 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+function editProperty(propertyId) {
+    // 跳转到编辑页面
+    window.location.href = `/admin/edit_property/${propertyId}`;
+}
+
+function deleteProperty(propertyId, propertyName) {
+    if (confirm(`确定要删除房产 "${propertyName}" 吗？此操作不可恢复。`)) {
+        fetch('/admin/delete_property', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `property_id=${propertyId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('删除失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除过程中发生错误');
+        });
+    }
+}
+</script>
 {% endblock %} 
