@@ -86,9 +86,9 @@ from config_loader import DB_CONFIG, CA_CERTIFICATE
 def get_db_connection():
     """获取数据库连接"""
     try:
-        # 尝试多种SSL配置方式（按成功率排序）
+        # 尝试多种SSL配置方式（按测试成功率排序）
         ssl_configs = [
-            # 方式1：禁用证书验证（测试显示这个方式有效）
+            # 方式1：禁用证书验证（已测试成功）
             {
                 'ssl_disabled': False,
                 'ssl_verify_cert': False,
