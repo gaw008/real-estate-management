@@ -20,20 +20,22 @@ class AuthSystem:
     def get_db_connection(self):
         """获取数据库连接"""
         try:
-            # 尝试多种SSL配置方式，优先使用方式2（禁用证书验证）
+            from config_loader import DB_CONFIG, CA_CERTIFICATE
+            
+            # 尝试多种SSL配置方式（已测试成功的顺序）
             ssl_configs = [
-                # 方式2：禁用证书验证（根据测试，这个方式成功）
+                # 方式1：禁用证书验证（已测试成功）
                 {
                     'ssl_disabled': False,
                     'ssl_verify_cert': False,
                     'ssl_verify_identity': False
                 },
-                # 方式1：使用CA证书
+                # 方式2：使用CA证书
                 {
                     'ssl_disabled': False,
                     'ssl_verify_cert': True,
                     'ssl_verify_identity': False,
-                    'ssl_ca': '/tmp/ca-certificate.crt'  # 使用CA证书路径
+                    'ssl_ca': CA_CERTIFICATE
                 },
                 # 方式3：完全禁用SSL（不推荐，但作为备用）
                 {
