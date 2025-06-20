@@ -1340,7 +1340,7 @@ def properties():
     # 计算分页信息
     total_pages = (total_count + per_page - 1) // per_page
     
-    return render_template('properties_fixed.html',
+    return render_template('properties.html',
                          properties=properties_list,
                          states=states,
                          cities=cities,

@@ -90,8 +90,8 @@
                 <div class="card-header bg-light">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="card-title mb-0">
-                            <span class="badge bg-secondary me-2">#{{ property.property_id }}</span>
-                            {{ property.property_name or '未命名房产' }}
+                            <span class="badge bg-secondary me-2">#{{ property.id }}</span>
+                            {{ property.name or '未命名房产' }}
                         </h6>
                         {% if property.wifi_available %}
                         <i class="fas fa-wifi text-success" title="WiFi可用"></i>
@@ -104,7 +104,7 @@
                         <h6 class="text-muted mb-1">
                             <i class="fas fa-map-marker-alt me-1"></i>位置
                         </h6>
-                        <p class="mb-0">{{ property.address or '地址未知' }}</p>
+                        <p class="mb-0">{{ property.street_address or '地址未知' }}</p>
                         <small class="text-muted">{{ property.city }}, {{ property.state }}</small>
                     </div>
 
@@ -179,15 +179,15 @@
                 </div>
                 <div class="card-footer bg-light">
                     <div class="btn-group w-100" role="group">
-                        <a href="{{ url_for('property_detail', property_id=property.property_id) }}" 
+                        <a href="{{ url_for('property_detail', property_id=property.id) }}" 
                            class="btn btn-outline-primary btn-sm">
                             <i class="fas fa-eye me-1"></i>查看详情
                         </a>
                         {% if session.get('user_type') == 'admin' or session.get('department') in ['Property Management Department'] %}
-                        <button class="btn btn-outline-warning btn-sm" onclick="editProperty({{ property.property_id }})">
+                        <button class="btn btn-outline-warning btn-sm" onclick="editProperty({{ property.id }})">
                             <i class="fas fa-edit me-1"></i>编辑
                         </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="deleteProperty({{ property.property_id }}, '{{ property.property_name }}')">
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteProperty({{ property.id }}, '{{ property.name }}')">
                             <i class="fas fa-trash me-1"></i>删除
                         </button>
                         {% endif %}
