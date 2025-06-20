@@ -251,7 +251,7 @@ class AuthSystem:
         try:
             print(f"🔍 尝试认证用户: {username}")
             cursor.execute("""
-                SELECT id, username, email, password_hash, user_type, owner_id, full_name, is_active
+                SELECT id, username, email, password_hash, user_type, department, owner_id, full_name, is_active
                 FROM users 
                 WHERE username = %s AND is_active = TRUE
             """, (username,))
@@ -273,6 +273,7 @@ class AuthSystem:
                         'username': user['username'],
                         'email': user['email'],
                         'user_type': user['user_type'],
+                        'department': user['department'],
                         'owner_id': user['owner_id'],
                         'full_name': user['full_name']
                     }
@@ -299,6 +300,7 @@ class AuthSystem:
             'admin': {
                 'password': 'admin123',
                 'user_type': 'admin',
+                'department': 'Admin',
                 'full_name': '系统管理员',
                 'email': 'admin@example.com',
                 'id': 1,
@@ -307,6 +309,7 @@ class AuthSystem:
             'pm01': {
                 'password': '123456',
                 'user_type': 'admin',
+                'department': 'Property Management Department',
                 'full_name': '房产管理员',
                 'email': 'pm01@example.com',
                 'id': 2,
@@ -315,6 +318,7 @@ class AuthSystem:
             'owner1': {
                 'password': '123456',
                 'user_type': 'owner',
+                'department': None,
                 'full_name': '业主张三',
                 'email': 'owner1@example.com',
                 'id': 3,
@@ -329,6 +333,7 @@ class AuthSystem:
                 'username': username,
                 'email': demo_users[username]['email'],
                 'user_type': demo_users[username]['user_type'],
+                'department': demo_users[username]['department'],
                 'owner_id': demo_users[username]['owner_id'],
                 'full_name': demo_users[username]['full_name']
             }

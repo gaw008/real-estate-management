@@ -188,6 +188,7 @@ def login():
                 session['user_id'] = user['id']
                 session['username'] = user['username']
                 session['user_type'] = user['user_type']
+                session['department'] = user['department']
                 session['owner_id'] = user['owner_id']
                 session['full_name'] = user['full_name']
                 session['session_id'] = session_id
@@ -202,10 +203,10 @@ def login():
                 session['user_id'] = user['id']
                 session['username'] = user['username']
                 session['user_type'] = user['user_type']
+                session['department'] = user['department']
                 session['owner_id'] = user['owner_id']
                 session['full_name'] = user['full_name']
                 session['session_id'] = f"demo_{user['id']}"
-                session['department'] = 'Property Management Department'  # 设置部门用于权限检查
                 
                 welcome_msg = f'欢迎回来，{user["full_name"]}！（演示模式）'
                 flash(welcome_msg, 'success')
@@ -1302,7 +1303,10 @@ def properties():
                 'bathrooms': 2,
                 'square_feet': 1500,
                 'cleaning_fee': 150,
-                'management_fee_rate': 8.5
+                'management_fee_rate': 8.5,
+                'management_fee_percentage': 8.5,
+                'capacity': 6,
+                'wifi_available': True
             }
         ]
         return render_template('properties.html',
