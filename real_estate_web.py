@@ -84,52 +84,25 @@ def get_department_display_name(department):
 from config_loader import DB_CONFIG, CA_CERTIFICATE
 
 def get_db_connection():
-    """获取数据库连接"""
+    """获取数据库连接 - 生产环境版本"""
     try:
-        # 尝试多种SSL配置方式（按测试成功率排序）
-        ssl_configs = [
-            # 方式1：禁用证书验证（已测试成功）
-            {
-                'ssl_disabled': False,
-                'ssl_verify_cert': False,
-                'ssl_verify_identity': False
-            },
-            # 方式2：使用CA证书
-            {
-                'ssl_disabled': False,
-                'ssl_verify_cert': True,
-                'ssl_verify_identity': False,
-                'ssl_ca': CA_CERTIFICATE
-            },
-            # 方式3：完全禁用SSL（不推荐，但作为备用）
-            {
-                'ssl_disabled': True
-            }
-        ]
+        # 使用已验证成功的SSL配置
+        ssl_config = {
+            'ssl_disabled': False,
+            'ssl_verify_cert': False,
+            'ssl_verify_identity': False
+        }
         
-        for i, ssl_config in enumerate(ssl_configs, 1):
-            try:
-                config = {**DB_CONFIG, **ssl_config}
-                print(f"尝试连接数据库 (方式{i}): {config['host']}:{config['port']}")
-                connection = mysql.connector.connect(**config)
-                print(f"✅ 数据库连接成功 (方式{i})")
-                
-                # 保存成功的配置供后续使用
-                global _successful_ssl_config
-                _successful_ssl_config = ssl_config
-                return connection
-            except Exception as ssl_e:
-                print(f"❌ 方式{i}连接失败: {ssl_e}")
-                continue
-        
-        # 所有方式都失败
-        print("❌ 所有SSL配置方式都失败")
-        return None
+        config = {**DB_CONFIG, **ssl_config}
+        print(f"连接数据库: {config['host']}:{config['port']}")
+        connection = mysql.connector.connect(**config)
+        print(f"✅ 数据库连接成功")
+        return connection
         
     except Exception as e:
         print(f"❌ 数据库连接错误: {e}")
         print(f"配置信息: host={DB_CONFIG.get('host')}, port={DB_CONFIG.get('port')}, database={DB_CONFIG.get('database')}, user={DB_CONFIG.get('user')}")
-        return None
+        raise Exception(f"数据库连接失败: {e}")  # 抛出异常而不是返回None
 
 def format_management_fee(rate, fee_type):
     """格式化管理费显示"""
@@ -150,21 +123,22 @@ def format_management_fee(rate, fee_type):
 def health_check():
     """健康检查端点 - 用于Render部署监控"""
     try:
-        db_status = 'connected' if get_db_connection() else 'disconnected'
+        connection = get_db_connection()
+        connection.close()
         return {
             'status': 'healthy',
             'message': '房地产管理系统运行正常',
-            'database': db_status,
-            'mode': 'online' if db_status == 'connected' else 'demo'
+            'database': 'connected',
+            'mode': 'production'
         }, 200
     except Exception as e:
         return {
-            'status': 'healthy',
-            'message': '房地产管理系统运行正常',
+            'status': 'error',
+            'message': '数据库连接失败',
             'database': 'disconnected',
-            'mode': 'demo',
+            'mode': 'offline',
             'error': str(e)
-        }, 200
+        }, 500
 
 @app.route('/')
 def index():
