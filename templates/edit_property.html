@@ -1,1 +1,146 @@
- 
+{% extends "base.html" %}
+
+{% block title %}编辑房产{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>编辑房产</h2>
+                <a href="{{ url_for('properties') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>返回房产列表
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">房产信息</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">房产名称 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ property.name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="property_type" class="form-label">房产类型</label>
+                                <select class="form-select" id="property_type" name="property_type">
+                                    <option value="">请选择类型</option>
+                                    <option value="单户型" {% if property.property_type == '单户型' %}selected{% endif %}>单户型</option>
+                                    <option value="公寓" {% if property.property_type == '公寓' %}selected{% endif %}>公寓</option>
+                                    <option value="联排别墅" {% if property.property_type == '联排别墅' %}selected{% endif %}>联排别墅</option>
+                                    <option value="多户型" {% if property.property_type == '多户型' %}selected{% endif %}>多户型</option>
+                                    <option value="商业" {% if property.property_type == '商业' %}selected{% endif %}>商业</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="street_address" class="form-label">街道地址 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="street_address" name="street_address" 
+                                       value="{{ property.street_address }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="zip_code" class="form-label">邮编 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="zip_code" name="zip_code" 
+                                       value="{{ property.zip_code }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="city" class="form-label">城市 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="city" name="city" 
+                                       value="{{ property.city }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="state" class="form-label">州 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="state" name="state" 
+                                       value="{{ property.state }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label for="bedrooms" class="form-label">卧室数量</label>
+                                <input type="number" class="form-control" id="bedrooms" name="bedrooms" 
+                                       value="{{ property.bedrooms }}" min="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="bathrooms" class="form-label">浴室数量</label>
+                                <input type="number" class="form-control" id="bathrooms" name="bathrooms" 
+                                       value="{{ property.bathrooms }}" step="0.5" min="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="square_feet" class="form-label">面积(平方英尺)</label>
+                                <input type="number" class="form-control" id="square_feet" name="square_feet" 
+                                       value="{{ property.square_feet }}" min="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="year_built" class="form-label">建造年份</label>
+                                <input type="number" class="form-control" id="year_built" name="year_built" 
+                                       value="{{ property.year_built }}" min="1800" max="{{ current_year }}">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="monthly_rent" class="form-label">月租金 ($)</label>
+                                <input type="number" class="form-control" id="monthly_rent" name="monthly_rent" 
+                                       value="{{ property.monthly_rent }}" step="0.01" min="0">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">房产描述</label>
+                            <textarea class="form-control" id="description" name="description" rows="4">{{ property.description }}</textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('properties') }}" class="btn btn-secondary me-md-2">取消</a>
+                            <button type="submit" class="btn btn-primary">保存更改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 表单验证
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let hasError = false;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                hasError = true;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (hasError) {
+            e.preventDefault();
+            alert('请填写所有必填字段');
+        }
+    });
+    
+    // 当前年份
+    const currentYear = new Date().getFullYear();
+    document.getElementById('year_built').max = currentYear;
+});
+</script>
+{% endblock %} 
