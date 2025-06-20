@@ -125,13 +125,21 @@ def health_check():
     """健康检查端点 - 用于Render部署监控"""
     try:
         connection = get_db_connection()
-        connection.close()
-        return {
-            'status': 'healthy',
-            'message': '房地产管理系统运行正常',
-            'database': 'connected',
-            'mode': 'production'
-        }, 200
+        if connection:
+            connection.close()
+            return {
+                'status': 'healthy',
+                'message': '房地产管理系统运行正常',
+                'database': 'connected',
+                'mode': 'production'
+            }, 200
+        else:
+            return {
+                'status': 'error',
+                'message': '数据库连接失败',
+                'database': 'disconnected',
+                'mode': 'offline'
+            }, 500
     except Exception as e:
         return {
             'status': 'error',
