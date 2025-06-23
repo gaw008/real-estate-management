@@ -278,7 +278,17 @@ function editProperty(propertyId) {
 }
 
 function deleteProperty(propertyId, propertyName) {
-    if (confirm(`确定要删除房产 "${propertyName}" 吗？此操作不可恢复。`)) {
+    // 增强确认对话框
+    const confirmMessage = `⚠️ 危险操作确认\n\n您即将删除房产："${propertyName}"\n\n此操作将会：\n• 删除房产基本信息\n• 删除相关财务记录\n• 删除业主关联关系\n• 数据将无法恢复\n\n确定要继续吗？`;
+    
+    if (confirm(confirmMessage)) {
+        // 显示加载状态
+        const deleteButtons = document.querySelectorAll('button[onclick*="deleteProperty(' + propertyId + ')"]');
+        deleteButtons.forEach(function(btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>删除中...';
+        });
+        
         fetch('/admin/delete_property', {
             method: 'POST',
             headers: {
@@ -286,18 +296,48 @@ function deleteProperty(propertyId, propertyName) {
             },
             body: `property_id=${propertyId}`
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
-                alert(data.message);
+                // 成功删除
+                alert(`✅ ${data.message}`);
                 location.reload();
             } else {
-                alert('删除失败：' + data.message);
+                // 删除失败，显示具体错误信息
+                alert(`❌ 删除失败\n\n${data.message}`);
+                // 恢复按钮状态
+                deleteButtons.forEach(function(btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash me-1"></i>删除';
+                });
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('删除过程中发生错误');
+            console.error('删除房产时发生错误:', error);
+            let errorMessage = '删除过程中发生网络错误，请检查：\n\n';
+            
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage += '• 网络连接问题\n• 服务器未响应\n• 请检查网络连接后重试';
+            } else if (error.message.includes('HTTP 403')) {
+                errorMessage += '• 权限不足\n• 请联系管理员检查您的权限设置';
+            } else if (error.message.includes('HTTP 500')) {
+                errorMessage += '• 服务器内部错误\n• 请联系系统管理员';
+            } else {
+                errorMessage += `• ${error.message}\n• 如问题持续，请联系技术支持`;
+            }
+            
+            alert(`❌ ${errorMessage}`);
+            
+            // 恢复按钮状态
+            deleteButtons.forEach(function(btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-trash me-1"></i>删除';
+            });
         });
     }
 }

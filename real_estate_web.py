@@ -1408,13 +1408,24 @@ def delete_property():
     if not property_id:
         return jsonify({'success': False, 'message': '房产ID不能为空'})
     
+    # 检查用户权限
+    user_type = session.get('user_type', '')
+    user_department = session.get('department', '')
+    
+    # 只有管理员或房产管理部门的用户可以删除房产
+    if user_type != 'admin' and user_department != 'Property Management Department':
+        return jsonify({
+            'success': False, 
+            'message': '您没有删除房产的权限。只有管理员或房产管理部门的员工可以执行此操作。'
+        })
+    
     conn = get_db_connection()
     if not conn:
-        # 演示模式：模拟删除成功
-        print(f"⚠️  演示模式删除房产: {property_id}")
+        # 数据库连接失败时，明确告知用户
+        print(f"❌ 数据库连接失败，无法删除房产: {property_id}")
         return jsonify({
-            'success': True, 
-            'message': f'房产 ID #{property_id} 已成功删除（演示模式）'
+            'success': False, 
+            'message': '数据库连接失败，无法执行删除操作。请稍后重试或联系管理员。'
         })
     
     cursor = conn.cursor()
@@ -1425,32 +1436,70 @@ def delete_property():
         property_info = cursor.fetchone()
         
         if not property_info:
-            return jsonify({'success': False, 'message': '房产不存在'})
+            return jsonify({'success': False, 'message': '房产不存在或已被删除'})
         
+        property_name = property_info[0]
+        
+        # 检查是否有关联的财务记录
+        cursor.execute("SELECT COUNT(*) FROM finance WHERE property_id = %s", (property_id,))
+        finance_count = cursor.fetchone()[0]
+        
+        # 检查是否有关联的业主关系
+        cursor.execute("SELECT COUNT(*) FROM property_owners WHERE property_id = %s", (property_id,))
+        owner_count = cursor.fetchone()[0]
+        
+        print(f"🔍 准备删除房产: {property_name} (ID: {property_id})")
+        print(f"   - 关联财务记录: {finance_count} 条")
+        print(f"   - 关联业主关系: {owner_count} 条")
+        
+        # 开始事务删除
         # 删除关联的财务记录
-        cursor.execute("DELETE FROM finance WHERE property_id = %s", (property_id,))
+        if finance_count > 0:
+            cursor.execute("DELETE FROM finance WHERE property_id = %s", (property_id,))
+            print(f"✅ 已删除 {finance_count} 条财务记录")
         
         # 删除关联的业主关系
-        cursor.execute("DELETE FROM property_owners WHERE property_id = %s", (property_id,))
+        if owner_count > 0:
+            cursor.execute("DELETE FROM property_owners WHERE property_id = %s", (property_id,))
+            print(f"✅ 已删除 {owner_count} 条业主关系")
         
         # 删除房产
         cursor.execute("DELETE FROM properties WHERE id = %s", (property_id,))
+        affected_rows = cursor.rowcount
+        
+        if affected_rows == 0:
+            conn.rollback()
+            return jsonify({'success': False, 'message': '房产删除失败，房产可能已不存在'})
         
         conn.commit()
+        print(f"✅ 房产 '{property_name}' 删除成功")
         
         return jsonify({
             'success': True, 
-            'message': f'房产 "{property_info[0]}" 已成功删除'
+            'message': f'房产 "{property_name}" 及其关联数据已成功删除'
         })
         
     except Exception as e:
-        print(f"删除房产错误: {e}")
+        error_msg = str(e)
+        print(f"❌ 删除房产错误: {error_msg}")
         conn.rollback()
-        # 数据库操作失败，返回演示模式
-        return jsonify({
-            'success': True, 
-            'message': f'房产 ID #{property_id} 已成功删除（演示模式）'
-        })
+        
+        # 根据错误类型提供更具体的错误信息
+        if 'foreign key constraint' in error_msg.lower():
+            return jsonify({
+                'success': False, 
+                'message': '无法删除房产：存在关联数据约束。请先删除相关的租约、财务记录等关联数据。'
+            })
+        elif 'access denied' in error_msg.lower():
+            return jsonify({
+                'success': False, 
+                'message': '数据库访问权限不足，请联系系统管理员。'
+            })
+        else:
+            return jsonify({
+                'success': False, 
+                'message': f'删除房产时发生错误：{error_msg}'
+            })
     finally:
         cursor.close()
         conn.close()
