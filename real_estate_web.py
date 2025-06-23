@@ -14,6 +14,10 @@ app = Flask(__name__)
 # 设置Flask配置
 app.secret_key = os.environ.get('APP_SECRET_KEY', 'default-secret-key-change-in-production')
 
+# 应用版本信息 - 用于区分本地和部署版本
+APP_VERSION = "v2.1.0-2025-06-23-login-fix"
+LAST_UPDATE = "2025-06-23 23:30:00"
+
 # 导入认证系统
 from auth_system import auth_system, login_required, admin_required, owner_required, super_admin_required
 from department_modules import (
@@ -131,14 +135,18 @@ def health_check():
                 'status': 'healthy',
                 'message': '房地产管理系统运行正常',
                 'database': 'connected',
-                'mode': 'production'
+                'mode': 'production',
+                'version': APP_VERSION,
+                'last_update': LAST_UPDATE
             }, 200
         else:
             return {
                 'status': 'error',
                 'message': '数据库连接失败',
                 'database': 'disconnected',
-                'mode': 'offline'
+                'mode': 'offline',
+                'version': APP_VERSION,
+                'last_update': LAST_UPDATE
             }, 500
     except Exception as e:
         return {
@@ -146,8 +154,30 @@ def health_check():
             'message': '数据库连接失败',
             'database': 'disconnected',
             'mode': 'offline',
-            'error': str(e)
+            'error': str(e),
+            'version': APP_VERSION,
+            'last_update': LAST_UPDATE
         }, 500
+
+@app.route('/version')
+def version_info():
+    """版本信息端点"""
+    return {
+        'app_name': '房地产管理系统',
+        'version': APP_VERSION,
+        'last_update': LAST_UPDATE,
+        'environment': 'production' if os.environ.get('PORT') else 'local',
+        'python_version': os.environ.get('PYTHON_VERSION', 'unknown'),
+        'features': [
+            '用户认证系统',
+            '房产管理',
+            '业主管理', 
+            '财务记录',
+            '部门权限管理',
+            '多语言支持',
+            '演示模式支持'
+        ]
+    }
 
 @app.route('/')
 def index():
