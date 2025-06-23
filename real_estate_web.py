@@ -183,7 +183,16 @@ def login():
                 return render_template('login_multilang.html')
             
             print("✅ 用户类型匹配，创建会话...")
-            # 创建会话
+            
+            # 立即设置Flask会话信息（无论数据库会话是否创建成功）
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['user_type'] = user['user_type']
+            session['department'] = user['department']
+            session['owner_id'] = user['owner_id']
+            session['full_name'] = user['full_name']
+            
+            # 尝试创建数据库会话
             session_id = auth_system.create_session(
                 user['id'], 
                 request.remote_addr, 
@@ -191,34 +200,22 @@ def login():
             )
             
             if session_id:
-                print(f"✅ 会话创建成功: {session_id}")
-                # 设置会话信息
-                session['user_id'] = user['id']
-                session['username'] = user['username']
-                session['user_type'] = user['user_type']
-                session['department'] = user['department']
-                session['owner_id'] = user['owner_id']
-                session['full_name'] = user['full_name']
+                print(f"✅ 数据库会话创建成功: {session_id}")
                 session['session_id'] = session_id
-                
-                welcome_msg = f'Welcome back, {user["full_name"]}!' if get_current_language() == 'en' else f'欢迎回来，{user["full_name"]}！'
-                flash(welcome_msg, 'success')
-                return redirect(url_for('dashboard'))
+                session['session_mode'] = 'database'
             else:
-                print("❌ 会话创建失败")
-                # 演示模式：直接使用Flask session而不依赖数据库
-                print("🔄 使用演示模式会话")
-                session['user_id'] = user['id']
-                session['username'] = user['username']
-                session['user_type'] = user['user_type']
-                session['department'] = user['department']
-                session['owner_id'] = user['owner_id']
-                session['full_name'] = user['full_name']
-                session['session_id'] = f"demo_{user['id']}"
-                
-                welcome_msg = f'欢迎回来，{user["full_name"]}！（演示模式）'
-                flash(welcome_msg, 'success')
-                return redirect(url_for('dashboard'))
+                print("⚠️  数据库会话创建失败，使用Flask本地会话")
+                session['session_id'] = f"local_session_{user['id']}"
+                session['session_mode'] = 'local'
+            
+            # 确保会话被永久保存
+            session.permanent = True
+            
+            welcome_msg = f'Welcome back, {user["full_name"]}!' if get_current_language() == 'en' else f'欢迎回来，{user["full_name"]}！'
+            flash(welcome_msg, 'success')
+            
+            print(f"🔄 重定向到仪表板，会话ID: {session.get('session_id')}")
+            return redirect(url_for('dashboard'))
         else:
             print("❌ 用户认证失败")
             flash('用户名或密码错误', 'error')
