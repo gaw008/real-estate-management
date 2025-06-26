@@ -18,6 +18,9 @@ app.secret_key = os.environ.get('APP_SECRET_KEY', 'default-secret-key-change-in-
 APP_VERSION = "v2.1.0-2025-06-23-login-fix"
 LAST_UPDATE = "2025-06-23 23:30:00"
 
+# 调试模式设置
+DEBUG_MODE = os.environ.get('DEBUG', 'False').lower() == 'true'
+
 # 导入认证系统
 from auth_system import auth_system, login_required, admin_required, owner_required, super_admin_required
 from department_modules import (
