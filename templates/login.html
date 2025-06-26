@@ -141,6 +141,25 @@
         .help-text li {
             margin-bottom: 0.3rem;
         }
+        
+        .version-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .version-info .d-flex {
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .version-info small {
+            color: #666;
+        }
+        
+        .version-info .text-center {
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -208,21 +227,30 @@
         <!-- 帮助信息 -->
         <div class="help-text">
             <h6><i class="fas fa-info-circle"></i> 登录帮助</h6>
-            <div id="admin-help">
-                <strong>公司内部人员:</strong>
-                <ul>
-                    <li>用户名: admin</li>
-                    <li>密码: admin123</li>
-                    <li>可查看所有房产和业主信息</li>
-                </ul>
+            <ul>
+                <li>公司内部员工请选择"公司内部"</li>
+                <li>房屋业主请选择"房屋业主"</li>
+                <li>默认管理员账号: admin / admin123</li>
+            </ul>
+        </div>
+        
+        <!-- 版本信息 -->
+        <div class="version-info">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="fas fa-code-branch"></i> 
+                    版本: {{ version_info.version if version_info else 'Unknown' }}
+                </small>
+                <small class="text-muted">
+                    <i class="fas fa-clock"></i> 
+                    {{ version_info.last_update if version_info else 'Unknown' }}
+                </small>
             </div>
-            <div id="owner-help" style="display: none;">
-                <strong>房屋业主:</strong>
-                <ul>
-                    <li>用户名: owner_[您的业主ID]</li>
-                    <li>密码: 手机号后4位或123456</li>
-                    <li>可查看自己的房产和收入明细</li>
-                </ul>
+            <div class="text-center mt-1">
+                <small class="text-muted">
+                    <i class="fas fa-server"></i> 
+                    环境: {{ version_info.environment if version_info else 'Unknown' }}
+                </small>
             </div>
         </div>
     </div>

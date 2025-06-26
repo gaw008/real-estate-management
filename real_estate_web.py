@@ -198,7 +198,12 @@ def login():
         
         if not username or not password:
             flash(get_text('please_enter_username_password') if get_current_language() == 'en' else '请输入用户名和密码', 'error')
-            return render_template('login_multilang.html')
+            version_data = {
+                'version': APP_VERSION,
+                'last_update': 'Dec 23, 2025',
+                'environment': 'Production' if not DEBUG_MODE else 'Development'
+            }
+            return render_template('login_multilang.html', version_info=version_data)
         
         # 验证用户
         print(f"🔍 尝试登录: {username}, 类型: {user_type}")
@@ -210,7 +215,12 @@ def login():
             if user['user_type'] != user_type:
                 print(f"❌ 用户类型不匹配: 期望{user_type}, 实际{user['user_type']}")
                 flash(get_text('user_type_mismatch') if get_current_language() == 'en' else '用户类型不匹配', 'error')
-                return render_template('login_multilang.html')
+                version_data = {
+                    'version': APP_VERSION,
+                    'last_update': 'Dec 23, 2025',
+                    'environment': 'Production' if not DEBUG_MODE else 'Development'
+                }
+                return render_template('login_multilang.html', version_info=version_data)
             
             print("✅ 用户类型匹配，创建会话...")
             
@@ -240,7 +250,7 @@ def login():
             
             # 确保会话被永久保存
             session.permanent = True
-            
+                
             welcome_msg = f'Welcome back, {user["full_name"]}!' if get_current_language() == 'en' else f'欢迎回来，{user["full_name"]}！'
             flash(welcome_msg, 'success')
             
@@ -250,7 +260,13 @@ def login():
             print("❌ 用户认证失败")
             flash('用户名或密码错误', 'error')
     
-    return render_template('login_multilang.html')
+    # GET请求或登录失败时
+    version_data = {
+        'version': APP_VERSION,
+        'last_update': 'Dec 23, 2025',
+        'environment': 'Production' if not DEBUG_MODE else 'Development'
+    }
+    return render_template('login_multilang.html', version_info=version_data)
 
 @app.route('/logout')
 def logout():
@@ -1482,12 +1498,12 @@ def delete_property():
         # 开始事务删除
         # 删除关联的财务记录
         if finance_count > 0:
-            cursor.execute("DELETE FROM finance WHERE property_id = %s", (property_id,))
+        cursor.execute("DELETE FROM finance WHERE property_id = %s", (property_id,))
             print(f"✅ 已删除 {finance_count} 条财务记录")
         
         # 删除关联的业主关系
         if owner_count > 0:
-            cursor.execute("DELETE FROM property_owners WHERE property_id = %s", (property_id,))
+        cursor.execute("DELETE FROM property_owners WHERE property_id = %s", (property_id,))
             print(f"✅ 已删除 {owner_count} 条业主关系")
         
         # 删除房产
@@ -1513,7 +1529,7 @@ def delete_property():
         
         # 根据错误类型提供更具体的错误信息
         if 'foreign key constraint' in error_msg.lower():
-            return jsonify({
+        return jsonify({
                 'success': False, 
                 'message': '无法删除房产：存在关联数据约束。请先删除相关的租约、财务记录等关联数据。'
             })
@@ -1526,7 +1542,7 @@ def delete_property():
             return jsonify({
                 'success': False, 
                 'message': f'删除房产时发生错误：{error_msg}'
-            })
+        })
     finally:
         cursor.close()
         conn.close()

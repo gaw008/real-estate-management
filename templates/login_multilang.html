@@ -158,8 +158,8 @@
         }
         
         .help-text ul {
-            margin: 0;
-            padding-left: 1.2rem;
+            margin-bottom: 0;
+            color: #666;
         }
         
         .help-text li {
@@ -186,6 +186,25 @@
         
         .register-link a:hover {
             text-decoration: underline;
+        }
+        
+        .version-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .version-info .d-flex {
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .version-info small {
+            color: #666;
+        }
+        
+        .version-info .text-center {
+            text-align: center;
         }
     </style>
 </head>
@@ -274,6 +293,26 @@
                 <li>{{ _('owner_login_help') if is_en() else '房屋业主请选择"房屋业主"' }}</li>
                 <li>{{ _('default_admin_account') if is_en() else '默认管理员账号: admin / admin123' }}</li>
             </ul>
+        </div>
+        
+        <!-- 版本信息 -->
+        <div class="version-info">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="fas fa-code-branch"></i> 
+                    版本: {{ version_info.version if version_info else 'Unknown' }}
+                </small>
+                <small class="text-muted">
+                    <i class="fas fa-clock"></i> 
+                    {{ version_info.last_update if version_info else 'Unknown' }}
+                </small>
+            </div>
+            <div class="text-center mt-1">
+                <small class="text-muted">
+                    <i class="fas fa-server"></i> 
+                    环境: {{ version_info.environment if version_info else 'Unknown' }}
+                </small>
+            </div>
         </div>
     </div>
     
