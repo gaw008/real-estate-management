@@ -2787,6 +2787,127 @@ def bulk_assign_properties():
     
     return redirect(url_for('admin_property_assignments'))
 
+@app.route('/debug/env')
+def debug_environment():
+    """环境诊断端点 - 比较本地和Render环境"""
+    import platform
+    import sys
+    
+    # 测试演示模式认证
+    test_auth = auth_system._demo_authenticate('admin', 'admin123')
+    
+    env_info = {
+        'timestamp': datetime.now().isoformat(),
+        'platform': platform.platform(),
+        'python_version': sys.version,
+        'flask_secret_key_set': bool(app.secret_key and app.secret_key != 'default-secret-key-change-in-production'),
+        'debug_mode': DEBUG_MODE,
+        'port_env': os.environ.get('PORT'),
+        'is_render': bool(os.environ.get('PORT')),
+        'app_version': APP_VERSION,
+        'environment_detected': 'production' if os.environ.get('PORT') else 'local',
+        
+        # 数据库连接测试
+        'db_connection': {
+            'status': 'attempting...',
+            'config': {
+                'host': DB_CONFIG.get('host', 'unknown'),
+                'port': DB_CONFIG.get('port', 'unknown'),
+                'database': DB_CONFIG.get('database', 'unknown'),
+                'user': DB_CONFIG.get('user', 'unknown')
+            }
+        },
+        
+        # 演示模式认证测试
+        'demo_auth_test': {
+            'admin_test': test_auth is not None,
+            'admin_data': test_auth if test_auth else 'Failed'
+        },
+        
+        # 环境变量
+        'env_vars': {
+            'SECRET_KEY_SET': bool(os.environ.get('APP_SECRET_KEY')),
+            'DEBUG': os.environ.get('DEBUG', 'Not Set'),
+            'MYSQL_HOST': os.environ.get('MYSQL_HOST', 'Not Set'),
+            'MYSQL_PORT': os.environ.get('MYSQL_PORT', 'Not Set'),
+            'MYSQL_USER': os.environ.get('MYSQL_USER', 'Not Set'),
+            'MYSQL_PASSWORD_SET': bool(os.environ.get('MYSQL_PASSWORD')),
+            'MYSQL_DATABASE': os.environ.get('MYSQL_DATABASE', 'Not Set')
+        }
+    }
+    
+    # 测试数据库连接
+    try:
+        conn = get_db_connection()
+        if conn:
+            env_info['db_connection']['status'] = 'success'
+            conn.close()
+        else:
+            env_info['db_connection']['status'] = 'failed'
+    except Exception as e:
+        env_info['db_connection']['status'] = f'error: {str(e)}'
+    
+    return jsonify(env_info)
+
+@app.route('/debug/login_test', methods=['POST'])
+def debug_login_test():
+    """登录测试端点 - 详细记录认证过程"""
+    username = request.json.get('username', 'admin')
+    password = request.json.get('password', 'admin123')
+    
+    result = {
+        'timestamp': datetime.now().isoformat(),
+        'username': username,
+        'steps': []
+    }
+    
+    try:
+        # 步骤1：测试数据库连接
+        result['steps'].append('Testing database connection...')
+        conn = auth_system.get_db_connection()
+        if conn:
+            result['steps'].append('✅ Database connection successful')
+            conn.close()
+            db_available = True
+        else:
+            result['steps'].append('❌ Database connection failed, will use demo mode')
+            db_available = False
+        
+        # 步骤2：尝试认证
+        result['steps'].append(f'Attempting authentication for: {username}')
+        if db_available:
+            # 尝试数据库认证
+            auth_result = auth_system.authenticate_user(username, password)
+        else:
+            # 直接使用演示模式认证
+            auth_result = auth_system._demo_authenticate(username, password)
+        
+        if auth_result:
+            result['steps'].append('✅ Authentication successful')
+            result['auth_success'] = True
+            result['user_data'] = auth_result
+        else:
+            result['steps'].append('❌ Authentication failed')
+            result['auth_success'] = False
+            result['user_data'] = None
+            
+            # 额外的演示模式测试
+            result['steps'].append('Testing demo mode authentication directly...')
+            demo_result = auth_system._demo_authenticate(username, password)
+            if demo_result:
+                result['steps'].append('✅ Direct demo authentication successful')
+                result['demo_auth_result'] = demo_result
+            else:
+                result['steps'].append('❌ Direct demo authentication also failed')
+                result['demo_auth_result'] = None
+        
+    except Exception as e:
+        result['steps'].append(f'❌ Exception occurred: {str(e)}')
+        result['error'] = str(e)
+        result['auth_success'] = False
+    
+    return jsonify(result)
+
 if __name__ == '__main__':
     import os
     
