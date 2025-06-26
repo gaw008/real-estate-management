@@ -1498,12 +1498,12 @@ def delete_property():
         # 开始事务删除
         # 删除关联的财务记录
         if finance_count > 0:
-        cursor.execute("DELETE FROM finance WHERE property_id = %s", (property_id,))
+            cursor.execute("DELETE FROM finance WHERE property_id = %s", (property_id,))
             print(f"✅ 已删除 {finance_count} 条财务记录")
         
         # 删除关联的业主关系
         if owner_count > 0:
-        cursor.execute("DELETE FROM property_owners WHERE property_id = %s", (property_id,))
+            cursor.execute("DELETE FROM property_owners WHERE property_id = %s", (property_id,))
             print(f"✅ 已删除 {owner_count} 条业主关系")
         
         # 删除房产
@@ -1529,7 +1529,7 @@ def delete_property():
         
         # 根据错误类型提供更具体的错误信息
         if 'foreign key constraint' in error_msg.lower():
-        return jsonify({
+            return jsonify({
                 'success': False, 
                 'message': '无法删除房产：存在关联数据约束。请先删除相关的租约、财务记录等关联数据。'
             })
@@ -1542,7 +1542,7 @@ def delete_property():
             return jsonify({
                 'success': False, 
                 'message': f'删除房产时发生错误：{error_msg}'
-        })
+            })
     finally:
         cursor.close()
         conn.close()
