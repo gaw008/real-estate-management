@@ -294,8 +294,9 @@ class AuthSystem:
     def _demo_authenticate(self, username, password):
         """演示模式认证 - 数据库连接失败时使用"""
         print("🔄 使用演示模式认证")
+        print(f"🔍 认证参数: username='{username}', password='{password}' (长度: {len(password) if password else 0})")
         
-        # 演示用户数据
+        # 演示用户数据 - 使用更严格的数据类型
         demo_users = {
             'admin': {
                 'password': 'admin123',
@@ -326,19 +327,56 @@ class AuthSystem:
             }
         }
         
-        if username in demo_users and demo_users[username]['password'] == password:
-            print(f"✅ 演示模式认证成功: {username}")
-            return {
-                'id': demo_users[username]['id'],
-                'username': username,
-                'email': demo_users[username]['email'],
-                'user_type': demo_users[username]['user_type'],
-                'department': demo_users[username]['department'],
-                'owner_id': demo_users[username]['owner_id'],
-                'full_name': demo_users[username]['full_name']
+        # 增强的认证逻辑
+        try:
+            # 确保参数不为空
+            if not username or not password:
+                print(f"❌ 演示模式认证失败: 参数为空 (username: {bool(username)}, password: {bool(password)})")
+                return None
+            
+            # 标准化用户名（去除空格，转小写）
+            username_clean = str(username).strip().lower()
+            password_clean = str(password).strip()
+            
+            print(f"🔍 清理后参数: username='{username_clean}', password='{password_clean}'")
+            print(f"🔍 可用用户: {list(demo_users.keys())}")
+            
+            # 检查用户是否存在
+            if username_clean not in demo_users:
+                print(f"❌ 演示模式认证失败: 用户不存在 '{username_clean}'")
+                print(f"🔍 用户名比较: {[(user, username_clean == user) for user in demo_users.keys()]}")
+                return None
+            
+            user_data = demo_users[username_clean]
+            expected_password = user_data['password']
+            
+            # 密码验证
+            if password_clean != expected_password:
+                print(f"❌ 演示模式认证失败: 密码错误")
+                print(f"🔍 密码比较: 输入='{password_clean}', 期望='{expected_password}', 匹配={password_clean == expected_password}")
+                return None
+            
+            print(f"✅ 演示模式认证成功: {username_clean}")
+            
+            # 构建返回数据
+            auth_result = {
+                'id': user_data['id'],
+                'username': username_clean,  # 使用清理后的用户名
+                'email': user_data['email'],
+                'user_type': user_data['user_type'],
+                'department': user_data['department'],
+                'owner_id': user_data['owner_id'],
+                'full_name': user_data['full_name']
             }
-        else:
-            print(f"❌ 演示模式认证失败: {username}")
+            
+            print(f"✅ 返回认证数据: {auth_result}")
+            return auth_result
+            
+        except Exception as e:
+            print(f"❌ 演示模式认证异常: {e}")
+            print(f"🔍 异常类型: {type(e).__name__}")
+            import traceback
+            print(f"🔍 异常堆栈: {traceback.format_exc()}")
             return None
     
     def create_session(self, user_id, ip_address=None, user_agent=None):

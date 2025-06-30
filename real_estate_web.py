@@ -2908,6 +2908,165 @@ def debug_login_test():
     
     return jsonify(result)
 
+@app.route('/debug/demo_auth_test', methods=['GET', 'POST'])
+def debug_demo_auth_test():
+    """专门测试演示模式认证"""
+    if request.method == 'GET':
+        # 返回测试页面
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>演示模式认证测试</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .test-form { background: #f5f5f5; padding: 20px; margin: 10px 0; border-radius: 5px; }
+                .result { background: #e8f5e9; padding: 15px; margin: 10px 0; border-radius: 5px; white-space: pre-wrap; }
+                .error { background: #ffebee; }
+                button { padding: 10px 20px; margin: 5px; }
+            </style>
+        </head>
+        <body>
+            <h1>演示模式认证测试</h1>
+            <div class="test-form">
+                <h3>手动测试</h3>
+                <form id="testForm">
+                    <label>用户名: <input type="text" id="username" value="admin"></label><br><br>
+                    <label>密码: <input type="text" id="password" value="admin123"></label><br><br>
+                    <button type="submit">测试认证</button>
+                </form>
+            </div>
+            
+            <div class="test-form">
+                <h3>批量测试</h3>
+                <button onclick="runBatchTest()">运行10次连续测试</button>
+                <button onclick="runStressTest()">运行50次压力测试</button>
+            </div>
+            
+            <div id="results"></div>
+            
+            <script>
+                document.getElementById('testForm').onsubmit = function(e) {
+                    e.preventDefault();
+                    testAuth();
+                };
+                
+                function testAuth() {
+                    const username = document.getElementById('username').value;
+                    const password = document.getElementById('password').value;
+                    
+                    fetch('/debug/demo_auth_test', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({username, password, test_type: 'single'})
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        addResult('单次测试结果', data);
+                    });
+                }
+                
+                function runBatchTest() {
+                    addResult('开始批量测试', {message: '运行10次连续测试...'});
+                    let results = [];
+                    let promises = [];
+                    
+                    for(let i = 0; i < 10; i++) {
+                        promises.push(
+                            fetch('/debug/demo_auth_test', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({username: 'admin', password: 'admin123', test_type: 'batch', test_id: i+1})
+                            }).then(r => r.json())
+                        );
+                    }
+                    
+                    Promise.all(promises).then(results => {
+                        const successes = results.filter(r => r.success).length;
+                        addResult('批量测试结果', {
+                            total: results.length,
+                            successes: successes,
+                            failures: results.length - successes,
+                            success_rate: (successes / results.length * 100).toFixed(1) + '%',
+                            results: results
+                        });
+                    });
+                }
+                
+                function runStressTest() {
+                    addResult('开始压力测试', {message: '运行50次并发测试...'});
+                    let promises = [];
+                    
+                    for(let i = 0; i < 50; i++) {
+                        promises.push(
+                            fetch('/debug/demo_auth_test', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({username: 'admin', password: 'admin123', test_type: 'stress', test_id: i+1})
+                            }).then(r => r.json())
+                        );
+                    }
+                    
+                    Promise.all(promises).then(results => {
+                        const successes = results.filter(r => r.success).length;
+                        addResult('压力测试结果', {
+                            total: results.length,
+                            successes: successes,
+                            failures: results.length - successes,
+                            success_rate: (successes / results.length * 100).toFixed(1) + '%',
+                            failure_details: results.filter(r => !r.success)
+                        });
+                    });
+                }
+                
+                function addResult(title, data) {
+                    const div = document.createElement('div');
+                    div.className = 'result' + (data.success === false ? ' error' : '');
+                    div.innerHTML = '<h4>' + title + '</h4><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    document.getElementById('results').appendChild(div);
+                    div.scrollIntoView();
+                }
+            </script>
+        </body>
+        </html>
+        '''
+    
+    # POST请求 - 执行测试
+    data = request.get_json()
+    username = data.get('username', 'admin')
+    password = data.get('password', 'admin123')
+    test_type = data.get('test_type', 'single')
+    test_id = data.get('test_id', 1)
+    
+    result = {
+        'timestamp': datetime.now().isoformat(),
+        'test_type': test_type,
+        'test_id': test_id,
+        'username': username,
+        'password_length': len(password) if password else 0
+    }
+    
+    try:
+        # 直接调用演示模式认证
+        auth_result = auth_system._demo_authenticate(username, password)
+        
+        if auth_result:
+            result['success'] = True
+            result['message'] = '认证成功'
+            result['user_data'] = auth_result
+        else:
+            result['success'] = False
+            result['message'] = '认证失败'
+            result['user_data'] = None
+            
+    except Exception as e:
+        result['success'] = False
+        result['message'] = f'认证异常: {str(e)}'
+        result['error'] = str(e)
+        result['error_type'] = type(e).__name__
+    
+    return jsonify(result)
+
 if __name__ == '__main__':
     import os
     
