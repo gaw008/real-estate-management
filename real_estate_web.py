@@ -3816,6 +3816,70 @@ def api_fix_login():
             'timestamp': datetime.now().isoformat()
         }, 500
 
+@app.route('/api/test_login', methods=['POST'])
+def api_test_login():
+    """简化的登录测试API，绕过复杂的表单验证"""
+    try:
+        data = request.get_json() if request.is_json else request.form
+        username = data.get('username')
+        password = data.get('password')
+        user_type = data.get('user_type', 'admin')
+        
+        if not username or not password:
+            return {
+                'success': False,
+                'error': 'Missing username or password',
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        print(f"🔍 API测试登录: {username}, 类型: {user_type}")
+        
+        # 直接调用认证系统
+        user = auth_system.authenticate_user(username, password)
+        
+        if user:
+            print(f"✅ 认证成功: {user}")
+            
+            # 检查用户类型是否匹配
+            if user['user_type'] != user_type:
+                return {
+                    'success': False,
+                    'error': f"User type mismatch: expected {user_type}, got {user['user_type']}",
+                    'user_data': user,
+                    'timestamp': datetime.now().isoformat()
+                }
+            
+            # 尝试创建会话
+            session_id = auth_system.create_session(
+                user['id'], 
+                request.remote_addr, 
+                request.headers.get('User-Agent')
+            )
+            
+            return {
+                'success': True,
+                'message': 'Login successful',
+                'user_data': user,
+                'session_id': session_id[:20] + '...' if session_id else None,
+                'session_mode': 'database' if session_id and not session_id.startswith('demo_') else 'demo',
+                'timestamp': datetime.now().isoformat()
+            }
+        else:
+            print("❌ 认证失败")
+            return {
+                'success': False,
+                'error': 'Authentication failed',
+                'timestamp': datetime.now().isoformat()
+            }
+            
+    except Exception as e:
+        print(f"❌ 登录测试异常: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }, 500
+
 if __name__ == '__main__':
     import os
     
