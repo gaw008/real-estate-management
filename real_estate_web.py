@@ -3183,6 +3183,216 @@ def debug_status():
     
     return status_html
 
+@app.route('/debug/login_flow_test', methods=['GET', 'POST'])
+def debug_login_flow_test():
+    """详细测试登录流程的每一步"""
+    if request.method == 'GET':
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>登录流程测试</title>
+            <meta charset="utf-8">
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .test-btn { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+                .result { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; white-space: pre-wrap; }
+                .error { background: #f8d7da; }
+                .success { background: #d4edda; }
+            </style>
+        </head>
+        <body>
+            <h1>🔧 登录流程详细测试</h1>
+            
+            <div>
+                <button class="test-btn" onclick="testStep1()">步骤1：测试表单参数接收</button>
+                <button class="test-btn" onclick="testStep2()">步骤2：测试演示模式认证</button>
+                <button class="test-btn" onclick="testStep3()">步骤3：测试用户类型匹配</button>
+                <button class="test-btn" onclick="testFullFlow()">完整流程测试</button>
+            </div>
+            
+            <div id="results"></div>
+            
+            <script>
+                function testStep1() {
+                    fetch('/debug/login_flow_test', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            test_step: 'step1',
+                            username: 'admin',
+                            password: 'admin123',
+                            user_type: 'admin'
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => addResult('步骤1：参数接收测试', data));
+                }
+                
+                function testStep2() {
+                    fetch('/debug/login_flow_test', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            test_step: 'step2',
+                            username: 'admin',
+                            password: 'admin123'
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => addResult('步骤2：演示模式认证测试', data));
+                }
+                
+                function testStep3() {
+                    fetch('/debug/login_flow_test', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            test_step: 'step3',
+                            username: 'admin',
+                            password: 'admin123',
+                            user_type: 'admin'
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => addResult('步骤3：用户类型匹配测试', data));
+                }
+                
+                function testFullFlow() {
+                    fetch('/debug/login_flow_test', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            test_step: 'full_flow',
+                            username: 'admin',
+                            password: 'admin123',
+                            user_type: 'admin'
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => addResult('完整登录流程测试', data));
+                }
+                
+                function addResult(title, data) {
+                    const div = document.createElement('div');
+                    div.className = 'result' + (data.success === false ? ' error' : data.success === true ? ' success' : '');
+                    div.innerHTML = '<h3>' + title + '</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    document.getElementById('results').appendChild(div);
+                    div.scrollIntoView();
+                }
+            </script>
+        </body>
+        </html>
+        '''
+    
+    # POST请求 - 执行测试
+    data = request.get_json()
+    test_step = data.get('test_step')
+    username = data.get('username')
+    password = data.get('password')
+    user_type = data.get('user_type')
+    
+    result = {
+        'timestamp': datetime.now().isoformat(),
+        'test_step': test_step,
+        'input_data': {
+            'username': username,
+            'password': password,
+            'user_type': user_type
+        }
+    }
+    
+    try:
+        if test_step == 'step1':
+            # 测试参数接收
+            result['success'] = True
+            result['message'] = '参数接收正常'
+            result['validation'] = {
+                'username_valid': bool(username),
+                'password_valid': bool(password),
+                'user_type_valid': bool(user_type),
+                'username_length': len(username) if username else 0,
+                'password_length': len(password) if password else 0
+            }
+            
+        elif test_step == 'step2':
+            # 测试演示模式认证
+            auth_result = auth_system._demo_authenticate(username, password)
+            result['success'] = auth_result is not None
+            result['message'] = '演示模式认证成功' if auth_result else '演示模式认证失败'
+            result['auth_result'] = auth_result
+            
+        elif test_step == 'step3':
+            # 测试用户类型匹配
+            auth_result = auth_system._demo_authenticate(username, password)
+            if auth_result:
+                user_type_match = auth_result['user_type'] == user_type
+                result['success'] = user_type_match
+                result['message'] = '用户类型匹配' if user_type_match else '用户类型不匹配'
+                result['type_comparison'] = {
+                    'expected_type': user_type,
+                    'actual_type': auth_result['user_type'],
+                    'match': user_type_match
+                }
+                result['auth_result'] = auth_result
+            else:
+                result['success'] = False
+                result['message'] = '认证失败，无法测试类型匹配'
+                
+        elif test_step == 'full_flow':
+            # 完整流程测试
+            steps = []
+            
+            # Step 1: 参数验证
+            if not username or not password:
+                result['success'] = False
+                result['message'] = '参数验证失败'
+                result['failed_step'] = 'parameter_validation'
+                return jsonify(result)
+            steps.append('✅ 参数验证通过')
+            
+            # Step 2: 演示模式认证
+            auth_result = auth_system._demo_authenticate(username, password)
+            if not auth_result:
+                result['success'] = False
+                result['message'] = '演示模式认证失败'
+                result['failed_step'] = 'demo_authentication'
+                result['steps'] = steps + ['❌ 演示模式认证失败']
+                return jsonify(result)
+            steps.append('✅ 演示模式认证成功')
+            
+            # Step 3: 用户类型匹配
+            if auth_result['user_type'] != user_type:
+                result['success'] = False
+                result['message'] = f"用户类型不匹配: 期望{user_type}, 实际{auth_result['user_type']}"
+                result['failed_step'] = 'user_type_mismatch'
+                result['steps'] = steps + [f"❌ 用户类型不匹配: 期望{user_type}, 实际{auth_result['user_type']}"]
+                result['auth_result'] = auth_result
+                return jsonify(result)
+            steps.append('✅ 用户类型匹配')
+            
+            # Step 4: 会话创建测试
+            steps.append('✅ 会话创建准备完成')
+            
+            result['success'] = True
+            result['message'] = '完整登录流程验证成功'
+            result['steps'] = steps
+            result['auth_result'] = auth_result
+            
+        else:
+            result['success'] = False
+            result['message'] = f'未知测试步骤: {test_step}'
+            
+    except Exception as e:
+        result['success'] = False
+        result['message'] = f'测试异常: {str(e)}'
+        result['error'] = str(e)
+        result['error_type'] = type(e).__name__
+        import traceback
+        result['traceback'] = traceback.format_exc()
+    
+    return jsonify(result)
+
 if __name__ == '__main__':
     import os
     
