@@ -212,6 +212,13 @@ def login():
         print(f"🔍 尝试登录: {username}, 类型: {user_type}")
         user = auth_system.authenticate_user(username, password)
         
+        # 如果数据库认证失败，尝试演示模式认证
+        if not user:
+            print("⚠️ 数据库认证失败，尝试演示模式认证...")
+            user = auth_system._demo_authenticate(username, password)
+            if user:
+                print(f"✅ 演示模式认证成功: {user}")
+        
         if user:
             print(f"✅ 用户认证成功: {user}")
             # 检查用户类型是否匹配
