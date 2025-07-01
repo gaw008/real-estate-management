@@ -3681,6 +3681,141 @@ def debug_fix_login():
             'message': '诊断过程中发生错误'
         }, 500
 
+@app.route('/api/fix_login', methods=['GET', 'POST'])
+def api_fix_login():
+    """简化的登录问题修复API端点"""
+    try:
+        # 基本诊断信息
+        diagnostics = {
+            'timestamp': datetime.now().isoformat(),
+            'is_render': bool(os.environ.get('PORT')),
+            'steps': []
+        }
+        
+        # 步骤1：测试数据库连接
+        diagnostics['steps'].append('🔍 步骤1: 测试数据库连接...')
+        db_conn = auth_system.get_db_connection()
+        if not db_conn:
+            diagnostics['steps'].append('❌ 数据库连接失败')
+            diagnostics['status'] = 'database_connection_failed'
+            return diagnostics, 500
+        
+        diagnostics['steps'].append('✅ 数据库连接成功')
+        db_conn.close()
+        
+        # 步骤2：检查用户表
+        diagnostics['steps'].append('🔍 步骤2: 检查用户表...')
+        conn = auth_system.get_db_connection()
+        if conn:
+            cursor = conn.cursor(dictionary=True)
+            try:
+                cursor.execute("SHOW TABLES LIKE 'users'")
+                table_exists = cursor.fetchone() is not None
+                
+                if table_exists:
+                    cursor.execute("SELECT COUNT(*) as count FROM users WHERE user_type = 'admin'")
+                    admin_count = cursor.fetchone()['count']
+                    diagnostics['steps'].append(f'✅ 用户表存在，管理员用户数: {admin_count}')
+                    diagnostics['admin_users_count'] = admin_count
+                else:
+                    diagnostics['steps'].append('❌ 用户表不存在')
+                    diagnostics['admin_users_count'] = 0
+                    
+            finally:
+                cursor.close()
+                conn.close()
+        
+        # 步骤3：测试认证
+        diagnostics['steps'].append('🔍 步骤3: 测试认证...')
+        auth_result = auth_system.authenticate_user('admin', 'admin123')
+        if auth_result:
+            diagnostics['steps'].append('✅ 数据库认证成功 - 问题已解决！')
+            diagnostics['status'] = 'login_working'
+            diagnostics['auth_success'] = True
+            return diagnostics
+        else:
+            diagnostics['steps'].append('❌ 数据库认证失败 - 需要修复')
+            diagnostics['auth_success'] = False
+        
+        # 如果是POST请求，执行修复
+        if request.method == 'POST':
+            diagnostics['steps'].append('🔧 开始执行修复操作...')
+            
+            # 创建用户表
+            diagnostics['steps'].append('📝 步骤4: 创建用户表...')
+            table_created = auth_system.create_users_table()
+            if table_created:
+                diagnostics['steps'].append('✅ 用户表创建成功')
+            else:
+                diagnostics['steps'].append('❌ 用户表创建失败')
+                diagnostics['status'] = 'fix_failed'
+                return diagnostics, 500
+            
+            # 创建管理员用户
+            diagnostics['steps'].append('👤 步骤5: 创建管理员用户...')
+            admin_created = auth_system.create_admin_user(
+                username='admin',
+                email='admin@example.com',
+                password='admin123',
+                full_name='系统管理员'
+            )
+            
+            if admin_created:
+                diagnostics['steps'].append('✅ 管理员用户创建成功')
+            else:
+                diagnostics['steps'].append('⚠️ 管理员用户已存在或创建失败')
+            
+            # 创建其他测试用户
+            diagnostics['steps'].append('👥 步骤6: 创建测试用户...')
+            test_users = [
+                ('superadmin', 'super@example.com', 'super2025', '超级管理员'),
+                ('manager', 'manager@example.com', 'manager123', '管理器'),
+                ('pm01', 'pm01@example.com', '123456', '房产管理员')
+            ]
+            
+            created_users = []
+            for username, email, password, full_name in test_users:
+                result = auth_system.create_admin_user(username, email, password, full_name)
+                if result:
+                    created_users.append(username)
+                    diagnostics['steps'].append(f'✅ 用户 {username} 创建成功')
+                else:
+                    diagnostics['steps'].append(f'⚠️ 用户 {username} 已存在或创建失败')
+            
+            # 验证修复结果
+            diagnostics['steps'].append('🧪 步骤7: 验证修复结果...')
+            final_auth_test = auth_system.authenticate_user('admin', 'admin123')
+            
+            if final_auth_test:
+                diagnostics['steps'].append('🎉 修复成功！admin用户现在可以正常登录')
+                diagnostics['status'] = 'fix_successful'
+                diagnostics['auth_success'] = True
+                diagnostics['available_accounts'] = [
+                    'admin / admin123',
+                    'superadmin / super2025',
+                    'manager / manager123',
+                    'pm01 / 123456'
+                ]
+            else:
+                diagnostics['steps'].append('❌ 修复失败，认证仍然不工作')
+                diagnostics['status'] = 'fix_failed'
+                diagnostics['auth_success'] = False
+        else:
+            # GET请求，只返回诊断信息
+            diagnostics['status'] = 'diagnosis_complete'
+            diagnostics['fix_needed'] = True
+            diagnostics['message'] = '检测到登录问题，使用POST请求到此端点执行修复'
+        
+        return diagnostics
+        
+    except Exception as e:
+        return {
+            'status': 'error',
+            'error': str(e),
+            'message': '诊断或修复过程中发生错误',
+            'timestamp': datetime.now().isoformat()
+        }, 500
+
 if __name__ == '__main__':
     import os
     
