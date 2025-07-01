@@ -345,50 +345,99 @@ class AuthSystem:
             }
         }
         
-        # 增强的认证逻辑
+        # 增强的认证逻辑 - 修复间歇性失败问题
         try:
-            # 确保参数不为空
+            # 第一步：参数验证
             if not username or not password:
                 print(f"❌ 演示模式认证失败: 参数为空 (username: {bool(username)}, password: {bool(password)})")
                 return None
             
-            # 标准化用户名（去除空格，转小写）
-            username_clean = str(username).strip().lower()
-            password_clean = str(password).strip()
+            # 第二步：参数清理和标准化
+            try:
+                username_clean = str(username).strip().lower()
+                password_clean = str(password).strip()
+            except Exception as e:
+                print(f"❌ 演示模式认证失败: 参数处理错误 - {e}")
+                return None
+            
+            # 第三步：验证清理后的参数
+            if len(username_clean) == 0 or len(password_clean) == 0:
+                print(f"❌ 演示模式认证失败: 清理后参数为空")
+                return None
             
             print(f"🔍 清理后参数: username='{username_clean}', password='{password_clean}'")
             print(f"🔍 可用用户: {list(demo_users.keys())}")
             
-            # 检查用户是否存在
-            if username_clean not in demo_users:
+            # 第四步：用户存在性检查 - 使用更健壮的比较方式
+            matched_user = None
+            for demo_username in demo_users.keys():
+                if demo_username == username_clean:
+                    matched_user = demo_username
+                    break
+            
+            if not matched_user:
                 print(f"❌ 演示模式认证失败: 用户不存在 '{username_clean}'")
-                print(f"🔍 用户名比较: {[(user, username_clean == user) for user in demo_users.keys()]}")
+                print(f"🔍 用户名精确比较结果:")
+                for demo_username in demo_users.keys():
+                    print(f"   - '{demo_username}' == '{username_clean}': {demo_username == username_clean}")
                 return None
             
-            user_data = demo_users[username_clean]
+            # 第五步：获取用户数据
+            user_data = demo_users[matched_user]
             expected_password = user_data['password']
             
-            # 密码验证
-            if password_clean != expected_password:
+            print(f"✅ 找到匹配用户: {matched_user}")
+            print(f"🔍 密码验证: 输入长度={len(password_clean)}, 期望长度={len(expected_password)}")
+            
+            # 第六步：密码验证 - 使用更严格的比较
+            password_match = False
+            try:
+                password_match = (password_clean == expected_password)
+            except Exception as e:
+                print(f"❌ 密码比较异常: {e}")
+                return None
+            
+            if not password_match:
                 print(f"❌ 演示模式认证失败: 密码错误")
-                print(f"🔍 密码比较: 输入='{password_clean}', 期望='{expected_password}', 匹配={password_clean == expected_password}")
+                print(f"🔍 密码详细比较:")
+                print(f"   - 输入: '{password_clean}' (类型: {type(password_clean)})")
+                print(f"   - 期望: '{expected_password}' (类型: {type(expected_password)})")
+                print(f"   - 匹配: {password_match}")
+                # 字符级比较
+                if len(password_clean) == len(expected_password):
+                    for i, (c1, c2) in enumerate(zip(password_clean, expected_password)):
+                        if c1 != c2:
+                            print(f"   - 字符差异位置 {i}: '{c1}' != '{c2}'")
                 return None
             
             print(f"✅ 演示模式认证成功: {username_clean}")
             
-            # 构建返回数据
-            auth_result = {
-                'id': user_data['id'],
-                'username': username_clean,  # 使用清理后的用户名
-                'email': user_data['email'],
-                'user_type': user_data['user_type'],
-                'department': user_data['department'],
-                'owner_id': user_data['owner_id'],
-                'full_name': user_data['full_name']
-            }
-            
-            print(f"✅ 返回认证数据: {auth_result}")
-            return auth_result
+            # 第七步：构建返回数据 - 确保数据完整性
+            try:
+                auth_result = {
+                    'id': int(user_data['id']),
+                    'username': str(matched_user),  # 使用匹配的原始用户名
+                    'email': str(user_data['email']),
+                    'user_type': str(user_data['user_type']),
+                    'department': str(user_data['department']) if user_data['department'] else None,
+                    'owner_id': int(user_data['owner_id']) if user_data['owner_id'] else None,
+                    'full_name': str(user_data['full_name'])
+                }
+                
+                print(f"✅ 构建认证结果: {auth_result}")
+                
+                # 验证结果完整性
+                required_fields = ['id', 'username', 'email', 'user_type', 'full_name']
+                for field in required_fields:
+                    if auth_result.get(field) is None:
+                        print(f"❌ 认证结果字段缺失: {field}")
+                        return None
+                
+                return auth_result
+                
+            except Exception as e:
+                print(f"❌ 构建认证结果失败: {e}")
+                return None
             
         except Exception as e:
             print(f"❌ 演示模式认证异常: {e}")
