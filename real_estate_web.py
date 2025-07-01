@@ -3393,6 +3393,294 @@ def debug_login_flow_test():
     
     return jsonify(result)
 
+@app.route('/debug/fix_login', methods=['GET', 'POST'])
+def debug_fix_login():
+    """诊断和修复登录问题的Web端点"""
+    import platform
+    
+    if request.method == 'POST':
+        # 执行修复操作
+        try:
+            # 1. 创建用户表
+            users_table_result = auth_system.create_users_table()
+            
+            # 2. 创建管理员用户
+            admin_create_result = auth_system.create_admin_user(
+                username='admin',
+                email='admin@example.com',
+                password='admin123',
+                full_name='系统管理员'
+            )
+            
+            # 3. 创建其他测试用户
+            test_users_results = []
+            test_users = [
+                ('superadmin', 'super@example.com', 'super2025', '超级管理员'),
+                ('manager', 'manager@example.com', 'manager123', '管理器'),
+                ('pm01', 'pm01@example.com', '123456', '房产管理员')
+            ]
+            
+            for username, email, password, full_name in test_users:
+                result = auth_system.create_admin_user(username, email, password, full_name)
+                test_users_results.append((username, result))
+            
+            # 4. 测试认证
+            auth_test_result = auth_system.authenticate_user('admin', 'admin123')
+            
+            return {
+                'status': 'fix_completed',
+                'results': {
+                    'users_table_created': users_table_result,
+                    'admin_user_created': admin_create_result,
+                    'test_users_created': test_users_results,
+                    'auth_test_success': auth_test_result is not None,
+                    'auth_test_data': auth_test_result
+                },
+                'message': '修复操作已完成' if auth_test_result else '修复操作完成但认证测试失败'
+            }
+            
+        except Exception as e:
+            return {
+                'status': 'error',
+                'error': str(e),
+                'message': '修复操作失败'
+            }, 500
+    
+    # GET请求 - 显示诊断信息
+    try:
+        # 环境信息
+        env_info = {
+            'platform': platform.platform(),
+            'is_render': bool(os.environ.get('PORT')),
+            'python_version': platform.python_version()
+        }
+        
+        # 数据库连接测试
+        db_conn = auth_system.get_db_connection()
+        db_connection_status = 'success' if db_conn else 'failed'
+        if db_conn:
+            db_conn.close()
+        
+        # 用户表检查
+        users_table_info = {}
+        if db_conn:
+            conn = auth_system.get_db_connection()
+            if conn:
+                cursor = conn.cursor(dictionary=True)
+                try:
+                    # 检查用户表是否存在
+                    cursor.execute("SHOW TABLES LIKE 'users'")
+                    table_exists = cursor.fetchone() is not None
+                    
+                    if table_exists:
+                        # 用户数量统计
+                        cursor.execute("SELECT COUNT(*) as count FROM users")
+                        total_users = cursor.fetchone()['count']
+                        
+                        cursor.execute("SELECT COUNT(*) as count FROM users WHERE user_type = 'admin'")
+                        admin_users = cursor.fetchone()['count']
+                        
+                        # 获取管理员用户列表
+                        cursor.execute("SELECT username, user_type, is_active FROM users WHERE user_type = 'admin' LIMIT 10")
+                        admin_list = cursor.fetchall()
+                        
+                        users_table_info = {
+                            'exists': True,
+                            'total_users': total_users,
+                            'admin_users': admin_users,
+                            'admin_list': admin_list
+                        }
+                    else:
+                        users_table_info = {'exists': False}
+                        
+                except Exception as e:
+                    users_table_info = {'error': str(e)}
+                finally:
+                    cursor.close()
+                    conn.close()
+        
+        # 认证测试
+        demo_auth_test = auth_system._demo_authenticate('admin', 'admin123')
+        db_auth_test = auth_system.authenticate_user('admin', 'admin123')
+        
+        auth_tests = {
+            'demo_auth_success': demo_auth_test is not None,
+            'demo_auth_data': demo_auth_test,
+            'db_auth_success': db_auth_test is not None,
+            'db_auth_data': db_auth_test
+        }
+        
+        # 配置信息
+        config_info = {
+            'db_host': DB_CONFIG.get('host', 'unknown') if DB_CONFIG else 'config_failed',
+            'db_port': DB_CONFIG.get('port', 'unknown') if DB_CONFIG else 'config_failed',
+            'db_database': DB_CONFIG.get('database', 'unknown') if DB_CONFIG else 'config_failed',
+            'db_user': DB_CONFIG.get('user', 'unknown') if DB_CONFIG else 'config_failed',
+            'db_password_set': bool(DB_CONFIG.get('password')) if DB_CONFIG else False
+        }
+        
+        return render_template_string("""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>登录问题诊断和修复</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; color: #856404; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+        .btn { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .btn:hover { background-color: #0056b3; }
+        .btn-danger { background-color: #dc3545; }
+        .btn-danger:hover { background-color: #c82333; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 房地产管理系统 - 登录问题诊断</h1>
+        
+        <div class="section info">
+            <h3>🌍 环境信息</h3>
+            <table>
+                <tr><td>平台</td><td>{{ env_info.platform }}</td></tr>
+                <tr><td>是否Render环境</td><td>{{ '✅ 是' if env_info.is_render else '❌ 否' }}</td></tr>
+                <tr><td>Python版本</td><td>{{ env_info.python_version }}</td></tr>
+            </table>
+        </div>
+        
+        <div class="section {{ 'success' if db_connection_status == 'success' else 'error' }}">
+            <h3>🔗 数据库连接状态</h3>
+            <p><strong>状态:</strong> {{ '✅ 连接成功' if db_connection_status == 'success' else '❌ 连接失败' }}</p>
+            <table>
+                <tr><td>主机</td><td>{{ config_info.db_host }}</td></tr>
+                <tr><td>端口</td><td>{{ config_info.db_port }}</td></tr>
+                <tr><td>数据库</td><td>{{ config_info.db_database }}</td></tr>
+                <tr><td>用户</td><td>{{ config_info.db_user }}</td></tr>
+                <tr><td>密码设置</td><td>{{ '✅ 已设置' if config_info.db_password_set else '❌ 未设置' }}</td></tr>
+            </table>
+        </div>
+        
+        <div class="section {{ 'success' if users_table_info.get('exists') else 'error' if 'error' not in users_table_info else 'warning' }}">
+            <h3>👤 用户表状态</h3>
+            {% if users_table_info.get('exists') %}
+                <p><strong>✅ 用户表存在</strong></p>
+                <table>
+                    <tr><td>总用户数</td><td>{{ users_table_info.total_users }}</td></tr>
+                    <tr><td>管理员用户数</td><td>{{ users_table_info.admin_users }}</td></tr>
+                </table>
+                {% if users_table_info.admin_list %}
+                    <h4>管理员用户列表:</h4>
+                    <table>
+                        <tr><th>用户名</th><th>类型</th><th>状态</th></tr>
+                        {% for user in users_table_info.admin_list %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.user_type }}</td>
+                            <td>{{ '激活' if user.is_active else '禁用' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+            {% elif 'error' in users_table_info %}
+                <p><strong>❌ 检查用户表时出错:</strong> {{ users_table_info.error }}</p>
+            {% else %}
+                <p><strong>❌ 用户表不存在</strong> - 这是主要问题！</p>
+            {% endif %}
+        </div>
+        
+        <div class="section {{ 'success' if auth_tests.db_auth_success else 'warning' }}">
+            <h3>🔐 认证测试</h3>
+            <table>
+                <tr>
+                    <td>演示模式认证</td>
+                    <td>{{ '✅ 成功' if auth_tests.demo_auth_success else '❌ 失败' }}</td>
+                </tr>
+                <tr>
+                    <td>数据库认证</td>
+                    <td>{{ '✅ 成功' if auth_tests.db_auth_success else '❌ 失败' }}</td>
+                </tr>
+            </table>
+            
+            {% if auth_tests.db_auth_success %}
+                <div class="success">
+                    <h4>✅ 数据库认证成功 - 登录应该正常工作！</h4>
+                    <pre>{{ auth_tests.db_auth_data }}</pre>
+                </div>
+            {% else %}
+                <div class="error">
+                    <h4>❌ 数据库认证失败 - 这是登录问题的根源</h4>
+                    {% if auth_tests.demo_auth_success %}
+                        <p>系统正在使用演示模式认证作为备用方案</p>
+                        <pre>演示用户数据: {{ auth_tests.demo_auth_data }}</pre>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        
+        {% if not auth_tests.db_auth_success %}
+        <div class="section warning">
+            <h3>🔧 修复操作</h3>
+            <p>检测到登录问题，点击下面的按钮执行自动修复：</p>
+            <form method="post">
+                <button type="submit" class="btn">🔧 执行自动修复</button>
+            </form>
+            <br>
+            <p><strong>修复操作将执行：</strong></p>
+            <ul>
+                <li>创建用户表（如果不存在）</li>
+                <li>创建默认管理员用户: admin/admin123</li>
+                <li>创建测试用户: superadmin/super2025, manager/manager123, pm01/123456</li>
+                <li>验证修复结果</li>
+            </ul>
+        </div>
+        {% else %}
+        <div class="section success">
+            <h3>✅ 系统状态正常</h3>
+            <p>数据库认证功能正常，用户应该可以正常登录</p>
+            <p><strong>可用账户:</strong></p>
+            <ul>
+                <li>admin / admin123</li>
+                <li>superadmin / super2025</li>
+                <li>manager / manager123</li>
+                <li>pm01 / 123456</li>
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="section info">
+            <h3>🔗 相关链接</h3>
+            <ul>
+                <li><a href="/login">登录页面</a></li>
+                <li><a href="/health">健康检查</a></li>
+                <li><a href="/debug/env">环境信息</a></li>
+                <li><a href="/">返回首页</a></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+        """, 
+        env_info=env_info,
+        db_connection_status=db_connection_status,
+        users_table_info=users_table_info,
+        auth_tests=auth_tests,
+        config_info=config_info
+        )
+        
+    except Exception as e:
+        return {
+            'status': 'error',
+            'error': str(e),
+            'message': '诊断过程中发生错误'
+        }, 500
+
 if __name__ == '__main__':
     import os
     
