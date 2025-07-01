@@ -3067,6 +3067,122 @@ def debug_demo_auth_test():
     
     return jsonify(result)
 
+@app.route('/debug/status')
+def debug_status():
+    """简化的系统状态页面"""
+    # 测试所有demo用户
+    demo_tests = {}
+    test_users = [
+        ('admin', 'admin123'),
+        ('superadmin', 'super2025'), 
+        ('manager', 'manager123'),
+        ('pm01', '123456')
+    ]
+    
+    for username, password in test_users:
+        try:
+            result = auth_system._demo_authenticate(username, password)
+            demo_tests[username] = {
+                'success': result is not None,
+                'data': result if result else 'Failed'
+            }
+        except Exception as e:
+            demo_tests[username] = {
+                'success': False,
+                'error': str(e)
+            }
+    
+    status_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>系统状态诊断</title>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
+            .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }}
+            .status {{ padding: 10px; margin: 10px 0; border-radius: 5px; }}
+            .success {{ background: #d4edda; border-left: 4px solid #28a745; }}
+            .error {{ background: #f8d7da; border-left: 4px solid #dc3545; }}
+            .info {{ background: #d1ecf1; border-left: 4px solid #17a2b8; }}
+            h1 {{ color: #333; }}
+            h3 {{ color: #666; margin-top: 20px; }}
+            pre {{ background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }}
+            .test-result {{ margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔧 房地产管理系统状态诊断</h1>
+            
+            <div class="status info">
+                <h3>📊 基本信息</h3>
+                <p><strong>版本:</strong> {APP_VERSION}</p>
+                <p><strong>环境:</strong> {'Production' if os.environ.get('PORT') else 'Development'}</p>
+                <p><strong>时间:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                <p><strong>平台:</strong> {os.environ.get('PORT', 'Local')}</p>
+            </div>
+
+            <div class="status {'success' if any(demo_tests[u]['success'] for u in demo_tests) else 'error'}">
+                <h3>🔐 演示模式认证测试</h3>
+    """
+    
+    for username, result in demo_tests.items():
+        success_class = 'success' if result['success'] else 'error'
+        status_icon = '✅' if result['success'] else '❌'
+        status_html += f"""
+                <div class="test-result">
+                    <strong>{status_icon} {username}</strong>: {'认证成功' if result['success'] else '认证失败'}
+                    {f"<br><small>错误: {result.get('error', '')}</small>" if not result['success'] and 'error' in result else ''}
+                </div>
+        """
+    
+    # 数据库连接测试
+    try:
+        conn = get_db_connection()
+        db_status = "连接成功" if conn else "连接失败"
+        db_class = "success" if conn else "error"
+        if conn:
+            conn.close()
+    except Exception as e:
+        db_status = f"连接异常: {str(e)}"
+        db_class = "error"
+    
+    status_html += f"""
+            </div>
+
+            <div class="status {db_class}">
+                <h3>🗄️ 数据库连接状态</h3>
+                <p>{db_status}</p>
+            </div>
+
+            <div class="status info">
+                <h3>🆘 备用管理员账户</h3>
+                <p>如果admin账户无法登录，请尝试以下备用账户：</p>
+                <ul>
+                    <li><strong>superadmin</strong> / super2025</li>
+                    <li><strong>manager</strong> / manager123</li>
+                    <li><strong>pm01</strong> / 123456</li>
+                </ul>
+                <p><em>注意：请选择"Company Internal"用户类型</em></p>
+            </div>
+
+            <div class="status info">
+                <h3>🔗 有用链接</h3>
+                <ul>
+                    <li><a href="/debug/env">详细环境信息</a></li>
+                    <li><a href="/debug/demo_auth_test">交互式认证测试</a></li>
+                    <li><a href="/login">返回登录页面</a></li>
+                    <li><a href="/health">健康检查</a></li>
+                </ul>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return status_html
+
 if __name__ == '__main__':
     import os
     

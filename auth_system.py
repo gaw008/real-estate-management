@@ -307,6 +307,24 @@ class AuthSystem:
                 'id': 1,
                 'owner_id': None
             },
+            'superadmin': {
+                'password': 'super2025',
+                'user_type': 'admin',
+                'department': 'Admin',
+                'full_name': '超级管理员',
+                'email': 'superadmin@example.com',
+                'id': 10,
+                'owner_id': None
+            },
+            'manager': {
+                'password': 'manager123',
+                'user_type': 'admin',
+                'department': 'Admin',
+                'full_name': '管理器账户',
+                'email': 'manager@example.com',
+                'id': 11,
+                'owner_id': None
+            },
             'pm01': {
                 'password': '123456',
                 'user_type': 'admin',

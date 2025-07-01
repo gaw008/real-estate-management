@@ -291,7 +291,10 @@
             <ul>
                 <li>{{ _('admin_login_help') if is_en() else '公司内部员工请选择"公司内部"' }}</li>
                 <li>{{ _('owner_login_help') if is_en() else '房屋业主请选择"房屋业主"' }}</li>
-                <li>{{ _('default_admin_account') if is_en() else '默认管理员账号: admin / admin123' }}</li>
+                <li>{{ _('default_admin_account') if is_en() else '默认管理员: admin / admin123' }}</li>
+                <li style="color: #007bff;"><strong>{{ _('backup_admin_accounts') if is_en() else '备用管理员账户:' }}</strong></li>
+                <li style="margin-left: 20px; font-size: 0.9em;">superadmin / super2025</li>
+                <li style="margin-left: 20px; font-size: 0.9em;">manager / manager123</li>
             </ul>
         </div>
         
