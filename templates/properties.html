@@ -191,7 +191,9 @@
                         <button class="btn btn-outline-warning btn-sm" onclick="editProperty({{ property.id }})">
                             <i class="fas fa-edit me-1"></i>编辑
                         </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="showDeleteModal({{ property.id }}, '{{ property.name }}')">
+                        <button class="btn btn-outline-danger btn-sm delete-btn" 
+                                data-property-id="{{ property.id }}" 
+                                data-property-name="{{ property.name }}">
                             <i class="fas fa-trash me-1"></i>删除
                         </button>
                         {% endif %}
@@ -385,7 +387,7 @@ function performDelete() {
     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>删除中...';
     
     // 显示原始删除按钮的加载状态
-    const deleteButtons = document.querySelectorAll('button[onclick*="showDeleteModal(' + propertyId + ')"]');
+    const deleteButtons = document.querySelectorAll('.delete-btn[data-property-id="' + propertyId + '"]');
     deleteButtons.forEach(function(btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>删除中...';
@@ -478,6 +480,16 @@ function showNotification(message, type = 'info') {
 
 // 页面加载完成后初始化事件监听器
 document.addEventListener('DOMContentLoaded', function() {
+    // 监听所有删除按钮的点击事件
+    document.querySelectorAll('.delete-btn').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const propertyId = this.getAttribute('data-property-id');
+            const propertyName = this.getAttribute('data-property-name');
+            console.log('Delete button clicked:', propertyId, propertyName); // 调试信息
+            showDeleteModal(propertyId, propertyName);
+        });
+    });
+    
     // 监听确认复选框变化
     const confirmCheckbox = document.getElementById('confirmDelete');
     const confirmBtn = document.getElementById('confirmDeleteBtn');
