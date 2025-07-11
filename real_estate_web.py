@@ -3887,6 +3887,71 @@ def api_test_login():
             'timestamp': datetime.now().isoformat()
         }, 500
 
+@app.route('/api/check_permissions')
+def api_check_permissions():
+    """检查当前用户的权限状态"""
+    try:
+        if 'user_id' not in session:
+            return {
+                'logged_in': False,
+                'message': '用户未登录'
+            }
+        
+        # 获取用户会话信息
+        user_info = {
+            'user_id': session.get('user_id'),
+            'username': session.get('username'),
+            'user_type': session.get('user_type'),
+            'department': session.get('department'),
+            'owner_id': session.get('owner_id'),
+            'full_name': session.get('full_name'),
+            'session_mode': session.get('session_mode', 'unknown')
+        }
+        
+        # 检查模块权限
+        from department_modules import get_user_accessible_modules, has_module_access, get_module_info
+        
+        accessible_modules = get_user_accessible_modules()
+        
+        # 检查关键模块权限
+        key_modules = ['property_info', 'customer_management', 'financial_records', 'owner_info', 'user_management']
+        module_permissions = {}
+        
+        for module in key_modules:
+            has_access = has_module_access(module)
+            module_info = get_module_info(module)
+            module_permissions[module] = {
+                'has_access': has_access,
+                'name': module_info.get('name', module) if module_info else module,
+                'description': module_info.get('description', '') if module_info else ''
+            }
+        
+        # 特别检查房产管理权限
+        property_access_reasons = []
+        if user_info['user_type'] == 'admin':
+            property_access_reasons.append('管理员身份')
+        
+        if user_info['department'] in ['Admin', 'Property Management Department', 'Sales Department', 'Accounting Department']:
+            property_access_reasons.append(f"部门权限: {user_info['department']}")
+        
+        return {
+            'logged_in': True,
+            'user_info': user_info,
+            'accessible_modules': accessible_modules,
+            'total_accessible_modules': len(accessible_modules),
+            'module_permissions': module_permissions,
+            'property_access_reasons': property_access_reasons,
+            'can_access_properties': has_module_access('property_info'),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            'error': str(e),
+            'message': '权限检查失败',
+            'timestamp': datetime.now().isoformat()
+        }, 500
+
 if __name__ == '__main__':
     import os
     
