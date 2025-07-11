@@ -4395,6 +4395,11 @@ def test_buttons():
     """按钮功能测试页面"""
     return render_template('button_test.html')
 
+@app.route('/debug/modal')
+def debug_modal():
+    """模态框调试页面"""
+    return render_template('debug_modal.html')
+
 @app.route('/demo/clear_properties', methods=['POST'])
 @login_required
 def clear_demo_properties():
