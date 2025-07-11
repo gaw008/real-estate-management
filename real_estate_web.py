@@ -1351,8 +1351,10 @@ def properties():
     """房产列表页面"""
     conn = get_db_connection()
     if not conn:
-        # 演示模式：显示示例数据
+        # 演示模式：显示示例数据和用户添加的房产
         print("⚠️  使用演示模式显示房产列表")
+        
+        # 固定的演示房产
         demo_properties = [
             {
                 'id': 1,
@@ -1370,15 +1372,35 @@ def properties():
                 'wifi_available': True
             }
         ]
+        
+        # 添加用户在session中保存的房产
+        if 'demo_properties' in session:
+            demo_properties.extend(session['demo_properties'])
+            print(f"✅ 加载了 {len(session['demo_properties'])} 个用户添加的演示房产")
+        
+        # 收集所有的州和城市选项
+        states = set(['CA', 'TX'])
+        cities = set(['演示城市'])
+        
+        for prop in demo_properties:
+            if prop.get('state'):
+                states.add(prop['state'])
+            if prop.get('city'):
+                cities.add(prop['city'])
+        
+        total_count = len(demo_properties)
+        
         return render_template('properties.html',
                              properties=demo_properties,
-                             states=['CA', 'TX'],
-                             cities=['演示城市'],
+                             states=sorted(list(states)),
+                             cities=sorted(list(cities)),
                              current_page=1,
                              total_pages=1,
-                             total_count=1,
+                             total_count=total_count,
                              filters={'city': '', 'state': '', 'search': ''},
-                             format_management_fee=format_management_fee)
+                             format_management_fee=format_management_fee,
+                             bedroom_options=[1, 2, 3, 4, 5],
+                             bathroom_options=[1, 1.5, 2, 2.5, 3, 3.5, 4])
     
     cursor = conn.cursor(dictionary=True)
     
@@ -1474,12 +1496,43 @@ def delete_property():
     
     conn = get_db_connection()
     if not conn:
-        # 数据库连接失败时，明确告知用户
-        print(f"❌ 数据库连接失败，无法删除房产: {property_id}")
-        return jsonify({
-            'success': False, 
-            'message': '数据库连接失败，无法执行删除操作。请稍后重试或联系管理员。'
-        })
+        # 演示模式：从session中删除房产
+        print(f"⚠️  演示模式：尝试删除房产 ID {property_id}")
+        
+        # 如果是演示房产#1（ID=1），不允许删除
+        if property_id == '1':
+            return jsonify({
+                'success': False, 
+                'message': '演示房产#1不能删除（演示模式）'
+            })
+        
+        # 从session中删除用户添加的房产
+        if 'demo_properties' in session:
+            property_id_int = int(property_id)
+            original_count = len(session['demo_properties'])
+            session['demo_properties'] = [
+                prop for prop in session['demo_properties'] 
+                if prop['id'] != property_id_int
+            ]
+            new_count = len(session['demo_properties'])
+            
+            if new_count < original_count:
+                session.permanent = True
+                print(f"✅ 演示模式：已删除房产 ID {property_id}")
+                return jsonify({
+                    'success': True, 
+                    'message': f'房产已删除（演示模式）'
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'message': '房产不存在或无法删除（演示模式）'
+                })
+        else:
+            return jsonify({
+                'success': False, 
+                'message': '没有找到要删除的房产（演示模式）'
+            })
     
     cursor = conn.cursor()
     
@@ -1587,8 +1640,43 @@ def add_property():
         
         conn = get_db_connection()
         if not conn:
-            # 数据库连接失败，使用演示模式
+            # 数据库连接失败，使用演示模式 - 保存到session
             print("⚠️  数据库连接失败，使用演示模式添加房产")
+            
+            # 在session中保存演示房产
+            if 'demo_properties' not in session:
+                session['demo_properties'] = []
+            
+            # 生成新的房产ID（使用当前列表长度 + 2，因为已有一个固定的演示房产）
+            new_property_id = len(session['demo_properties']) + 2
+            
+            # 创建新房产对象
+            new_property = {
+                'id': new_property_id,
+                'name': property_data['name'],
+                'street_address': property_data['street_address'],
+                'city': property_data['city'],
+                'state': property_data['state'],
+                'zip_code': property_data['zip_code'],
+                'bedrooms': int(property_data['bedrooms']) if property_data['bedrooms'] else None,
+                'bathrooms': float(property_data['bathrooms']) if property_data['bathrooms'] else None,
+                'square_feet': int(property_data['square_feet']) if property_data['square_feet'] else None,
+                'property_type': property_data['property_type'],
+                'year_built': int(property_data['year_built']) if property_data['year_built'] else None,
+                'monthly_rent': float(property_data['monthly_rent']) if property_data['monthly_rent'] else None,
+                'description': property_data['description'],
+                'cleaning_fee': None,
+                'management_fee_rate': None,
+                'management_fee_percentage': None,
+                'capacity': None,
+                'wifi_available': False
+            }
+            
+            # 添加到session
+            session['demo_properties'].append(new_property)
+            session.permanent = True  # 保持session
+            
+            print(f"✅ 演示模式：已添加房产 '{new_property['name']}' (ID: {new_property_id})")
             flash('房产添加成功（演示模式）', 'success')
             return redirect(url_for('properties'))
         
@@ -1643,8 +1731,68 @@ def edit_property(property_id):
     """编辑房产"""
     conn = get_db_connection()
     if not conn:
-        flash('数据库连接失败', 'error')
-        return redirect(url_for('properties'))
+        # 演示模式：编辑session中的房产
+        print(f"⚠️  演示模式：编辑房产 ID {property_id}")
+        
+        if request.method == 'POST':
+            # 从session中找到并更新房产
+            if 'demo_properties' in session:
+                for i, prop in enumerate(session['demo_properties']):
+                    if prop['id'] == property_id:
+                        # 更新房产数据
+                        session['demo_properties'][i].update({
+                            'name': request.form.get('name'),
+                            'street_address': request.form.get('street_address'),
+                            'city': request.form.get('city'),
+                            'state': request.form.get('state'),
+                            'zip_code': request.form.get('zip_code'),
+                            'bedrooms': int(request.form.get('bedrooms')) if request.form.get('bedrooms') else None,
+                            'bathrooms': float(request.form.get('bathrooms')) if request.form.get('bathrooms') else None,
+                            'square_feet': int(request.form.get('square_feet')) if request.form.get('square_feet') else None,
+                            'property_type': request.form.get('property_type'),
+                            'year_built': int(request.form.get('year_built')) if request.form.get('year_built') else None,
+                            'monthly_rent': float(request.form.get('monthly_rent')) if request.form.get('monthly_rent') else None,
+                            'description': request.form.get('description')
+                        })
+                        session.permanent = True
+                        flash('房产更新成功（演示模式）', 'success')
+                        return redirect(url_for('properties'))
+            
+            flash('房产不存在（演示模式）', 'error')
+            return redirect(url_for('properties'))
+        else:
+            # GET请求：显示编辑表单
+            property_data = None
+            
+            # 检查是否是固定的演示房产
+            if property_id == 1:
+                property_data = {
+                    'id': 1,
+                    'name': '演示房产 #1',
+                    'street_address': '123 演示街',
+                    'city': '演示城市',
+                    'state': 'CA',
+                    'zip_code': '90210',
+                    'bedrooms': 3,
+                    'bathrooms': 2,
+                    'square_feet': 1500,
+                    'property_type': 'House',
+                    'year_built': 2000,
+                    'monthly_rent': 2500,
+                    'description': '演示房产描述'
+                }
+            elif 'demo_properties' in session:
+                # 从session中查找房产
+                for prop in session['demo_properties']:
+                    if prop['id'] == property_id:
+                        property_data = prop
+                        break
+            
+            if property_data:
+                return render_template('edit_property.html', property=property_data)
+            else:
+                flash('房产不存在（演示模式）', 'error')
+                return redirect(url_for('properties'))
     
     cursor = conn.cursor(dictionary=True)
     
@@ -4240,6 +4388,78 @@ def api_diagnose_frontend():
 </body>
 </html>
     """)
+
+@app.route('/test/buttons')
+@login_required
+def test_buttons():
+    """按钮功能测试页面"""
+    return render_template('button_test.html')
+
+@app.route('/demo/clear_properties', methods=['POST'])
+@login_required
+def clear_demo_properties():
+    """清理演示模式中的房产数据"""
+    if 'demo_properties' in session:
+        count = len(session['demo_properties'])
+        session.pop('demo_properties', None)
+        print(f"🧹 清理了 {count} 个演示房产")
+        return jsonify({'success': True, 'message': f'已清理 {count} 个演示房产'})
+    else:
+        return jsonify({'success': True, 'message': '没有需要清理的演示房产'})
+
+@app.route('/api/diagnose_buttons')
+def api_diagnose_buttons():
+    """诊断前端按钮权限和显示问题"""
+    results = {
+        'session_info': {
+            'user_type': session.get('user_type'),
+            'department': session.get('department'),
+            'username': session.get('username'),
+            'user_id': session.get('user_id'),
+            'all_session_keys': list(session.keys())
+        },
+        'button_permissions': {},
+        'recommendations': []
+    }
+    
+    # 检查权限逻辑
+    user_type = session.get('user_type', '')
+    user_department = session.get('department', '')
+    
+    # 房产管理按钮权限检查
+    property_access = (user_type == 'admin' or user_department == 'Property Management Department')
+    
+    results['button_permissions'] = {
+        'can_add_property': property_access,
+        'can_edit_property': property_access,
+        'can_delete_property': property_access,
+        'permission_logic': {
+            'user_type_is_admin': user_type == 'admin',
+            'department_is_property_management': user_department == 'Property Management Department',
+            'combined_access': property_access
+        }
+    }
+    
+    # 生成建议
+    if not property_access:
+        results['recommendations'].append("用户没有房产管理权限")
+        if user_type != 'admin':
+            results['recommendations'].append("用户类型不是admin")
+        if user_department != 'Property Management Department':
+            results['recommendations'].append("用户部门不是'Property Management Department'")
+    else:
+        results['recommendations'].append("用户具有房产管理权限，按钮应该显示")
+    
+    # 检查数据库连接
+    conn = get_db_connection()
+    if conn:
+        results['database_connection'] = 'OK'
+        conn.close()
+    else:
+        results['database_connection'] = 'FAILED'
+        results['recommendations'].append("数据库连接失败，可能影响功能")
+    
+    return jsonify(results)
 
 if __name__ == '__main__':
     import os

@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}按钮功能测试{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>按钮功能测试页面</h2>
+            <p class="text-muted">用于诊断房产管理按钮的权限和功能问题</p>
+        </div>
+    </div>
+    
+    <!-- 权限信息显示 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>当前用户权限信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>用户类型:</strong> {{ session.get('user_type', '未设置') }}<br>
+                            <strong>部门:</strong> {{ session.get('department', '未设置') }}<br>
+                            <strong>用户名:</strong> {{ session.get('username', '未设置') }}<br>
+                            <strong>用户ID:</strong> {{ session.get('user_id', '未设置') }}<br>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>权限检查结果:</strong><br>
+                            {% if session.get('user_type') == 'admin' or session.get('department') in ['Property Management Department'] %}
+                                <span class="badge bg-success">✅ 有权限</span>
+                            {% else %}
+                                <span class="badge bg-danger">❌ 无权限</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 按钮测试区域 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>按钮测试</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>权限控制的按钮:</h6>
+                            {% if session.get('user_type') == 'admin' or session.get('department') in ['Property Management Department'] %}
+                                <div class="btn-group mb-3" role="group">
+                                    <a href="{{ url_for('add_property') }}" class="btn btn-success">
+                                        <i class="fas fa-plus me-2"></i>添加新房产
+                                    </a>
+                                    <button class="btn btn-outline-warning" onclick="testEditFunction()">
+                                        <i class="fas fa-edit me-1"></i>测试编辑功能
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="testDeleteFunction()">
+                                        <i class="fas fa-trash me-1"></i>测试删除功能
+                                    </button>
+                                </div>
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    按钮应该显示并可点击
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    您没有权限，按钮不应该显示
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>测试按钮 (不受权限控制):</h6>
+                            <div class="btn-group mb-3" role="group">
+                                <button class="btn btn-primary" onclick="testJavaScript()">
+                                    <i class="fas fa-code me-1"></i>测试JavaScript
+                                </button>
+                                <button class="btn btn-info" onclick="testAjax()">
+                                    <i class="fas fa-network-wired me-1"></i>测试AJAX
+                                </button>
+                                <button class="btn btn-secondary" onclick="checkPermissions()">
+                                    <i class="fas fa-shield-alt me-1"></i>检查权限
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 测试结果显示区域 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>测试结果</h5>
+                </div>
+                <div class="card-body">
+                    <div id="testResults" class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        点击测试按钮查看结果
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTestResults(message, type = 'info') {
+    const resultDiv = document.getElementById('testResults');
+    const iconMap = {
+        'success': 'fas fa-check-circle',
+        'error': 'fas fa-exclamation-circle',
+        'warning': 'fas fa-exclamation-triangle',
+        'info': 'fas fa-info-circle'
+    };
+    
+    resultDiv.className = `alert alert-${type}`;
+    resultDiv.innerHTML = `<i class="${iconMap[type]} me-2"></i>${message}`;
+}
+
+function testJavaScript() {
+    updateTestResults('JavaScript 正常工作！', 'success');
+}
+
+function testEditFunction() {
+    updateTestResults('编辑功能测试：准备跳转到编辑页面...', 'info');
+    
+    // 模拟编辑房产ID为1的房产
+    const propertyId = 1;
+    const editUrl = `/admin/edit_property/${propertyId}`;
+    
+    updateTestResults(`编辑功能测试：即将跳转到 ${editUrl}`, 'warning');
+    
+    // 3秒后跳转
+    setTimeout(() => {
+        window.location.href = editUrl;
+    }, 3000);
+}
+
+function testDeleteFunction() {
+    updateTestResults('删除功能测试：准备测试删除请求...', 'info');
+    
+    // 模拟删除房产ID为1的房产
+    const propertyId = 1;
+    const propertyName = '测试房产';
+    
+    if (confirm(`这是测试删除功能，确定要测试删除房产 "${propertyName}" 吗？`)) {
+        updateTestResults('删除功能测试：发送删除请求...', 'warning');
+        
+        fetch('/admin/delete_property', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `property_id=${propertyId}`
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                updateTestResults(`删除功能测试成功：${data.message}`, 'success');
+            } else {
+                updateTestResults(`删除功能测试返回错误：${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            updateTestResults(`删除功能测试失败：${error.message}`, 'error');
+        });
+    } else {
+        updateTestResults('删除功能测试：用户取消了操作', 'info');
+    }
+}
+
+function testAjax() {
+    updateTestResults('AJAX 测试：发送请求...', 'info');
+    
+    fetch('/api/diagnose_buttons')
+        .then(response => response.json())
+        .then(data => {
+            let message = 'AJAX 测试成功！<br>';
+            message += `用户类型: ${data.session_info.user_type}<br>`;
+            message += `部门: ${data.session_info.department}<br>`;
+            message += `权限状态: ${data.button_permissions.combined_access ? '有权限' : '无权限'}<br>`;
+            message += `数据库连接: ${data.database_connection}`;
+            
+            updateTestResults(message, 'success');
+        })
+        .catch(error => {
+            updateTestResults(`AJAX 测试失败：${error.message}`, 'error');
+        });
+}
+
+function checkPermissions() {
+    updateTestResults('检查权限：发送请求...', 'info');
+    
+    fetch('/api/diagnose_buttons')
+        .then(response => response.json())
+        .then(data => {
+            let message = '权限检查结果：<br>';
+            message += `<strong>会话信息:</strong><br>`;
+            message += `- 用户类型: ${data.session_info.user_type || '未设置'}<br>`;
+            message += `- 部门: ${data.session_info.department || '未设置'}<br>`;
+            message += `- 用户名: ${data.session_info.username || '未设置'}<br>`;
+            message += `<strong>权限状态:</strong><br>`;
+            message += `- 可以添加房产: ${data.button_permissions.can_add_property ? '是' : '否'}<br>`;
+            message += `- 可以编辑房产: ${data.button_permissions.can_edit_property ? '是' : '否'}<br>`;
+            message += `- 可以删除房产: ${data.button_permissions.can_delete_property ? '是' : '否'}<br>`;
+            message += `<strong>建议:</strong><br>`;
+            data.recommendations.forEach(rec => {
+                message += `- ${rec}<br>`;
+            });
+            
+            updateTestResults(message, data.button_permissions.combined_access ? 'success' : 'warning');
+        })
+        .catch(error => {
+            updateTestResults(`权限检查失败：${error.message}`, 'error');
+        });
+}
+</script>
+{% endblock %} 
