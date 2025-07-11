@@ -3951,6 +3951,140 @@ def api_check_permissions():
             'timestamp': datetime.now().isoformat()
         }, 500
 
+@app.route('/api/diagnose_property_management')
+def api_diagnose_property_management():
+    """诊断房产管理功能的详细状态"""
+    try:
+        diagnosis = {
+            'timestamp': datetime.now().isoformat(),
+            'tests': []
+        }
+        
+        # 测试1：用户登录状态
+        if 'user_id' not in session:
+            diagnosis['tests'].append({
+                'test': '用户登录状态',
+                'status': '失败',
+                'message': '用户未登录',
+                'recommendation': '请先登录系统'
+            })
+            diagnosis['overall_status'] = '需要登录'
+            return diagnosis
+        
+        diagnosis['tests'].append({
+            'test': '用户登录状态',
+            'status': '通过',
+            'message': f"用户 {session.get('username')} 已登录"
+        })
+        
+        # 测试2：用户基本信息
+        user_info = {
+            'user_id': session.get('user_id'),
+            'username': session.get('username'),
+            'user_type': session.get('user_type'),
+            'department': session.get('department'),
+            'full_name': session.get('full_name'),
+            'session_mode': session.get('session_mode', 'unknown')
+        }
+        
+        diagnosis['tests'].append({
+            'test': '用户基本信息',
+            'status': '通过',
+            'details': user_info
+        })
+        
+        # 测试3：模块权限检查
+        property_access = has_module_access('property_info')
+        diagnosis['tests'].append({
+            'test': '房产模块权限',
+            'status': '通过' if property_access else '失败',
+            'message': '有权限访问房产模块' if property_access else '没有房产模块访问权限',
+            'recommendation': '请联系管理员分配房产管理权限' if not property_access else None
+        })
+        
+        # 测试4：部门权限详细检查
+        user_department = session.get('department', '')
+        allowed_departments = ['Admin', 'Property Management Department', 'Sales Department', 'Accounting Department']
+        dept_access = user_department in allowed_departments or session.get('user_type') == 'admin'
+        
+        diagnosis['tests'].append({
+            'test': '部门权限检查',
+            'status': '通过' if dept_access else '失败',
+            'details': {
+                'user_department': user_department,
+                'allowed_departments': allowed_departments,
+                'is_admin': session.get('user_type') == 'admin'
+            }
+        })
+        
+        # 测试5：数据库连接
+        db_conn = get_db_connection()
+        diagnosis['tests'].append({
+            'test': '数据库连接',
+            'status': '通过' if db_conn else '失败',
+            'message': '数据库连接正常' if db_conn else '数据库连接失败，使用演示模式'
+        })
+        if db_conn:
+            db_conn.close()
+        
+        # 测试6：路由访问测试
+        from flask import url_for
+        try:
+            properties_url = url_for('properties')
+            add_property_url = url_for('add_property')
+            diagnosis['tests'].append({
+                'test': '路由配置',
+                'status': '通过',
+                'details': {
+                    'properties_url': properties_url,
+                    'add_property_url': add_property_url
+                }
+            })
+        except Exception as e:
+            diagnosis['tests'].append({
+                'test': '路由配置',
+                'status': '失败',
+                'message': f'路由配置错误: {str(e)}'
+            })
+        
+        # 测试7：特定权限操作检查
+        can_add = session.get('user_type') == 'admin' or session.get('department') in ['Property Management Department']
+        can_edit = session.get('user_type') == 'admin' or session.get('department') in ['Property Management Department']
+        can_delete = session.get('user_type') == 'admin' or session.get('department') in ['Property Management Department']
+        
+        diagnosis['tests'].append({
+            'test': '房产操作权限',
+            'status': '通过' if all([can_add, can_edit, can_delete]) else '部分通过',
+            'details': {
+                'can_add_property': can_add,
+                'can_edit_property': can_edit,
+                'can_delete_property': can_delete
+            }
+        })
+        
+        # 综合评估
+        failed_tests = [test for test in diagnosis['tests'] if test['status'] == '失败']
+        if failed_tests:
+            diagnosis['overall_status'] = '有问题'
+            diagnosis['critical_issues'] = [test['test'] for test in failed_tests]
+            diagnosis['recommendations'] = []
+            for test in failed_tests:
+                if 'recommendation' in test and test['recommendation']:
+                    diagnosis['recommendations'].append(test['recommendation'])
+        else:
+            diagnosis['overall_status'] = '正常'
+            diagnosis['message'] = '所有权限检查通过，房产管理功能应该可以正常使用'
+        
+        return diagnosis
+        
+    except Exception as e:
+        return {
+            'overall_status': '错误',
+            'error': str(e),
+            'message': '诊断过程中发生错误',
+            'timestamp': datetime.now().isoformat()
+        }, 500
+
 if __name__ == '__main__':
     import os
     
