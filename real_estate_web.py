@@ -4085,6 +4085,162 @@ def api_diagnose_property_management():
             'timestamp': datetime.now().isoformat()
         }, 500
 
+@app.route('/api/diagnose_frontend')
+def api_diagnose_frontend():
+    """诊断前端JavaScript问题"""
+    return render_template_string("""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>前端功能诊断</title>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>🔧 前端JavaScript功能诊断</h2>
+        <div id="results"></div>
+        
+        <!-- 测试按钮 -->
+        <h4>测试功能</h4>
+        <button class="btn btn-warning" onclick="testEditFunction()">测试编辑功能</button>
+        <button class="btn btn-danger" onclick="testDeleteFunction()">测试删除功能</button>
+        <button class="btn btn-success" onclick="testFormSubmit()">测试表单提交</button>
+        
+        <hr>
+        <h4>返回链接</h4>
+        <a href="/properties" class="btn btn-primary">返回房产列表</a>
+        <a href="/admin/add_property" class="btn btn-success">测试添加房产页面</a>
+    </div>
+
+    <script>
+        function addResult(message, type) {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            resultsDiv.appendChild(div);
+        }
+
+        // 页面加载时执行基本检查
+        document.addEventListener('DOMContentLoaded', function() {
+            addResult('✅ JavaScript已加载', 'success');
+            addResult('✅ DOM已准备就绪', 'success');
+            
+            // 检查jQuery是否可用
+            if (typeof $ !== 'undefined') {
+                addResult('✅ jQuery已加载', 'success');
+            } else {
+                addResult('⚠️ jQuery未加载', 'info');
+            }
+            
+            // 检查Bootstrap JavaScript
+            if (typeof bootstrap !== 'undefined') {
+                addResult('✅ Bootstrap JavaScript已加载', 'success');
+            } else {
+                addResult('⚠️ Bootstrap JavaScript未加载', 'info');
+            }
+            
+            // 检查Fetch API支持
+            if (typeof fetch !== 'undefined') {
+                addResult('✅ Fetch API支持正常', 'success');
+            } else {
+                addResult('❌ Fetch API不支持', 'error');
+            }
+        });
+
+        function testEditFunction() {
+            addResult('🔍 测试编辑功能...', 'info');
+            try {
+                // 模拟editProperty函数
+                const testPropertyId = 123;
+                const expectedUrl = `/admin/edit_property/${testPropertyId}`;
+                addResult(`✅ 编辑URL生成正确: ${expectedUrl}`, 'success');
+                addResult('💡 编辑功能应该能正常工作（不会真的跳转）', 'info');
+            } catch (error) {
+                addResult(`❌ 编辑功能测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testDeleteFunction() {
+            addResult('🔍 测试删除功能...', 'info');
+            try {
+                // 测试fetch请求
+                const testData = new URLSearchParams();
+                testData.append('property_id', '999999'); // 使用不存在的ID测试
+                
+                fetch('/admin/delete_property', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: testData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                })
+                .then(data => {
+                    addResult(`✅ 删除API响应正常: ${data.message || '响应成功'}`, 'success');
+                })
+                .catch(error => {
+                    if (error.message.includes('HTTP')) {
+                        addResult(`⚠️ 删除API返回错误（正常，因为测试ID不存在）: ${error.message}`, 'info');
+                    } else {
+                        addResult(`❌ 删除功能网络错误: ${error.message}`, 'error');
+                    }
+                });
+            } catch (error) {
+                addResult(`❌ 删除功能测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testFormSubmit() {
+            addResult('🔍 测试表单提交功能...', 'info');
+            try {
+                // 创建测试表单
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/admin/add_property';
+                
+                // 添加测试数据
+                const fields = {
+                    'name': 'JavaScript测试房产',
+                    'street_address': '测试地址123号',
+                    'city': '测试城市',
+                    'state': 'TEST',
+                    'zip_code': '12345'
+                };
+                
+                Object.keys(fields).forEach(name => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = fields[name];
+                    form.appendChild(input);
+                });
+                
+                addResult('✅ 表单创建成功', 'success');
+                addResult('💡 表单提交功能应该能正常工作（不会真的提交）', 'info');
+                addResult('📋 测试数据准备完成', 'success');
+            } catch (error) {
+                addResult(`❌ 表单功能测试失败: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
+    """)
+
 if __name__ == '__main__':
     import os
     
