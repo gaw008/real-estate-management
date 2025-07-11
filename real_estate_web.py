@@ -3908,8 +3908,7 @@ def api_check_permissions():
             'session_mode': session.get('session_mode', 'unknown')
         }
         
-        # 检查模块权限
-        from department_modules import get_user_accessible_modules, has_module_access, get_module_info
+        # 使用已导入的模块权限函数
         
         accessible_modules = get_user_accessible_modules()
         

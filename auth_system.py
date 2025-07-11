@@ -721,21 +721,8 @@ def staff_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def has_module_access(module_name):
-    """检查当前用户是否有访问指定模块的权限"""
-    user_type = session.get('user_type')
-    
-    # 模块权限映射
-    module_permissions = {
-        'property_info': ['admin', 'property_manager', 'sales', 'accounting'],
-        'customer_progress': ['admin', 'sales'],
-        'maintenance_records': ['admin', 'property_manager'],
-        'cleaning_records': ['admin', 'property_manager'],
-        'financial_records': ['admin', 'accounting'],
-        'owner_info': ['admin', 'sales', 'accounting']
-    }
-    
-    return user_type in module_permissions.get(module_name, [])
+# 注意：has_module_access函数现在在department_modules.py中定义
+# 请使用 from department_modules import has_module_access
 
 # 全局认证系统实例
 auth_system = AuthSystem() 
