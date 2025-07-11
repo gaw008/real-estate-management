@@ -52,26 +52,22 @@
                     <label for="bedrooms" class="form-label">卧室</label>
                     <select class="form-select" id="bedrooms" name="bedrooms">
                         <option value="">全部</option>
-                        {% if bedroom_options %}
                         {% for bedroom in bedroom_options %}
                         <option value="{{ bedroom }}" {% if filters.bedrooms == bedroom|string %}selected{% endif %}>
                             {{ bedroom }}室
                         </option>
                         {% endfor %}
-                        {% endif %}
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label for="bathrooms" class="form-label">浴室</label>
                     <select class="form-select" id="bathrooms" name="bathrooms">
                         <option value="">全部</option>
-                        {% if bathroom_options %}
                         {% for bathroom in bathroom_options %}
                         <option value="{{ bathroom }}" {% if filters.bathrooms == bathroom|string %}selected{% endif %}>
                             {{ bathroom }}卫
                         </option>
                         {% endfor %}
-                        {% endif %}
                     </select>
                 </div>
                 <div class="col-md-1">
@@ -191,7 +187,7 @@
                         <button class="btn btn-outline-warning btn-sm" onclick="editProperty({{ property.id }})">
                             <i class="fas fa-edit me-1"></i>编辑
                         </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="showDeleteModal({{ property.id }}, '{{ property.name }}')">
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteProperty({{ property.id }}, '{{ property.name }}')">
                             <i class="fas fa-trash me-1"></i>删除
                         </button>
                         {% endif %}
@@ -202,12 +198,13 @@
         {% endfor %}
     </div>
 
-    <!-- 分页部分省略，保持与原文件相同 -->
+    <!-- 分页 -->
     {% if total_pages > 1 %}
     <div class="row mt-4">
         <div class="col-12">
             <nav aria-label="房产列表分页">
                 <ul class="pagination justify-content-center">
+                    <!-- 上一页 -->
                     {% if current_page > 1 %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ current_page - 1 }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
@@ -220,6 +217,7 @@
                     </li>
                     {% endif %}
 
+                    <!-- 页码 -->
                     {% for page_num in range(1, total_pages + 1) %}
                         {% if page_num == current_page %}
                         <li class="page-item active">
@@ -238,6 +236,7 @@
                         {% endif %}
                     {% endfor %}
 
+                    <!-- 下一页 -->
                     {% if current_page < total_pages %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ current_page + 1 }}{% for key, value in filters.items() %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
@@ -345,10 +344,11 @@
 let deletePropertyData = null;
 
 function editProperty(propertyId) {
+    // 跳转到编辑页面
     window.location.href = `/admin/edit_property/${propertyId}`;
 }
 
-function showDeleteModal(propertyId, propertyName) {
+function deleteProperty(propertyId, propertyName) {
     // 存储房产信息
     deletePropertyData = {
         id: propertyId,
@@ -373,6 +373,7 @@ function showDeleteModal(propertyId, propertyName) {
     modal.show();
 }
 
+// 执行实际删除操作
 function performDelete() {
     if (!deletePropertyData) return;
     
@@ -385,7 +386,7 @@ function performDelete() {
     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>删除中...';
     
     // 显示原始删除按钮的加载状态
-    const deleteButtons = document.querySelectorAll('button[onclick*="showDeleteModal(' + propertyId + ')"]');
+    const deleteButtons = document.querySelectorAll('button[onclick*="deleteProperty(' + propertyId + ')"]');
     deleteButtons.forEach(function(btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>删除中...';
@@ -455,6 +456,7 @@ function performDelete() {
     });
 }
 
+// 显示通知消息
 function showNotification(message, type = 'info') {
     // 创建通知元素
     const notification = document.createElement('div');
@@ -482,31 +484,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmCheckbox = document.getElementById('confirmDelete');
     const confirmBtn = document.getElementById('confirmDeleteBtn');
     
-    if (confirmCheckbox && confirmBtn) {
-        confirmCheckbox.addEventListener('change', function() {
-            confirmBtn.disabled = !this.checked;
-        });
-        
-        // 监听确认删除按钮点击
-        confirmBtn.addEventListener('click', function() {
-            if (deletePropertyData && confirmCheckbox.checked) {
-                performDelete();
-            }
-        });
-    }
+    confirmCheckbox.addEventListener('change', function() {
+        confirmBtn.disabled = !this.checked;
+    });
+    
+    // 监听确认删除按钮点击
+    confirmBtn.addEventListener('click', function() {
+        if (deletePropertyData && confirmCheckbox.checked) {
+            performDelete();
+        }
+    });
     
     // 监听模态框关闭事件，重置状态
     const modal = document.getElementById('deleteConfirmModal');
-    if (modal) {
-        modal.addEventListener('hidden.bs.modal', function() {
-            deletePropertyData = null;
-            if (confirmCheckbox) confirmCheckbox.checked = false;
-            if (confirmBtn) {
-                confirmBtn.disabled = true;
-                confirmBtn.innerHTML = '<i class="fas fa-trash me-1"></i>确认删除';
-            }
-        });
-    }
+    modal.addEventListener('hidden.bs.modal', function() {
+        deletePropertyData = null;
+        confirmCheckbox.checked = false;
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-trash me-1"></i>确认删除';
+    });
 });
 </script>
 {% endblock %} 
