@@ -4502,6 +4502,58 @@ def api_diagnose_buttons():
     
     return jsonify(results)
 
+@app.route('/debug/edit_test/<int:property_id>')
+def debug_edit_test(property_id):
+    """调试编辑功能问题"""
+    debug_info = {
+        'property_id': property_id,
+        'session_info': {
+            'user_id': session.get('user_id'),
+            'user_type': session.get('user_type'),
+            'username': session.get('username'),
+            'department': session.get('department'),
+            'logged_in': 'user_id' in session
+        },
+        'permissions': {
+            'has_property_info': has_module_access('property_info'),
+            'accessible_modules': get_user_accessible_modules()
+        },
+        'edit_url': f'/admin/edit_property/{property_id}',
+        'test_message': 'Debug route working'
+    }
+    
+    return f'''
+    <html>
+    <head><title>编辑功能调试</title></head>
+    <body style="font-family: Arial; margin: 20px;">
+        <h2>编辑功能调试信息</h2>
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
+            <h3>房产ID: {property_id}</h3>
+            <h3>用户会话信息:</h3>
+            <ul>
+                <li>用户ID: {debug_info['session_info']['user_id']}</li>
+                <li>用户类型: {debug_info['session_info']['user_type']}</li>
+                <li>用户名: {debug_info['session_info']['username']}</li>
+                <li>部门: {debug_info['session_info']['department']}</li>
+                <li>是否登录: {debug_info['session_info']['logged_in']}</li>
+            </ul>
+            
+            <h3>权限信息:</h3>
+            <ul>
+                <li>property_info权限: {debug_info['permissions']['has_property_info']}</li>
+                <li>可访问模块: {debug_info['permissions']['accessible_modules']}</li>
+            </ul>
+            
+            <h3>测试链接:</h3>
+            <p><a href="{debug_info['edit_url']}" style="background: blue; color: white; padding: 10px; text-decoration: none;">测试编辑链接</a></p>
+            
+            <h3>原始权限测试:</h3>
+            <p><a href="/admin/edit_property/{property_id}" style="background: green; color: white; padding: 10px; text-decoration: none;">直接访问编辑页面</a></p>
+        </div>
+    </body>
+    </html>
+    '''
+
 if __name__ == '__main__':
     import os
     
