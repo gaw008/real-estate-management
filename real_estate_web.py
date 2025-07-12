@@ -4512,6 +4512,40 @@ def api_diagnose_buttons():
     
     return jsonify(results)
 
+@app.route('/debug/routes')
+def debug_routes():
+    """显示所有注册的路由"""
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            'endpoint': rule.endpoint,
+            'methods': list(rule.methods),
+            'route': str(rule)
+        })
+    
+    routes_html = ""
+    for route in sorted(routes, key=lambda x: x['route']):
+        methods_str = ', '.join([m for m in route['methods'] if m not in ['HEAD', 'OPTIONS']])
+        routes_html += f"<tr><td>{route['route']}</td><td>{methods_str}</td><td>{route['endpoint']}</td></tr>"
+    
+    return f'''
+    <html>
+    <head><title>路由调试</title></head>
+    <body style="font-family: Arial; margin: 20px;">
+        <h2>所有注册的路由</h2>
+        <table border="1" style="border-collapse: collapse; width: 100%;">
+            <tr style="background: #f0f0f0;">
+                <th style="padding: 10px;">路由</th>
+                <th style="padding: 10px;">方法</th>
+                <th style="padding: 10px;">端点</th>
+            </tr>
+            {routes_html}
+        </table>
+        <p><a href="/debug/edit_test/1">测试编辑调试</a></p>
+    </body>
+    </html>
+    '''
+
 @app.route('/debug/edit_test/<int:property_id>')
 def debug_edit_test(property_id):
     """调试编辑功能问题"""
