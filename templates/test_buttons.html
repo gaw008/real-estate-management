@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}按钮功能测试{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>按钮功能测试</h2>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>编辑功能测试</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-warning" onclick="editProperty(1)">
+                        <i class="fas fa-edit me-1"></i>测试编辑房产ID 1
+                    </button>
+                    <button class="btn btn-warning" onclick="editProperty(2)">
+                        <i class="fas fa-edit me-1"></i>测试编辑房产ID 2
+                    </button>
+                    <div class="mt-3">
+                        <small class="text-muted">点击按钮应该跳转到编辑页面</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>添加功能测试</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('add_property') }}" class="btn btn-success">
+                        <i class="fas fa-plus me-1"></i>测试添加房产
+                    </a>
+                    <div class="mt-3">
+                        <small class="text-muted">点击按钮应该跳转到添加页面</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>当前用户信息</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item">用户类型: {{ session.get('user_type', '未知') }}</li>
+                        <li class="list-group-item">部门: {{ session.get('department', '未知') }}</li>
+                        <li class="list-group-item">用户名: {{ session.get('username', '未知') }}</li>
+                        <li class="list-group-item">是否登录: {{ 'Yes' if session.get('user_id') else 'No' }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>当前Session中的房产</h5>
+                </div>
+                <div class="card-body">
+                    {% if session.get('demo_properties') %}
+                    <ul class="list-group">
+                        {% for prop in session.get('demo_properties', []) %}
+                        <li class="list-group-item">
+                            <strong>ID {{ prop.id }}:</strong> {{ prop.name }} - {{ prop.city }}, {{ prop.state }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">Session中没有找到demo_properties</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editProperty(propertyId) {
+    console.log('editProperty called with ID:', propertyId);
+    console.log('About to redirect to:', `/admin/edit_property/${propertyId}`);
+    window.location.href = `/admin/edit_property/${propertyId}`;
+}
+
+// 页面加载时显示调试信息
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Test page loaded');
+    console.log('Current user session:', {
+        user_type: '{{ session.get("user_type") }}',
+        department: '{{ session.get("department") }}',
+        username: '{{ session.get("username") }}',
+        user_id: '{{ session.get("user_id") }}'
+    });
+});
+</script>
+{% endblock %} 

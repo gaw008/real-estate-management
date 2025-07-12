@@ -1715,7 +1715,43 @@ def add_property():
             
         except Exception as e:
             print(f"❌ 添加房产失败: {e}")
-            # 数据库操作失败，使用演示模式
+            # 数据库操作失败，使用演示模式保存到session
+            print("⚠️  数据库操作失败，切换到演示模式保存房产")
+            
+            # 在session中保存演示房产
+            if 'demo_properties' not in session:
+                session['demo_properties'] = []
+            
+            # 生成新的房产ID（使用当前列表长度 + 2，因为已有一个固定的演示房产）
+            new_property_id = len(session['demo_properties']) + 2
+            
+            # 创建新房产对象
+            new_property = {
+                'id': new_property_id,
+                'name': property_data['name'],
+                'street_address': property_data['street_address'],
+                'city': property_data['city'],
+                'state': property_data['state'],
+                'zip_code': property_data['zip_code'],
+                'bedrooms': int(property_data['bedrooms']) if property_data['bedrooms'] else None,
+                'bathrooms': float(property_data['bathrooms']) if property_data['bathrooms'] else None,
+                'square_feet': int(property_data['square_feet']) if property_data['square_feet'] else None,
+                'property_type': property_data['property_type'],
+                'year_built': int(property_data['year_built']) if property_data['year_built'] else None,
+                'monthly_rent': float(property_data['monthly_rent']) if property_data['monthly_rent'] else None,
+                'description': property_data['description'],
+                'cleaning_fee': None,
+                'management_fee_rate': None,
+                'management_fee_percentage': None,
+                'capacity': None,
+                'wifi_available': False
+            }
+            
+            # 添加到session
+            session['demo_properties'].append(new_property)
+            session.permanent = True  # 保持session
+            
+            print(f"✅ 演示模式：已添加房产 '{new_property['name']}' (ID: {new_property_id})")
             flash('房产添加成功（演示模式）', 'success')
             return redirect(url_for('properties'))
         finally:
