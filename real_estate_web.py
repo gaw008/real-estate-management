@@ -1765,6 +1765,16 @@ def add_property():
 @module_required('property_info')
 def edit_property(property_id):
     """编辑房产"""
+    return edit_property_impl(property_id)
+
+@app.route('/edit_property_direct/<int:property_id>', methods=['GET', 'POST'])
+@login_required
+def edit_property_direct(property_id):
+    """编辑房产 - 直接访问（调试用）"""
+    return edit_property_impl(property_id)
+
+def edit_property_impl(property_id):
+    """编辑房产"""
     conn = get_db_connection()
     if not conn:
         # 演示模式：编辑session中的房产
@@ -4547,8 +4557,9 @@ def debug_edit_test(property_id):
             <h3>测试链接:</h3>
             <p><a href="{debug_info['edit_url']}" style="background: blue; color: white; padding: 10px; text-decoration: none;">测试编辑链接</a></p>
             
-            <h3>原始权限测试:</h3>
-            <p><a href="/admin/edit_property/{property_id}" style="background: green; color: white; padding: 10px; text-decoration: none;">直接访问编辑页面</a></p>
+            <h3>编辑访问测试:</h3>
+            <p><a href="/admin/edit_property/{property_id}" style="background: green; color: white; padding: 10px; text-decoration: none; margin-right: 10px;">标准编辑路由</a></p>
+            <p><a href="/edit_property_direct/{property_id}" style="background: orange; color: white; padding: 10px; text-decoration: none;">备用编辑路由</a></p>
         </div>
     </body>
     </html>

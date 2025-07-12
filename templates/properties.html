@@ -348,7 +348,15 @@
 let deletePropertyData = null;
 
 function editProperty(propertyId) {
+    console.log('编辑房产 ID:', propertyId);
+    // 首先尝试标准路由
     window.location.href = `/admin/edit_property/${propertyId}`;
+}
+
+function editPropertyDirect(propertyId) {
+    console.log('直接编辑房产 ID:', propertyId);
+    // 备用路由，绕过模块权限检查
+    window.location.href = `/edit_property_direct/${propertyId}`;
 }
 
 function showDeleteModal(propertyId, propertyName) {
