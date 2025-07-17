@@ -1349,12 +1349,135 @@ def demo_delete_user():
 @module_required('property_info')
 def properties():
     """房产列表页面"""
-    conn = get_db_connection()
-    if not conn:
-        # 演示模式：显示示例数据和用户添加的房产
-        print("⚠️  使用演示模式显示房产列表")
+    try:
+        conn = get_db_connection()
+        if not conn:
+            # 演示模式：显示示例数据和用户添加的房产
+            print("⚠️  使用演示模式显示房产列表")
+            
+            # 固定的演示房产
+            demo_properties = [
+                {
+                    'id': 1,
+                    'name': '演示房产 #1',
+                    'street_address': '123 演示街',
+                    'city': '演示城市',
+                    'state': 'CA',
+                    'bedrooms': 3,
+                    'bathrooms': 2,
+                    'square_feet': 1500,
+                    'cleaning_fee': 150,
+                    'management_fee_rate': 8.5,
+                    'management_fee_percentage': 8.5,
+                    'capacity': 6,
+                    'wifi_available': True
+                }
+            ]
+            
+            # 添加用户在session中保存的房产
+            if 'demo_properties' in session:
+                demo_properties.extend(session['demo_properties'])
+                print(f"✅ 加载了 {len(session['demo_properties'])} 个用户添加的演示房产")
+            
+            # 收集所有的州和城市选项
+            states = set(['CA', 'TX'])
+            cities = set(['演示城市'])
+            
+            for prop in demo_properties:
+                if prop.get('state'):
+                    states.add(prop['state'])
+                if prop.get('city'):
+                    cities.add(prop['city'])
+            
+            total_count = len(demo_properties)
+            
+            return render_template('properties_fixed.html',
+                                 properties=demo_properties,
+                                 states=sorted(list(states)),
+                                 cities=sorted(list(cities)),
+                                 current_page=1,
+                                 total_pages=1,
+                                 total_count=total_count,
+                                 filters={'city': '', 'state': '', 'search': ''},
+                                 format_management_fee=format_management_fee,
+                                 bedroom_options=[1, 2, 3, 4, 5],
+                                 bathroom_options=[1, 1.5, 2, 2.5, 3, 3.5, 4])
         
-        # 固定的演示房产
+        cursor = conn.cursor(dictionary=True)
+        
+        # 获取筛选参数
+        city = request.args.get('city', '')
+        state = request.args.get('state', '')
+        search = request.args.get('search', '')
+        page = int(request.args.get('page', 1))
+        per_page = 12
+        
+        # 构建查询条件
+        where_conditions = []
+        params = []
+        
+        if city:
+            where_conditions.append("city LIKE %s")
+            params.append(f"%{city}%")
+        
+        if state:
+            where_conditions.append("state = %s")
+            params.append(state)
+        
+        if search:
+            where_conditions.append("(name LIKE %s OR street_address LIKE %s)")
+            params.extend([f"%{search}%", f"%{search}%"])
+        
+        where_clause = " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+        
+        # 获取总数
+        count_query = f"SELECT COUNT(*) as count FROM properties{where_clause}"
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()['count']
+        
+        # 获取房产数据
+        offset = (page - 1) * per_page
+        query = f"""
+            SELECT p.*, f.cleaning_fee, f.management_fee_rate, f.management_fee_type
+            FROM properties p
+            LEFT JOIN finance f ON p.id = f.property_id
+            {where_clause}
+            ORDER BY p.created_at DESC
+            LIMIT %s OFFSET %s
+        """
+        cursor.execute(query, params + [per_page, offset])
+        properties_list = cursor.fetchall()
+        
+        # 获取筛选选项
+        cursor.execute("SELECT DISTINCT state FROM properties ORDER BY state")
+        states = [row['state'] for row in cursor.fetchall()]
+        
+        cursor.execute("SELECT DISTINCT city FROM properties ORDER BY city")
+        cities = [row['city'] for row in cursor.fetchall()]
+        
+        cursor.close()
+        conn.close()
+        
+        # 计算分页信息
+        total_pages = (total_count + per_page - 1) // per_page
+        
+        return render_template('properties_fixed.html',
+                             properties=properties_list,
+                             states=states,
+                             cities=cities,
+                             current_page=page,
+                             total_pages=total_pages,
+                             total_count=total_count,
+                             filters={
+                                 'city': city,
+                                 'state': state,
+                                 'search': search
+                             },
+                             format_management_fee=format_management_fee)
+    
+    except Exception as e:
+        print(f"❌ 房产列表获取失败: {e}")
+        # 发生异常时显示演示模式
         demo_properties = [
             {
                 'id': 1,
@@ -1373,106 +1496,17 @@ def properties():
             }
         ]
         
-        # 添加用户在session中保存的房产
-        if 'demo_properties' in session:
-            demo_properties.extend(session['demo_properties'])
-            print(f"✅ 加载了 {len(session['demo_properties'])} 个用户添加的演示房产")
-        
-        # 收集所有的州和城市选项
-        states = set(['CA', 'TX'])
-        cities = set(['演示城市'])
-        
-        for prop in demo_properties:
-            if prop.get('state'):
-                states.add(prop['state'])
-            if prop.get('city'):
-                cities.add(prop['city'])
-        
-        total_count = len(demo_properties)
-        
-        return render_template('properties.html',
+        return render_template('properties_fixed.html',
                              properties=demo_properties,
-                             states=sorted(list(states)),
-                             cities=sorted(list(cities)),
+                             states=['CA', 'TX'],
+                             cities=['演示城市'],
                              current_page=1,
                              total_pages=1,
-                             total_count=total_count,
+                             total_count=len(demo_properties),
                              filters={'city': '', 'state': '', 'search': ''},
                              format_management_fee=format_management_fee,
                              bedroom_options=[1, 2, 3, 4, 5],
                              bathroom_options=[1, 1.5, 2, 2.5, 3, 3.5, 4])
-    
-    cursor = conn.cursor(dictionary=True)
-    
-    # 获取筛选参数
-    city = request.args.get('city', '')
-    state = request.args.get('state', '')
-    search = request.args.get('search', '')
-    page = int(request.args.get('page', 1))
-    per_page = 12
-    
-    # 构建查询条件
-    where_conditions = []
-    params = []
-    
-    if city:
-        where_conditions.append("city LIKE %s")
-        params.append(f"%{city}%")
-    
-    if state:
-        where_conditions.append("state = %s")
-        params.append(state)
-    
-    if search:
-        where_conditions.append("(name LIKE %s OR street_address LIKE %s)")
-        params.extend([f"%{search}%", f"%{search}%"])
-    
-    where_clause = " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
-    
-    # 获取总数
-    count_query = f"SELECT COUNT(*) as count FROM properties{where_clause}"
-    cursor.execute(count_query, params)
-    total_count = cursor.fetchone()['count']
-    
-    # 获取房产数据
-    offset = (page - 1) * per_page
-    query = f"""
-        SELECT p.*, f.cleaning_fee, f.management_fee_rate, f.management_fee_type
-        FROM properties p
-        LEFT JOIN finance f ON p.id = f.property_id
-        {where_clause}
-        ORDER BY p.created_at DESC
-        LIMIT %s OFFSET %s
-    """
-    cursor.execute(query, params + [per_page, offset])
-    properties_list = cursor.fetchall()
-    
-    # 获取筛选选项
-    cursor.execute("SELECT DISTINCT state FROM properties ORDER BY state")
-    states = [row['state'] for row in cursor.fetchall()]
-    
-    cursor.execute("SELECT DISTINCT city FROM properties ORDER BY city")
-    cities = [row['city'] for row in cursor.fetchall()]
-    
-    cursor.close()
-    conn.close()
-    
-    # 计算分页信息
-    total_pages = (total_count + per_page - 1) // per_page
-    
-    return render_template('properties.html',
-                         properties=properties_list,
-                         states=states,
-                         cities=cities,
-                         current_page=page,
-                         total_pages=total_pages,
-                         total_count=total_count,
-                         filters={
-                             'city': city,
-                             'state': state,
-                             'search': search
-                         },
-                         format_management_fee=format_management_fee)
 
 @app.route('/admin/delete_property', methods=['POST'])
 @module_required('property_info')
