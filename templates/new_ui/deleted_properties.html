@@ -1,0 +1,157 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}已删除房产{% endblock %}
+
+{% block page_title %}已删除房产{% endblock %}
+
+{% block content %}
+<div class="action-bar" style="margin-bottom: 20px;">
+    <a href="{{ url_for('properties_fixed') }}" class="btn btn-secondary">
+        ← 返回房产列表
+    </a>
+</div>
+
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    <strong>撤销删除说明：</strong>
+    <ul style="margin: 10px 0 0 20px;">
+        <li>房产删除后，您有30分钟的时间可以撤销删除操作</li>
+        <li>超过30分钟后，房产将永久删除，无法恢复</li>
+        <li>撤销删除后，房产将恢复正常状态，所有关联数据也会恢复</li>
+    </ul>
+</div>
+
+<div class="table-container">
+    <h3>已删除房产列表 <small class="text-muted"> (共 {{ total_count }} 个)</small></h3>
+    
+    {% if properties %}
+    <table>
+        <thead>
+            <tr>
+                <th>房产名称</th>
+                <th>地址</th>
+                <th>城市</th>
+                <th>州</th>
+                <th>房型布局</th>
+                <th>删除时间</th>
+                <th>剩余时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for property in properties %}
+            <tr class="{% if not property.can_undo %}table-secondary{% endif %}">
+                <td>{{ property.name or '未命名' }}</td>
+                <td>{{ property.street_address or 'N/A' }}</td>
+                <td>{{ property.city or 'N/A' }}</td>
+                <td>{{ property.state or 'N/A' }}</td>
+                <td>{{ property.layout or 'N/A' }}</td>
+                <td>{{ property.deleted_at.strftime('%Y-%m-%d %H:%M:%S') if property.deleted_at else 'N/A' }}</td>
+                <td>
+                    {% if property.can_undo %}
+                        <span class="text-warning">
+                            <i class="fas fa-clock"></i>
+                            {{ property.remaining_minutes }} 分钟
+                        </span>
+                    {% else %}
+                        <span class="text-danger">
+                            <i class="fas fa-times-circle"></i>
+                            已过期
+                        </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if property.can_undo %}
+                        <button class="btn btn-sm btn-success" onclick="undoDeleteProperty('{{ property.id }}', '{{ property.name|replace("'", "\\'")|replace('"', '\\"') }}')">
+                            <i class="fas fa-undo"></i> 撤销删除
+                        </button>
+                    {% else %}
+                        <span class="text-muted">无法撤销</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="text-center" style="padding: 40px;">
+        <i class="fas fa-trash-alt fa-3x text-muted"></i>
+        <h4 class="text-muted mt-3">暂无已删除的房产</h4>
+        <p class="text-muted">所有房产都处于正常状态</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function undoDeleteProperty(propertyId, propertyName) {
+    if (confirm(`您确定要撤销删除房产 "${propertyName}" 吗？`)) {
+        console.log('撤销删除函数被调用:', propertyId, propertyName);
+        
+        const formData = new FormData();
+        formData.append('property_id', propertyId);
+        
+        console.log('发送撤销删除请求到:', "{{ url_for('undo_delete_property') }}");
+        
+        fetch("{{ url_for('undo_delete_property') }}", {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log('收到响应:', response.status);
+            
+            // 检查是否被重定向到登录页面
+            if (response.redirected || response.url.includes('/login')) {
+                alert('会话已过期，请重新登录');
+                window.location.href = '/login';
+                return;
+            }
+            
+            // 检查响应类型
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                // 如果不是JSON响应，可能是HTML错误页面
+                return response.text().then(text => {
+                    throw new Error('服务器返回了非JSON响应');
+                });
+            }
+        })
+        .then(data => {
+            console.log('响应数据:', data);
+            if (data.success) {
+                alert(data.message || '撤销删除成功！');
+                window.location.reload();
+            } else {
+                alert('撤销删除失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('撤销删除操作失败:', error);
+            if (error.message.includes('非JSON响应')) {
+                alert('会话已过期，请重新登录');
+                window.location.href = '/login';
+            } else {
+                alert('撤销删除过程中发生网络或服务器错误。');
+            }
+        });
+    } else {
+        console.log('用户取消撤销删除');
+    }
+}
+
+// 自动刷新页面以更新剩余时间
+setInterval(function() {
+    // 检查是否有可以撤销的房产
+    const undoButtons = document.querySelectorAll('.btn-success');
+    if (undoButtons.length > 0) {
+        // 如果有可以撤销的房产，每30秒刷新一次页面
+        setTimeout(function() {
+            window.location.reload();
+        }, 30000);
+    }
+}, 30000);
+</script>
+{% endblock %} 

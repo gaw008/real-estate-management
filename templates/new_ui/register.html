@@ -1,0 +1,111 @@
+{% extends "new_ui/base.html" %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册 - 短租公司操作系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/new_style.css') }}">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--light-gray);
+            padding: 20px 0;
+        }
+        .register-card {
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid var(--border);
+        }
+        .register-card h1 {
+            color: var(--main-blue);
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-card">
+        <h1>创建您的账户</h1>
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="user_type">账户类型</label>
+                <select id="user_type" name="user_type" required>
+                    <option value="owner" selected>我是业主 (Owner)</option>
+                    <option value="admin">我是公司员工 (Admin)</option>
+                </select>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="username">用户名 <span class="text-danger">*</span></label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="full_name">全名 <span class="text-danger">*</span></label>
+                        <input type="text" id="full_name" name="full_name" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">邮箱 <span class="text-danger">*</span></label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="password">密码 <span class="text-danger">*</span></label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                </div>
+                 <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="confirm_password">确认密码 <span class="text-danger">*</span></label>
+                        <input type="password" id="confirm_password" name="confirm_password" required>
+                    </div>
+                </div>
+            </div>
+
+            <div id="admin-fields" style="display:none;">
+                <hr>
+                <h4>管理员信息</h4>
+                <div class="form-group">
+                    <label for="department">部门</label>
+                    <input type="text" id="department" name="department">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">注册</button>
+        </form>
+         <div style="text-align: center; margin-top: 20px;">
+            <p style="color: #666;">
+                已有账户？ <a href="{{ url_for('login') }}" style="color: var(--main-blue); text-decoration: none; font-weight: 500;">立即登录</a>
+            </p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('user_type').addEventListener('change', function() {
+            var adminFields = document.getElementById('admin-fields');
+            if (this.value === 'admin') {
+                adminFields.style.display = 'block';
+            } else {
+                adminFields.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 

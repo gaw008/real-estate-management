@@ -1,0 +1,53 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}业主详情: {{ owner.name }}{% endblock %}
+
+{% block page_title %}业主详情: {{ owner.name }}{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    <h3>基本信息</h3>
+    <table class="table">
+        <tr>
+            <td><strong>业主ID</strong></td>
+            <td>{{ owner.owner_id }}</td>
+            <td><strong>电话</strong></td>
+            <td>{{ owner.phone or 'N/A' }}</td>
+        </tr>
+        <tr>
+            <td><strong>邮箱</strong></td>
+            <td>{{ owner.email or 'N/A' }}</td>
+            <td><strong>偏好策略</strong></td>
+            <td>{{ owner.preferences_strategy or 'N/A' }}</td>
+        </tr>
+    </table>
+</div>
+
+<div class="table-container">
+    <h3>名下房产 ({{ properties|length }})</h3>
+    {% if properties %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>房产名称</th>
+                <th>地址</th>
+                <th>卧室数</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for property in properties %}
+            <tr>
+                <td>{{ property.name or '未命名' }}</td>
+                <td>{{ property.street_address or 'N/A' }}, {{ property.city }}</td>
+                <td>{{ property.beds or 'N/A' }}</td>
+                <td><a href="{{ url_for('property_detail_fixed', property_id=property.id) }}" class="btn btn-sm btn-secondary">查看</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>该业主暂无房产</p>
+    {% endif %}
+</div>
+{% endblock %} 

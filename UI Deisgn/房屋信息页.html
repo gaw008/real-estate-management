@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>短租公司操作系统 UI - 房产管理</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+    :root {
+      --main-blue: #5784e6;
+      --main-yellow: #ffcf54;
+      --light-beige: #fcf7ef;
+      --dark-blue: #0e1534;
+      --text: #333;
+      --light-gray: #f5f6fa;
+      --border: #e0e0e0;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      font-weight: 400;
+    }
+    body {
+      background-color: var(--light-gray);
+      display: flex;
+      color: var(--text);
+    }
+    .sidebar {
+      width: 220px;
+      background-color: white;
+      border-right: 1px solid var(--border);
+      height: 100vh;
+      padding-top: 20px;
+    }
+    .sidebar h2 {
+      color: var(--main-blue);
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 32px;
+      font-weight: 600;
+    }
+    .nav-item {
+      padding: 12px 24px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      font-size: 15px;
+    }
+    .nav-item:hover, .nav-item.active {
+      background-color: var(--main-blue);
+      color: white;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--light-gray);
+    }
+    .topbar {
+      background-color: white;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .topbar h1 {
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .table {
+      background-color: white;
+      margin: 24px;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    .table h3 {
+      margin-bottom: 12px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    th {
+      background-color: var(--light-gray);
+      color: #666;
+      font-weight: 500;
+    }
+    .action-btn {
+      background-color: var(--main-blue);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-right: 4px;
+    }
+    .action-btn:hover {
+      background-color: #406bd4;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>短租管理</h2>
+    <div class="nav-item">控制面板</div>
+    <div class="nav-item active">房产管理</div>
+    <div class="nav-item">员工分组</div>
+    <div class="nav-item">业主查询</div>
+    <div class="nav-item">财务分析</div>
+    <div class="nav-item">系统设置</div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <h1>房产管理</h1>
+      <button class="action-btn">➕ 添加房产</button>
+    </div>
+    <div class="table">
+      <h3>房产列表</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>地址</th>
+            <th>城市</th>
+            <th>房东</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>10654 El Monte</td>
+            <td>10654 El Monte Ave</td>
+            <td>El Monte</td>
+            <td>Wenjie Bi</td>
+            <td>🟢 活跃</td>
+            <td>
+              <button class="action-btn">编辑</button>
+              <button class="action-btn">删除</button>
+            </td>
+          </tr>
+          <tr>
+            <td>109 Irvine</td>
+            <td>109 Irvine Blvd</td>
+            <td>Irvine</td>
+            <td>Victor Ge</td>
+            <td>🟡 待审核</td>
+            <td>
+              <button class="action-btn">编辑</button>
+              <button class="action-btn">删除</button>
+            </td>
+          </tr>
+          <tr>
+            <td>1203 Glendora</td>
+            <td>1203 Glendora Ave</td>
+            <td>West Covina</td>
+            <td>Linda Xu</td>
+            <td>🔴 已停用</td>
+            <td>
+              <button class="action-btn">编辑</button>
+              <button class="action-btn">删除</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

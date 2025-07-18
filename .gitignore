@@ -90,4 +90,7 @@ import_to_postgresql.py
 *.backup
 
 # CSV data files (optional - you might want to keep sample data)
-# *.csv 
+# *.csv
+
+# 敏感配置文件
+config/config.py 

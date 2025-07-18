@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>系统设置</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --main-blue: #5784e6;
+      --light-gray: #f5f6fa;
+      --border: #e0e0e0;
+      --text: #333;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      display: flex;
+      background-color: var(--light-gray);
+      color: var(--text);
+    }
+    .sidebar {
+      width: 220px;
+      background-color: white;
+      border-right: 1px solid var(--border);
+      height: 100vh;
+      padding-top: 20px;
+    }
+    .sidebar h2 {
+      color: var(--main-blue);
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 32px;
+      font-weight: 600;
+    }
+    .nav-item {
+      padding: 12px 24px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .nav-item:hover, .nav-item.active {
+      background-color: var(--main-blue);
+      color: white;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      background-color: white;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar h1 {
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .card {
+      background-color: white;
+      margin: 24px;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .card h2 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+    .card label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 14px;
+      color: #555;
+    }
+    .card input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .card button {
+      margin-top: 16px;
+      background-color: var(--main-blue);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>短租管理</h2>
+    <div class="nav-item">控制面板</div>
+    <div class="nav-item">房产管理</div>
+    <div class="nav-item">员工分组</div>
+    <div class="nav-item">业主查询</div>
+    <div class="nav-item">财务分析</div>
+    <div class="nav-item active">系统设置</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>系统设置</h1>
+    </div>
+
+    <div class="card">
+      <h2>用户权限设置</h2>
+      <label>用户名</label>
+      <input type="text" placeholder="例如: Lily" />
+      <label>角色</label>
+      <input type="text" placeholder="如: 管理员 / 清洁员 / 客服" />
+      <button>保存权限</button>
+    </div>
+
+    <div class="card">
+      <h2>Webhook 设置</h2>
+      <label>清洁排班 Webhook</label>
+      <input type="url" placeholder="https://open.larksuite.com/xxx" />
+      <label>通知推送 Webhook</label>
+      <input type="url" placeholder="https://open.larksuite.com/yyy" />
+      <button>保存 Webhook</button>
+    </div>
+
+    <div class="card">
+      <h2>API 密钥管理</h2>
+      <label>Guesty API Key</label>
+      <input type="password" value="****************" />
+      <label>Lark Bot Token</label>
+      <input type="password" value="****************" />
+      <button>更新密钥</button>
+    </div>
+  </div>
+</body>
+</html>

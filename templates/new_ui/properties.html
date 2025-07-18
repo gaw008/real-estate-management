@@ -1,0 +1,423 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}房产管理{% endblock %}
+
+{% block page_title %}房产管理{% endblock %}
+
+{% block content %}
+<!-- 搜索和操作栏 -->
+<div class="search-section">
+    <form method="GET" class="search-form">
+        <div class="search-row">
+            <div class="search-group">
+                <input type="text" class="search-input" id="search" name="search" 
+                       value="{{ filters.search }}" placeholder="搜索房产名称或地址">
+            </div>
+            <div class="filter-group">
+                <select class="filter-select" id="state" name="state">
+                    <option value="">所有州</option>
+                    {% for state in states %}
+                    <option value="{{ state }}" {% if filters.state == state %}selected{% endif %}>
+                        {{ state }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="text" class="filter-input" id="city" name="city" 
+                       value="{{ filters.city }}" placeholder="城市">
+                <button type="submit" class="search-btn">搜索</button>
+            </div>
+            <div class="action-group">
+                <a href="{{ url_for('add_property') }}" class="btn btn-primary">添加房产</a>
+                <a href="{{ url_for('deleted_properties') }}" class="btn btn-outline-secondary">已删除</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 房产列表 -->
+<div class="table-section">
+    <div class="table-header">
+        <h3>房产列表 <span class="count-badge">{{ total_count }} 个</span></h3>
+    </div>
+    
+    {% if properties %}
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>房产名称</th>
+                    <th>地址</th>
+                    <th>城市</th>
+                    <th>州</th>
+                    <th>房型布局</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for property in properties %}
+                <tr>
+                    <td>{{ property.name or '未命名' }}</td>
+                    <td>{{ property.street_address or 'N/A' }}</td>
+                    <td>{{ property.city or 'N/A' }}</td>
+                    <td>{{ property.state or 'N/A' }}</td>
+                    <td>{{ property.layout or 'N/A' }}</td>
+                    <td class="action-buttons">
+                        <a href="{{ url_for('property_detail_fixed', property_id=property.id) }}" 
+                           class="btn btn-sm btn-secondary">查看</a>
+                        {% if session.get('user_type') == 'admin' %}
+                        <a href="{{ url_for('edit_property', property_id=property.id) }}" 
+                           class="btn btn-sm btn-primary">编辑</a>
+                        <button class="btn btn-sm btn-danger" 
+                                onclick="deleteProperty('{{ property.id }}', '{{ property.name|replace("'", "\\'")|replace('"', '\\"') }}')">
+                            删除
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>没有找到匹配的房产。</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 分页 -->
+{% if total_pages > 1 %}
+<div class="pagination-section">
+    <nav class="pagination-nav">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('properties_fixed', page=pagination.prev_num, **filters) }}" 
+           class="page-link">上一页</a>
+        {% endif %}
+        
+        <div class="page-numbers">
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                        <span class="page-link active">{{ page_num }}</span>
+                    {% else %}
+                        <a href="{{ url_for('properties_fixed', page=page_num, **filters) }}" 
+                           class="page-link">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="page-ellipsis">...</span>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        {% if pagination.has_next %}
+        <a href="{{ url_for('properties_fixed', page=pagination.next_num, **filters) }}" 
+           class="page-link">下一页</a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteProperty(propertyId, propertyName) {
+    if (confirm(`您确定要删除房产 "${propertyName}" 吗？此操作不可恢复。`)) {
+        const formData = new FormData();
+        formData.append('property_id', propertyId);
+        
+        fetch("{{ url_for('delete_property') }}", {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected || response.url.includes('/login')) {
+                alert('会话已过期，请重新登录');
+                window.location.href = '/login';
+                return;
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                return response.text().then(text => {
+                    throw new Error('服务器返回了非JSON响应');
+                });
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message || '删除成功！');
+                window.location.reload();
+            } else {
+                alert('删除失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('删除操作失败:', error);
+            if (error.message.includes('非JSON响应')) {
+                alert('会话已过期，请重新登录');
+                window.location.href = '/login';
+            } else {
+                alert('删除过程中发生网络或服务器错误。');
+            }
+        });
+    }
+}
+
+// 搜索输入防抖
+let searchTimeout;
+document.getElementById('search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 500);
+});
+
+// 州选择器变化时自动提交
+document.getElementById('state').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+
+<style>
+/* 房产管理页面样式 */
+.search-section {
+    background: white;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.search-group {
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.filter-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.filter-select, .filter-input {
+    padding: 0.75rem 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.filter-select:focus, .filter-input:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.search-btn {
+    padding: 0.75rem 1.5rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.search-btn:hover {
+    background: #0056b3;
+}
+
+.action-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-group .btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* 表格样式 */
+.table-section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.table-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+}
+
+.table-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.count-badge {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background: #f8f9fa;
+    padding: 1rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 0.9rem;
+}
+
+.data-table td {
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.data-table tr:hover {
+    background: #f8f9fa;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* 空状态 */
+.empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+/* 分页样式 */
+.pagination-section {
+    background: white;
+    padding: 1rem 1.5rem;
+    margin-top: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.pagination-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-numbers {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.page-link {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    background: white;
+    color: #007bff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+}
+
+.page-link.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.page-ellipsis {
+    padding: 0.5rem 0.75rem;
+    color: #6c757d;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .search-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-group {
+        min-width: auto;
+    }
+    
+    .filter-group {
+        justify-content: space-between;
+    }
+    
+    .action-group {
+        justify-content: center;
+    }
+    
+    .data-table {
+        font-size: 0.8rem;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .pagination-nav {
+        flex-wrap: wrap;
+    }
+}
+</style>
+{% endblock %} 

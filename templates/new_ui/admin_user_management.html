@@ -1,0 +1,90 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}系统设置 - 用户管理{% endblock %}
+
+{% block page_title %}系统设置 - 用户管理{% endblock %}
+
+{% block content %}
+<div class="grid">
+    <div class="card">
+        <h3>总用户数</h3>
+        <p>{{ stats.total_users }}</p>
+    </div>
+    <div class="card">
+        <h3>管理员</h3>
+        <p>{{ stats.admin_count }}</p>
+    </div>
+    <div class="card">
+        <h3>业主用户</h3>
+        <p>{{ stats.owner_count }}</p>
+    </div>
+    <div class="card">
+        <h3>未分配部门</h3>
+        <p>{{ stats.unassigned_count }}</p>
+    </div>
+</div>
+
+<div class="table-container">
+    <h3>用户列表</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>用户名</th>
+                <th>全名</th>
+                <th>用户类型</th>
+                <th>部门</th>
+                <th>邮箱</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ user.full_name or 'N/A' }}</td>
+                <td>{{ user.user_type }}</td>
+                <td>{{ get_department_display_name(user.department) }}</td>
+                <td>{{ user.email or 'N/A' }}</td>
+                <td>
+                    <a href="#" class="btn btn-sm btn-primary">编辑</a>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser('{{ user.id }}', '{{ user.username }}')">删除</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center">没有找到用户。</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteUser(userId, username) {
+    if (confirm(`您确定要删除用户 "${username}" 吗？此操作不可恢复。`)) {
+        fetch("{{ url_for('admin_delete_user') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({user_id: userId})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || '删除成功！');
+                window.location.reload();
+            } else {
+                alert('删除失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('删除操作失败:', error);
+            alert('删除过程中发生网络或服务器错误。');
+        });
+    }
+}
+</script>
+{% endblock %} 

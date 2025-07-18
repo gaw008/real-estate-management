@@ -1,0 +1,68 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}编辑业主{% endblock %}
+
+{% block page_title %}编辑业主{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">编辑业主信息</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="name">姓名 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ owner_data.name or '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="email">邮箱 <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{{ owner_data.email or '' }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="phone">电话</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" 
+                                           value="{{ owner_data.phone or '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="preferences_strategy">投资策略</label>
+                                    <select class="form-control" id="preferences_strategy" name="preferences_strategy">
+                                        <option value="">请选择策略</option>
+                                        <option value="保守型" {% if owner_data.preferences_strategy == '保守型' %}selected{% endif %}>保守型</option>
+                                        <option value="稳健型" {% if owner_data.preferences_strategy == '稳健型' %}selected{% endif %}>稳健型</option>
+                                        <option value="积极型" {% if owner_data.preferences_strategy == '积极型' %}selected{% endif %}>积极型</option>
+                                        <option value="激进型" {% if owner_data.preferences_strategy == '激进型' %}selected{% endif %}>激进型</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">保存更改</button>
+                            <a href="{{ url_for('owners_fixed') }}" class="btn btn-secondary">取消</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

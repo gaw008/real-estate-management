@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}短租公司操作系统{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/new_style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="sidebar">
+    <h2>短租管理</h2>
+    <nav>
+      <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">控制面板</a>
+      <a href="{{ url_for('properties_fixed') }}" class="nav-item {% if 'propert' in request.endpoint %}active{% endif %}">房产管理</a>
+      <a href="{{ url_for('admin_employee_departments') }}" class="nav-item {% if 'admin_employee_departments' in request.endpoint %}active{% endif %}">员工分组</a>
+      <a href="{{ url_for('owners_fixed') }}" class="nav-item {% if 'owner' in request.endpoint %}active{% endif %}">业主查询</a>
+      <a href="{{ url_for('admin_financial_reports') }}" class="nav-item {% if 'admin_financial_reports' in request.endpoint %}active{% endif %}">财务分析</a>
+      <a href="{{ url_for('admin_user_management') }}" class="nav-item {% if 'admin_user_management' in request.endpoint %}active{% endif %}">系统设置</a>
+      <a href="{{ url_for('logout') }}" class="nav-item">登出</a>
+    </nav>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <h1>{% block page_title %}{% endblock %}</h1>
+      <div>
+        {% if 'user_id' in session %}
+          欢迎, {{ session['user_id'] }}
+        {% else %}
+          📅 {{ "2025-07-17" }}
+        {% endif %}
+      </div>
+    </div>
+    <div class="content-wrapper">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flashes">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html> 

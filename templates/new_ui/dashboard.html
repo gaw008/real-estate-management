@@ -1,0 +1,49 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}控制面板 - {{ super() }}{% endblock %}
+
+{% block page_title %}操作系统数据概览{% endblock %}
+
+{% block content %}
+<div class="grid">
+    {% if session.user_type == 'admin' %}
+        <!-- 管理员统计 -->
+        <div class="card">
+            <h3>房产总数</h3>
+            <p>{{ stats.properties_count }}</p>
+        </div>
+        <div class="card">
+            <h3>业主总数</h3>
+            <p>{{ stats.owners_count }}</p>
+        </div>
+        <div class="card">
+            <h3>城市数量</h3>
+            <p>{{ stats.cities_count }}</p>
+        </div>
+        <div class="card">
+            <h3>州数量</h3>
+            <p>{{ stats.states_count }}</p>
+        </div>
+    {% else %}
+        <!-- 业主统计 -->
+        <div class="card">
+            <h3>我的房产</h3>
+            <p>{{ owner_stats.property_count }}</p>
+        </div>
+        <div class="card">
+            <h3>总收入</h3>
+            <p>${{ "%.2f"|format(owner_stats.total_income) }}</p>
+        </div>
+        <div class="card">
+            <h3>平均管理费</h3>
+            <p>{{ owner_stats.average_fee_rate }}%</p>
+        </div>
+         <div class="card">
+            <h3>待处理事项</h3>
+            <p>0</p>
+        </div>
+    {% endif %}
+</div>
+
+
+{% endblock %} 

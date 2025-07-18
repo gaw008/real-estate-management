@@ -1,0 +1,138 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}员工部门管理{% endblock %}
+
+{% block page_title %}员工部门管理{% endblock %}
+
+{% block content %}
+
+<!-- 部门统计 -->
+<div class="stats-grid">
+    {% set total_employees = employees|length %}
+    <div class="card">
+        <h3>员工总数</h3>
+        <p class="stat-number">{{ total_employees }}</p>
+    </div>
+    {% for stat in department_stats %}
+    <div class="card">
+        <h3>{{ get_department_display_name(stat.department) }}</h3>
+        <p class="stat-number">{{ stat.count }}</p>
+    </div>
+    {% endfor %}
+    {% set unassigned_count = total_employees - department_stats|sum(attribute='count') %}
+    <div class="card">
+        <h3>未分配部门</h3>
+        <p class="stat-number">{{ unassigned_count }}</p>
+    </div>
+</div>
+
+<!-- 员工列表和部门设置 -->
+<div class="table-container">
+    <form id="batch-update-form">
+        <h3>员工列表</h3>
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-primary" onclick="batchUpdateDepartments()">批量更新</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>姓名 (用户名)</th>
+                    <th>邮箱</th>
+                    <th>用户类型</th>
+                    <th>当前部门</th>
+                    <th>分配新部门</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee in employees %}
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox" data-user-id="{{ employee.id }}"></td>
+                    <td>{{ employee.full_name or 'N/A' }} ({{ employee.username }})</td>
+                    <td>{{ employee.email or 'N/A' }}</td>
+                    <td>
+                        <span class="badge type-{{ employee.user_type|lower }}">{{ employee.user_type }}</span>
+                    </td>
+                    <td>{{ get_department_display_name(employee.department) }}</td>
+                    <td>
+                        <select name="department_{{ employee.id }}" class="form-control">
+                            <option value="">-- 选择部门 --</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept }}" {% if dept == employee.department %}selected{% endif %}>
+                                {{ get_department_display_name(dept) }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">没有找到员工信息。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('select-all').addEventListener('change', function(e) {
+    const checkboxes = document.querySelectorAll('.employee-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = e.target.checked;
+    });
+});
+
+function batchUpdateDepartments() {
+    const assignments = [];
+    const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+
+    if (checkboxes.length === 0) {
+        alert('请至少选择一名员工。');
+        return;
+    }
+
+    checkboxes.forEach(checkbox => {
+        const userId = checkbox.dataset.userId;
+        const select = document.querySelector(`select[name="department_${userId}"]`);
+        if (select.value) {
+            assignments.push({
+                user_id: userId,
+                department: select.value
+            });
+        }
+    });
+
+    if (assignments.length === 0) {
+        alert('请为选中的员工选择一个新部门。');
+        return;
+    }
+    
+    const endpoint = "{{ url_for('admin_batch_set_departments') }}";
+
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ assignments: assignments })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || '批量更新成功！');
+            window.location.reload();
+        } else {
+            alert('批量更新失败：' + (data.message || '未知错误'));
+        }
+    })
+    .catch(error => {
+        console.error('批量更新失败:', error);
+        alert('批量更新过程中发生网络或服务器错误。');
+    });
+}
+</script>
+{% endblock %} 

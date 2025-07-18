@@ -1,0 +1,684 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}财务报表管理{% endblock %}
+
+{% block page_title %}财务报表管理{% endblock %}
+
+{% block content %}
+<!-- 统计卡片 -->
+<div class="stats-grid">
+    <div class="card">
+        <h3>总报表数</h3>
+        <p class="stat-number">{{ stats.total_reports or 0 }}</p>
+    </div>
+    <div class="card">
+        <h3>涉及房产</h3>
+        <p class="stat-number">{{ stats.properties_with_reports or 0 }}</p>
+    </div>
+    <div class="card">
+        <h3>房产分配</h3>
+        <p class="stat-number">{{ stats.total_assignments or 0 }}</p>
+    </div>
+</div>
+
+<!-- 添加财务报表表单 -->
+<div class="form-section">
+    <div class="form-header">
+        <h3>添加财务报表</h3>
+        <button class="btn btn-outline-secondary" onclick="toggleForm()" id="toggleBtn">收起</button>
+    </div>
+    <div class="form-content" id="addForm">
+        <form method="POST" action="{{ url_for('admin_financial_reports') }}" class="add-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>选择房产 *</label>
+                    <select name="property_id" class="form-control" required>
+                        <option value="">请选择房产</option>
+                        {% for p in properties %}
+                        <option value="{{ p.id }}">{{ p.name or p.id }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>年份 *</label>
+                    <input type="number" name="report_year" class="form-control" value="{{ current_year }}" required>
+                </div>
+                <div class="form-group">
+                    <label>月份 *</label>
+                    <input type="number" name="report_month" class="form-control" value="{{ current_month }}" min="1" max="12" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>报表标题 *</label>
+                    <input type="text" name="report_title" class="form-control" placeholder="例如：月度财务报表" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>OneDrive链接 *</label>
+                    <input type="url" name="onedrive_link" class="form-control" placeholder="https://..." required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>备注</label>
+                    <textarea name="notes" class="form-control" rows="2" placeholder="可选备注信息"></textarea>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">添加报表</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 搜索和筛选栏 -->
+<div class="search-section">
+    <form method="GET" class="search-form">
+        <div class="search-row">
+            <div class="search-group">
+                <input type="number" class="search-input" id="year" name="year" 
+                       value="{{ request.args.get('year') }}" placeholder="年份筛选">
+            </div>
+            <div class="filter-group">
+                <input type="number" class="filter-input" id="month" name="month" 
+                       value="{{ request.args.get('month') }}" placeholder="月份" min="1" max="12">
+                <select class="filter-select" id="property_id" name="property_id">
+                    <option value="">所有房产</option>
+                    {% for p in properties %}
+                    <option value="{{ p.id }}" {% if request.args.get('property_id') == p.id|string %}selected{% endif %}>
+                        {{ p.name or p.id }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="search-btn">筛选</button>
+            </div>
+            <div class="action-group">
+                <a href="{{ url_for('admin_financial_reports') }}" class="btn btn-outline-secondary">重置</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 财务报表列表 -->
+<div class="table-section">
+    <div class="table-header">
+        <h3>财务报表列表 <span class="count-badge">{{ total_count }} 条</span></h3>
+    </div>
+    
+    {% if reports %}
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>房产信息</th>
+                    <th>分配业主</th>
+                    <th>报表期间</th>
+                    <th>报表标题</th>
+                    <th>OneDrive链接</th>
+                    <th>上传者</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>
+                        <div class="property-info">
+                            <div class="property-name">{{ report.property_name or 'N/A' }}</div>
+                            <div class="property-address">{{ report.property_address or '' }}</div>
+                        </div>
+                    </td>
+                    <td>{{ report.assigned_owners or '未分配' }}</td>
+                    <td>{{ report.report_year }}-{{ "%02d"|format(report.report_month) }}</td>
+                    <td>{{ report.report_title }}</td>
+                    <td>
+                        <a href="{{ report.onedrive_link }}" target="_blank" class="link-btn">
+                            <i class="fas fa-external-link-alt"></i> 查看报表
+                        </a>
+                    </td>
+                    <td>{{ report.uploaded_by_username or 'N/A' }}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-danger" 
+                                onclick="deleteReport('{{ report.id }}', '{{ report.report_title|safe }}')">
+                            删除
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>没有找到匹配的财务报表。</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 分页 -->
+{% if total_pages > 1 %}
+<div class="pagination-section">
+    <nav class="pagination-nav">
+        {% if current_page > 1 %}
+        <a href="{{ url_for('admin_financial_reports', page=current_page-1, **request.args) }}" 
+           class="page-link">上一页</a>
+        {% endif %}
+        
+        <div class="page-numbers">
+            {% for page_num in range(1, total_pages + 1) %}
+                {% if page_num == current_page %}
+                    <span class="page-link active">{{ page_num }}</span>
+                {% else %}
+                    <a href="{{ url_for('admin_financial_reports', page=page_num, **request.args) }}" 
+                       class="page-link">{{ page_num }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        {% if current_page < total_pages %}
+        <a href="{{ url_for('admin_financial_reports', page=current_page+1, **request.args) }}" 
+           class="page-link">下一页</a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">确认删除</h5>
+                <button type="button" class="btn-close" onclick="hideModal()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>您确定要删除财务报表 "<span id="reportTitle"></span>" 吗？</p>
+                <p class="text-danger">此操作不可恢复。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideModal()">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">确认删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 表单展开/收起功能
+function toggleForm() {
+    const form = document.getElementById('addForm');
+    const btn = document.getElementById('toggleBtn');
+    
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        btn.textContent = '收起';
+    } else {
+        form.style.display = 'none';
+        btn.textContent = '展开';
+    }
+}
+
+// 删除报表功能
+function deleteReport(reportId, reportTitle) {
+    // 清理报表标题中的特殊字符
+    const cleanTitle = reportTitle.replace(/['"\\]/g, '');
+    // 设置报表标题
+    document.getElementById('reportTitle').textContent = cleanTitle;
+    
+    // 显示模态框
+    const modal = document.getElementById('deleteModal');
+    modal.style.display = 'block';
+    modal.classList.add('show');
+    
+    // 设置确认删除按钮的事件
+    document.getElementById('confirmDelete').onclick = function() {
+        const formData = new FormData();
+        formData.append('report_id', reportId);
+        
+        fetch('{{ url_for("delete_financial_report") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected || response.url.includes('/login')) {
+                alert('会话已过期，请重新登录');
+                window.location.href = '/login';
+                return;
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                return response.text().then(text => {
+                    throw new Error('服务器返回了非JSON响应');
+                });
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message || '删除成功！');
+                window.location.reload();
+            } else {
+                alert('删除失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('删除操作失败:', error);
+            if (error.message.includes('非JSON响应')) {
+                alert('会话已过期，请重新登录');
+                window.location.href = '/login';
+            } else {
+                alert('删除过程中发生网络或服务器错误。');
+            }
+        });
+        
+        // 隐藏模态框
+        hideModal();
+    };
+}
+
+// 隐藏模态框的函数
+function hideModal() {
+    const modal = document.getElementById('deleteModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+}
+
+// 点击模态框外部关闭
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideModal();
+    }
+});
+
+// 年份输入防抖
+let yearTimeout;
+document.getElementById('year').addEventListener('input', function() {
+    clearTimeout(yearTimeout);
+    yearTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 500);
+});
+
+// 月份输入防抖
+let monthTimeout;
+document.getElementById('month').addEventListener('input', function() {
+    clearTimeout(monthTimeout);
+    monthTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 500);
+});
+
+// 房产选择器变化时自动提交
+document.getElementById('property_id').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+
+<style>
+/* 财务报表管理页面样式 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 0 1.5rem;
+}
+
+.form-section {
+    background: white;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.form-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #555;
+}
+
+.form-control {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--main-blue);
+    box-shadow: 0 0 0 2px rgba(87, 132, 230, 0.1);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.search-section {
+    background: white;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.search-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.filter-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.filter-input, .filter-select {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    min-width: 120px;
+}
+
+.search-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--main-blue);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.action-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.table-section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.table-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.count-badge {
+    background: var(--main-blue);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background: #f8f9fa;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: #666;
+    border-bottom: 1px solid #eee;
+}
+
+.data-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+}
+
+.property-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.property-name {
+    font-weight: 500;
+    color: var(--text);
+}
+
+.property-address {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.link-btn {
+    color: var(--main-blue);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.link-btn:hover {
+    text-decoration: underline;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+}
+
+.empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: #666;
+}
+
+.pagination-section {
+    background: white;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.pagination-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-numbers {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.page-link {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background: #f8f9fa;
+    border-color: var(--main-blue);
+}
+
+.page-link.active {
+    background: var(--main-blue);
+    color: white;
+    border-color: var(--main-blue);
+}
+
+/* 模态框样式 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: none;
+}
+
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-dialog {
+    background: white;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-content {
+    padding: 0;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .search-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        flex-wrap: wrap;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-table {
+        font-size: 0.8rem;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 0.75rem 0.5rem;
+    }
+}
+</style>
+{% endblock %} 

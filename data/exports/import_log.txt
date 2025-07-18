@@ -1,0 +1,357 @@
+2025-07-18 10:16:08,230 - INFO - 🚀 开始房地产数据库导入流程...
+2025-07-18 10:16:08,231 - INFO - SSL证书文件创建成功: /var/folders/z_/ljjw5vts629bfj7t6k4wtnj80000gn/T/tmp73alloaf.pem
+2025-07-18 10:16:08,231 - INFO - 正在连接到Aiven MySQL数据库...
+2025-07-18 10:16:08,583 - INFO - ✅ 数据库连接成功！
+2025-07-18 10:16:08,654 - INFO - MySQL版本: 8.0.35
+2025-07-18 10:16:08,654 - INFO - 开始创建数据库表结构...
+2025-07-18 10:16:08,715 - INFO - 暂时禁用外键约束检查。
+2025-07-18 10:16:08,926 - INFO - 清理现有表结构
+2025-07-18 10:16:08,926 - INFO - 正在创建表: properties...
+2025-07-18 10:16:08,972 - INFO - ✅ properties 表结构创建成功！
+2025-07-18 10:16:08,972 - INFO - 正在创建表: owners_master...
+2025-07-18 10:16:09,014 - INFO - ✅ owners_master 表结构创建成功！
+2025-07-18 10:16:09,014 - INFO - 正在创建表: users...
+2025-07-18 10:16:09,063 - ERROR - ❌ 创建表失败: 3734 (HY000): Failed to add the foreign key constraint. Missing column 'id' for constraint 'password_change_log_ibfk_1' in the referenced table 'users'
+2025-07-18 10:16:09,100 - ERROR - 💥 导入过程中出现错误: 3734 (HY000): Failed to add the foreign key constraint. Missing column 'id' for constraint 'password_change_log_ibfk_1' in the referenced table 'users'
+2025-07-18 10:16:09,101 - INFO - 数据库连接已关闭
+2025-07-18 10:16:09,101 - INFO - SSL证书临时文件已删除
+2025-07-18 10:16:34,668 - INFO - 🚀 开始房地产数据库导入流程...
+2025-07-18 10:16:34,669 - INFO - SSL证书文件创建成功: /var/folders/z_/ljjw5vts629bfj7t6k4wtnj80000gn/T/tmpw1cryh44.pem
+2025-07-18 10:16:34,669 - INFO - 正在连接到Aiven MySQL数据库...
+2025-07-18 10:16:34,958 - INFO - ✅ 数据库连接成功！
+2025-07-18 10:16:35,016 - INFO - MySQL版本: 8.0.35
+2025-07-18 10:16:35,016 - INFO - 开始创建数据库表结构...
+2025-07-18 10:16:35,072 - INFO - 暂时禁用外键约束检查。
+2025-07-18 10:16:35,308 - INFO - 清理现有表结构
+2025-07-18 10:16:35,308 - INFO - 正在创建表: properties...
+2025-07-18 10:16:35,347 - INFO - ✅ properties 表结构创建成功！
+2025-07-18 10:16:35,347 - INFO - 正在创建表: owners_master...
+2025-07-18 10:16:35,386 - INFO - ✅ owners_master 表结构创建成功！
+2025-07-18 10:16:35,386 - INFO - 正在创建表: users...
+2025-07-18 10:16:35,425 - ERROR - ❌ 创建表失败: 3734 (HY000): Failed to add the foreign key constraint. Missing column 'id' for constraint 'password_reset_tokens_ibfk_1' in the referenced table 'users'
+2025-07-18 10:16:35,458 - ERROR - 💥 导入过程中出现错误: 3734 (HY000): Failed to add the foreign key constraint. Missing column 'id' for constraint 'password_reset_tokens_ibfk_1' in the referenced table 'users'
+2025-07-18 10:16:35,458 - INFO - 数据库连接已关闭
+2025-07-18 10:16:35,458 - INFO - SSL证书临时文件已删除
+2025-07-18 10:16:49,960 - INFO - 🚀 开始房地产数据库导入流程...
+2025-07-18 10:16:49,961 - INFO - SSL证书文件创建成功: /var/folders/z_/ljjw5vts629bfj7t6k4wtnj80000gn/T/tmpzldw6ivz.pem
+2025-07-18 10:16:49,961 - INFO - 正在连接到Aiven MySQL数据库...
+2025-07-18 10:16:50,208 - INFO - ✅ 数据库连接成功！
+2025-07-18 10:16:50,280 - INFO - MySQL版本: 8.0.35
+2025-07-18 10:16:50,280 - INFO - 开始创建数据库表结构...
+2025-07-18 10:16:50,349 - INFO - 暂时禁用外键约束检查。
+2025-07-18 10:16:50,633 - INFO - 清理现有表结构
+2025-07-18 10:16:50,633 - INFO - 正在创建表: properties...
+2025-07-18 10:16:50,673 - INFO - ✅ properties 表结构创建成功！
+2025-07-18 10:16:50,674 - INFO - 正在创建表: owners_master...
+2025-07-18 10:16:50,717 - INFO - ✅ owners_master 表结构创建成功！
+2025-07-18 10:16:50,719 - INFO - 正在创建表: users...
+2025-07-18 10:16:50,767 - ERROR - ❌ 创建表失败: 3734 (HY000): Failed to add the foreign key constraint. Missing column 'id' for constraint 'user_sessions_ibfk_1' in the referenced table 'users'
+2025-07-18 10:16:50,803 - ERROR - 💥 导入过程中出现错误: 3734 (HY000): Failed to add the foreign key constraint. Missing column 'id' for constraint 'user_sessions_ibfk_1' in the referenced table 'users'
+2025-07-18 10:16:50,803 - INFO - 数据库连接已关闭
+2025-07-18 10:16:50,803 - INFO - SSL证书临时文件已删除
+2025-07-18 10:17:04,811 - INFO - 🚀 开始房地产数据库导入流程...
+2025-07-18 10:17:04,812 - INFO - SSL证书文件创建成功: /var/folders/z_/ljjw5vts629bfj7t6k4wtnj80000gn/T/tmpmmd7ovhe.pem
+2025-07-18 10:17:04,812 - INFO - 正在连接到Aiven MySQL数据库...
+2025-07-18 10:17:05,072 - INFO - ✅ 数据库连接成功！
+2025-07-18 10:17:05,138 - INFO - MySQL版本: 8.0.35
+2025-07-18 10:17:05,139 - INFO - 开始创建数据库表结构...
+2025-07-18 10:17:05,199 - INFO - 暂时禁用外键约束检查。
+2025-07-18 10:17:05,518 - INFO - 清理现有表结构
+2025-07-18 10:17:05,518 - INFO - 正在创建表: properties...
+2025-07-18 10:17:05,564 - INFO - ✅ properties 表结构创建成功！
+2025-07-18 10:17:05,564 - INFO - 正在创建表: owners_master...
+2025-07-18 10:17:05,606 - INFO - ✅ owners_master 表结构创建成功！
+2025-07-18 10:17:05,606 - INFO - 正在创建表: users...
+2025-07-18 10:17:05,647 - INFO - ✅ users 表结构创建成功！
+2025-07-18 10:17:05,648 - INFO - 正在创建表: property_owners...
+2025-07-18 10:17:05,684 - INFO - ✅ property_owners 表结构创建成功！
+2025-07-18 10:17:05,684 - INFO - 正在创建表: property_assignments...
+2025-07-18 10:17:05,730 - INFO - ✅ property_assignments 表结构创建成功！
+2025-07-18 10:17:05,730 - INFO - 正在创建表: financial_reports...
+2025-07-18 10:17:05,771 - INFO - ✅ financial_reports 表结构创建成功！
+2025-07-18 10:17:05,771 - INFO - 正在创建表: password_change_log...
+2025-07-18 10:17:05,812 - INFO - ✅ password_change_log 表结构创建成功！
+2025-07-18 10:17:05,813 - INFO - 正在创建表: password_reset_tokens...
+2025-07-18 10:17:05,850 - INFO - ✅ password_reset_tokens 表结构创建成功！
+2025-07-18 10:17:05,850 - INFO - 正在创建表: user_sessions...
+2025-07-18 10:17:05,896 - INFO - ✅ user_sessions 表结构创建成功！
+2025-07-18 10:17:05,963 - INFO - 重新启用外键约束检查。
+2025-07-18 10:17:05,963 - INFO - 开始导入房产数据...
+2025-07-18 10:17:05,973 - INFO - 读取到 92 条房产记录
+2025-07-18 10:17:06,840 - ERROR - 处理第24行数据时出错: 1406 (22001): Data too long for column 'front_door_code' at row 1
+2025-07-18 10:17:06,840 - ERROR - 问题数据: {'id': '16061LA', 'name': '1606 #1 Los Anageles', 'street_address': '1606 11th Place #1, Los Angeles, California 90015, United States', 'city': 'Los Angeles', 'state': 'California', 'layout': '5b5b', 'property size': 1768.0, 'land size': nan, 'occupancy': 10, 'beds': '5q', 'owner_id': nan, 'front_door_code': 'Passcode for Driveway: 6062#\nPasscode for Pedestrian way: 6061\nPasscode for Building door: 5580\nPasscode for smart lock #1: 7856', 'storage_code': nan, 'wifi_name': 'SPECTRUMSETUP-01', 'wifi_password': 'studiodesert203', 'trash_day': 'Monday ', 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:06,872 - ERROR - 处理第25行数据时出错: 1406 (22001): Data too long for column 'front_door_code' at row 1
+2025-07-18 10:17:06,873 - ERROR - 问题数据: {'id': '16062LA', 'name': '1606 #2 Los Angeles', 'street_address': '1606 11th Place #2, Los Angeles, California 90015, United States', 'city': 'Los Angeles', 'state': 'California', 'layout': '5b5b', 'property size': 1777.0, 'land size': nan, 'occupancy': 10, 'beds': '5q', 'owner_id': nan, 'front_door_code': 'Passcode for Driveway: 6062#\nPasscode for Pedestrian way: 6061\nPasscode for Building door: 5580\nPasscode for smart lock #2: 2773', 'storage_code': nan, 'wifi_name': 'SPECTRUMSETUP-E7', 'wifi_password': 'decentnature558', 'trash_day': 'Monday ', 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:06,906 - ERROR - 处理第26行数据时出错: 1406 (22001): Data too long for column 'front_door_code' at row 1
+2025-07-18 10:17:06,907 - ERROR - 问题数据: {'id': '16063LA', 'name': '1606 #3 Los Angeles', 'street_address': '1606 11th Place #3, Los Angeles, California 90015, United States', 'city': 'Los Angeles', 'state': 'California', 'layout': '5b5b', 'property size': 1777.0, 'land size': nan, 'occupancy': 10, 'beds': '5q', 'owner_id': nan, 'front_door_code': 'Passcode for Driveway: 6062#\nPasscode for Pedestrian way: 6061\nPasscode for Building door: 5580\nPasscode for smart lock #3: 1324', 'storage_code': nan, 'wifi_name': 'SPECTRUMSETUP-E7', 'wifi_password': 'decentnature558', 'trash_day': 'Monday ', 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:07,471 - ERROR - 处理第43行数据时出错: 1406 (22001): Data too long for column 'front_door_code' at row 1
+2025-07-18 10:17:07,471 - ERROR - 问题数据: {'id': '258W', 'name': '258 Walnut', 'street_address': '3311 South Flemington Drive, West Covina, California 91792, United States', 'city': 'West Covina', 'state': 'California', 'layout': '1b1b', 'property size': 250.0, 'land size': nan, 'occupancy': 2, 'beds': '1k', 'owner_id': nan, 'front_door_code': 'Passcode for iron outside door: 2589\nPasscode for white inside door :  9898', 'storage_code': nan, 'wifi_name': 'DBW157', 'wifi_password': 'qpqp1010', 'trash_day': 'Monday', 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:07,749 - ERROR - 处理第51行数据时出错: 1406 (22001): Data too long for column 'storage_code' at row 1
+2025-07-18 10:17:07,749 - ERROR - 问题数据: {'id': '325AWC', 'name': '325 A West Covina', 'street_address': '325 N Carvol Ave, West Covina, CA 91790, USA', 'city': 'West Covina', 'state': 'California', 'layout': '3b3b', 'property size': 1362.0, 'land size': nan, 'occupancy': 6, 'beds': '3q', 'owner_id': nan, 'front_door_code': '1472369#', 'storage_code': ' ADU (storage) passcode. 18411727#\nroom code 123456#\nGas meter lockbox 2580', 'wifi_name': 'SpectrumSetup-A12F', 'wifi_password': 'budgeteditor891', 'trash_day': 'Monday', 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:07,783 - ERROR - 处理第52行数据时出错: 1406 (22001): Data too long for column 'storage_code' at row 1
+2025-07-18 10:17:07,783 - ERROR - 问题数据: {'id': '325BWC', 'name': '325 B West Covina', 'street_address': '325 N Carvol Ave, West Covina, CA 91790, USA', 'city': 'West Covina', 'state': 'California', 'layout': '2b1b', 'property size': 500.0, 'land size': nan, 'occupancy': 4, 'beds': '2q', 'owner_id': nan, 'front_door_code': '987357#', 'storage_code': 'ADU (storage) passcode. 18411727#\nroom code 123456#', 'wifi_name': 'SpectrumSetup-A12F', 'wifi_password': 'budgeteditor891', 'trash_day': 'Monday', 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:07,891 - ERROR - 处理第55行数据时出错: 1406 (22001): Data too long for column 'front_door_code' at row 1
+2025-07-18 10:17:07,891 - ERROR - 问题数据: {'id': '3673P', 'name': '3673 Pomona', 'street_address': '3673 Legato Ct, Pomona, CA 91766, USA', 'city': 'Pomona', 'state': 'California', 'layout': '2b2b', 'property size': 930.0, 'land size': nan, 'occupancy': 7, 'beds': '2k2sofa', 'owner_id': nan, 'front_door_code': 'Passcode for Community gate: #1470 \nPasscode for smart lock: 0918', 'storage_code': '1709', 'wifi_name': 'SpectrumSetup-B178', 'wifi_password': 'opendrama430', 'trash_day': nan, 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:07,996 - ERROR - 处理第58行数据时出错: 1406 (22001): Data too long for column 'front_door_code' at row 1
+2025-07-18 10:17:07,996 - ERROR - 问题数据: {'id': '38650A', 'name': '38650 Anza', 'street_address': '38650 Hill St, Anza, CA 92539, USA', 'city': 'Anza', 'state': 'California', 'layout': '3b2b', 'property size': 2200.0, 'land size': nan, 'occupancy': 8, 'beds': '2k2q', 'owner_id': nan, 'front_door_code': 'Gate combo lock code:  4863\nPasscode for lock: 4863', 'storage_code': nan, 'wifi_name': 'ADTRAN_5GHZ_035A', 'wifi_password': '12345678', 'trash_day': nan, 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:08,310 - ERROR - 处理第67行数据时出错: 1406 (22001): Data too long for column 'front_door_code' at row 1
+2025-07-18 10:17:08,310 - ERROR - 问题数据: {'id': '506SG', 'name': '506 San Gabriel', 'street_address': '506 E Saxon Ave, San Gabriel, CA 91776, USA', 'city': 'San Gabriel', 'state': 'California', 'layout': '2b2b', 'property size': 1000.0, 'land size': nan, 'occupancy': 4, 'beds': '2q', 'owner_id': nan, 'front_door_code': 'Passcode for front gate: 0808*\nPasscode for smart lock: 4625', 'storage_code': '080858', 'wifi_name': '504506', 'wifi_password': 'saxon 504', 'trash_day': 'Friday', 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:08,670 - ERROR - 处理第78行数据时出错: 1406 (22001): Data too long for column 'storage_code' at row 1
+2025-07-18 10:17:08,670 - ERROR - 问题数据: {'id': '8205RC', 'name': '8205 Rancho', 'street_address': '8205 Rancheria Dr, Rancho Cucamonga, CA 91730', 'city': 'Rancho Cucamonga', 'state': 'California', 'layout': '2b1b', 'property size': 800.0, 'land size': nan, 'occupancy': 4, 'beds': '1k1q', 'owner_id': nan, 'front_door_code': '08153126', 'storage_code': '8205: Supply 1395, Garage 0505, admin 7948226, Access Washer/Dryer use code  0505', 'wifi_name': '8205 Rancheria', 'wifi_password': 'crispycarrot365', 'trash_day': 'Friday', 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:08,700 - ERROR - 处理第79行数据时出错: 1406 (22001): Data too long for column 'storage_code' at row 1
+2025-07-18 10:17:08,701 - ERROR - 问题数据: {'id': '8207RC', 'name': '8207 Rancho', 'street_address': '1870 North Calaveras Avenue, Ontario, California 91764, United States', 'city': 'Ontario', 'state': 'California', 'layout': '2b1b', 'property size': 800.0, 'land size': nan, 'occupancy': 4, 'beds': '1k1q', 'owner_id': nan, 'front_door_code': '18480313', 'storage_code': '8207: Supply 2626, Garage 0707, admin 8261287, Access Washer/Dryer use code  0707', 'wifi_name': '8205 Rancheria', 'wifi_password': 'crispycarrot365', 'trash_day': 'Friday', 'Unnamed: 16': nan, 'Unnamed: 17': nan, 'Unnamed: 18': nan, 'Unnamed: 19': nan, 'Unnamed: 20': nan, 'Unnamed: 21': nan, 'Unnamed: 22': nan, 'Unnamed: 23': nan}
+2025-07-18 10:17:09,149 - INFO - ✅ 成功导入 92 条房产记录
+2025-07-18 10:17:09,150 - INFO - 开始导入业主数据...
+2025-07-18 10:17:09,153 - INFO - 读取到 81 条业主记录
+2025-07-18 10:17:11,465 - INFO - ✅ 成功导入 69 条业主记录
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 1980CH
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 2312RH
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 15421HH
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 15415HH
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 10919RC
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 18153RH
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 18153RH
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 10919RC
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 18513RH
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 258W
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 2115LV
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: EOCR
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 807P
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 17447R
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 17447R
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 148I
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 325WC
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 4061O
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 4096O
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 506SG
+2025-07-18 10:17:11,500 - WARNING - 跳过不存在的房产ID: 7931R
+2025-07-18 10:17:11,501 - WARNING - 跳过不存在的房产ID: 8205RC
+2025-07-18 10:17:11,501 - WARNING - 跳过不存在的房产ID: 8205RC
+2025-07-18 10:17:11,501 - WARNING - 跳过不存在的房产ID: 8207RC
+2025-07-18 10:17:11,501 - WARNING - 跳过不存在的房产ID: 8207RC
+2025-07-18 10:17:11,501 - WARNING - 跳过不存在的房产ID: 5934CD
+2025-07-18 10:17:11,501 - WARNING - 跳过不存在的房产ID: 38650A
+2025-07-18 10:17:11,501 - WARNING - 跳过不存在的房产ID: 14349VN
+2025-07-18 10:17:11,501 - WARNING - 跳过不存在的房产ID: 11701O
+2025-07-18 10:17:11,501 - WARNING - 跳过不存在的房产ID: 1606LA
+2025-07-18 10:17:13,049 - INFO - ✅ 成功导入 48 条房产-业主关系
+2025-07-18 10:17:13,086 - INFO - 开始导入财务数据...
+2025-07-18 10:17:13,090 - INFO - 读取到 92 条财务记录
+2025-07-18 10:17:13,187 - ERROR - ❌ 导入财务数据失败: 1146 (42S02): Table 'defaultdb.finance' doesn't exist
+2025-07-18 10:17:13,187 - ERROR - 💥 导入过程中出现错误: 1146 (42S02): Table 'defaultdb.finance' doesn't exist
+2025-07-18 10:17:13,188 - INFO - 数据库连接已关闭
+2025-07-18 10:17:13,188 - INFO - SSL证书临时文件已删除
+2025-07-18 10:17:45,327 - INFO - 🚀 开始房地产数据库导入流程...
+2025-07-18 10:17:45,329 - INFO - SSL证书文件创建成功: /var/folders/z_/ljjw5vts629bfj7t6k4wtnj80000gn/T/tmp20c59vqg.pem
+2025-07-18 10:17:45,329 - INFO - 正在连接到Aiven MySQL数据库...
+2025-07-18 10:17:45,630 - INFO - ✅ 数据库连接成功！
+2025-07-18 10:17:45,700 - INFO - MySQL版本: 8.0.35
+2025-07-18 10:17:45,700 - INFO - 开始创建数据库表结构...
+2025-07-18 10:17:45,767 - INFO - 暂时禁用外键约束检查。
+2025-07-18 10:17:46,117 - INFO - 清理现有表结构
+2025-07-18 10:17:46,117 - INFO - 正在创建表: properties...
+2025-07-18 10:17:46,162 - INFO - ✅ properties 表结构创建成功！
+2025-07-18 10:17:46,162 - INFO - 正在创建表: owners_master...
+2025-07-18 10:17:46,204 - INFO - ✅ owners_master 表结构创建成功！
+2025-07-18 10:17:46,204 - INFO - 正在创建表: users...
+2025-07-18 10:17:46,241 - INFO - ✅ users 表结构创建成功！
+2025-07-18 10:17:46,241 - INFO - 正在创建表: property_owners...
+2025-07-18 10:17:46,282 - INFO - ✅ property_owners 表结构创建成功！
+2025-07-18 10:17:46,282 - INFO - 正在创建表: property_assignments...
+2025-07-18 10:17:46,321 - INFO - ✅ property_assignments 表结构创建成功！
+2025-07-18 10:17:46,321 - INFO - 正在创建表: financial_reports...
+2025-07-18 10:17:46,358 - INFO - ✅ financial_reports 表结构创建成功！
+2025-07-18 10:17:46,358 - INFO - 正在创建表: password_change_log...
+2025-07-18 10:17:46,400 - INFO - ✅ password_change_log 表结构创建成功！
+2025-07-18 10:17:46,400 - INFO - 正在创建表: password_reset_tokens...
+2025-07-18 10:17:46,443 - INFO - ✅ password_reset_tokens 表结构创建成功！
+2025-07-18 10:17:46,443 - INFO - 正在创建表: user_sessions...
+2025-07-18 10:17:46,484 - INFO - ✅ user_sessions 表结构创建成功！
+2025-07-18 10:17:46,559 - INFO - 重新启用外键约束检查。
+2025-07-18 10:17:46,559 - INFO - 开始导入房产数据...
+2025-07-18 10:17:46,567 - INFO - 读取到 92 条房产记录
+2025-07-18 10:17:49,758 - INFO - ✅ 成功导入 92 条房产记录
+2025-07-18 10:17:49,758 - INFO - 开始导入业主数据...
+2025-07-18 10:17:49,759 - INFO - 读取到 81 条业主记录
+2025-07-18 10:17:52,383 - INFO - ✅ 成功导入 69 条业主记录
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 1980CH
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 2312RH
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 15421HH
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 15415HH
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 10919RC
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 18153RH
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 18153RH
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 10919RC
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 18513RH
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 2115LV
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: EOCR
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 807P
+2025-07-18 10:17:52,420 - WARNING - 跳过不存在的房产ID: 17447R
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 17447R
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 148I
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 325WC
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 4061O
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 4096O
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 7931R
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 5934CD
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 14349VN
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 11701O
+2025-07-18 10:17:52,421 - WARNING - 跳过不存在的房产ID: 1606LA
+2025-07-18 10:17:54,271 - INFO - ✅ 成功导入 55 条房产-业主关系
+2025-07-18 10:17:54,302 - INFO - 开始导入财务数据...
+2025-07-18 10:17:54,305 - INFO - 读取到 92 条财务记录
+2025-07-18 10:17:54,415 - ERROR - ❌ 导入财务数据失败: 1054 (42S22): Unknown column 'owner_clean' in 'field list'
+2025-07-18 10:17:54,415 - ERROR - 💥 导入过程中出现错误: 1054 (42S22): Unknown column 'owner_clean' in 'field list'
+2025-07-18 10:17:54,416 - INFO - 数据库连接已关闭
+2025-07-18 10:17:54,416 - INFO - SSL证书临时文件已删除
+2025-07-18 10:18:07,799 - INFO - 🚀 开始房地产数据库导入流程...
+2025-07-18 10:18:07,800 - INFO - SSL证书文件创建成功: /var/folders/z_/ljjw5vts629bfj7t6k4wtnj80000gn/T/tmprv3zvcli.pem
+2025-07-18 10:18:07,800 - INFO - 正在连接到Aiven MySQL数据库...
+2025-07-18 10:18:08,140 - INFO - ✅ 数据库连接成功！
+2025-07-18 10:18:08,216 - INFO - MySQL版本: 8.0.35
+2025-07-18 10:18:08,216 - INFO - 开始创建数据库表结构...
+2025-07-18 10:18:08,283 - INFO - 暂时禁用外键约束检查。
+2025-07-18 10:18:08,667 - INFO - 清理现有表结构
+2025-07-18 10:18:08,667 - INFO - 正在创建表: properties...
+2025-07-18 10:18:08,706 - INFO - ✅ properties 表结构创建成功！
+2025-07-18 10:18:08,706 - INFO - 正在创建表: owners_master...
+2025-07-18 10:18:08,746 - INFO - ✅ owners_master 表结构创建成功！
+2025-07-18 10:18:08,746 - INFO - 正在创建表: users...
+2025-07-18 10:18:08,783 - INFO - ✅ users 表结构创建成功！
+2025-07-18 10:18:08,784 - INFO - 正在创建表: property_owners...
+2025-07-18 10:18:08,825 - INFO - ✅ property_owners 表结构创建成功！
+2025-07-18 10:18:08,825 - INFO - 正在创建表: property_assignments...
+2025-07-18 10:18:08,866 - INFO - ✅ property_assignments 表结构创建成功！
+2025-07-18 10:18:08,867 - INFO - 正在创建表: financial_reports...
+2025-07-18 10:18:08,910 - INFO - ✅ financial_reports 表结构创建成功！
+2025-07-18 10:18:08,910 - INFO - 正在创建表: password_change_log...
+2025-07-18 10:18:08,952 - INFO - ✅ password_change_log 表结构创建成功！
+2025-07-18 10:18:08,952 - INFO - 正在创建表: password_reset_tokens...
+2025-07-18 10:18:08,989 - INFO - ✅ password_reset_tokens 表结构创建成功！
+2025-07-18 10:18:08,990 - INFO - 正在创建表: user_sessions...
+2025-07-18 10:18:09,030 - INFO - ✅ user_sessions 表结构创建成功！
+2025-07-18 10:18:09,093 - INFO - 重新启用外键约束检查。
+2025-07-18 10:18:09,093 - INFO - 开始导入房产数据...
+2025-07-18 10:18:09,100 - INFO - 读取到 92 条房产记录
+2025-07-18 10:18:12,362 - INFO - ✅ 成功导入 92 条房产记录
+2025-07-18 10:18:12,362 - INFO - 开始导入业主数据...
+2025-07-18 10:18:12,367 - INFO - 读取到 81 条业主记录
+2025-07-18 10:18:14,763 - INFO - ✅ 成功导入 69 条业主记录
+2025-07-18 10:18:14,797 - WARNING - 跳过不存在的房产ID: 1980CH
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 2312RH
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 15421HH
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 15415HH
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 10919RC
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 18153RH
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 18153RH
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 10919RC
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 18513RH
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 2115LV
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: EOCR
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 807P
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 17447R
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 17447R
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 148I
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 325WC
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 4061O
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 4096O
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 7931R
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 5934CD
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 14349VN
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 11701O
+2025-07-18 10:18:14,798 - WARNING - 跳过不存在的房产ID: 1606LA
+2025-07-18 10:18:16,578 - INFO - ✅ 成功导入 55 条房产-业主关系
+2025-07-18 10:18:16,617 - INFO - 开始导入财务数据...
+2025-07-18 10:18:16,619 - INFO - 读取到 92 条财务记录
+2025-07-18 10:18:16,720 - ERROR - ❌ 导入财务数据失败: 1054 (42S22): Unknown column 'cleaning_fee' in 'field list'
+2025-07-18 10:18:16,720 - ERROR - 💥 导入过程中出现错误: 1054 (42S22): Unknown column 'cleaning_fee' in 'field list'
+2025-07-18 10:18:16,720 - INFO - 数据库连接已关闭
+2025-07-18 10:18:16,721 - INFO - SSL证书临时文件已删除
+2025-07-18 10:18:38,045 - INFO - 🚀 开始房地产数据库导入流程...
+2025-07-18 10:18:38,046 - INFO - SSL证书文件创建成功: /var/folders/z_/ljjw5vts629bfj7t6k4wtnj80000gn/T/tmpo6vcmohv.pem
+2025-07-18 10:18:38,046 - INFO - 正在连接到Aiven MySQL数据库...
+2025-07-18 10:18:38,328 - INFO - ✅ 数据库连接成功！
+2025-07-18 10:18:38,401 - INFO - MySQL版本: 8.0.35
+2025-07-18 10:18:38,401 - INFO - 开始创建数据库表结构...
+2025-07-18 10:18:38,474 - INFO - 暂时禁用外键约束检查。
+2025-07-18 10:18:38,796 - INFO - 清理现有表结构
+2025-07-18 10:18:38,796 - INFO - 正在创建表: properties...
+2025-07-18 10:18:38,834 - INFO - ✅ properties 表结构创建成功！
+2025-07-18 10:18:38,834 - INFO - 正在创建表: owners_master...
+2025-07-18 10:18:38,885 - INFO - ✅ owners_master 表结构创建成功！
+2025-07-18 10:18:38,885 - INFO - 正在创建表: users...
+2025-07-18 10:18:38,923 - INFO - ✅ users 表结构创建成功！
+2025-07-18 10:18:38,923 - INFO - 正在创建表: property_owners...
+2025-07-18 10:18:38,966 - INFO - ✅ property_owners 表结构创建成功！
+2025-07-18 10:18:38,966 - INFO - 正在创建表: property_assignments...
+2025-07-18 10:18:39,006 - INFO - ✅ property_assignments 表结构创建成功！
+2025-07-18 10:18:39,007 - INFO - 正在创建表: financial_reports...
+2025-07-18 10:18:39,050 - INFO - ✅ financial_reports 表结构创建成功！
+2025-07-18 10:18:39,050 - INFO - 正在创建表: password_change_log...
+2025-07-18 10:18:39,090 - INFO - ✅ password_change_log 表结构创建成功！
+2025-07-18 10:18:39,090 - INFO - 正在创建表: password_reset_tokens...
+2025-07-18 10:18:39,129 - INFO - ✅ password_reset_tokens 表结构创建成功！
+2025-07-18 10:18:39,129 - INFO - 正在创建表: user_sessions...
+2025-07-18 10:18:39,167 - INFO - ✅ user_sessions 表结构创建成功！
+2025-07-18 10:18:39,234 - INFO - 重新启用外键约束检查。
+2025-07-18 10:18:39,234 - INFO - 开始导入房产数据...
+2025-07-18 10:18:39,242 - INFO - 读取到 92 条房产记录
+2025-07-18 10:18:42,342 - INFO - ✅ 成功导入 92 条房产记录
+2025-07-18 10:18:42,342 - INFO - 开始导入业主数据...
+2025-07-18 10:18:42,347 - INFO - 读取到 81 条业主记录
+2025-07-18 10:18:44,694 - INFO - ✅ 成功导入 69 条业主记录
+2025-07-18 10:18:44,729 - WARNING - 跳过不存在的房产ID: 1980CH
+2025-07-18 10:18:44,729 - WARNING - 跳过不存在的房产ID: 2312RH
+2025-07-18 10:18:44,729 - WARNING - 跳过不存在的房产ID: 15421HH
+2025-07-18 10:18:44,729 - WARNING - 跳过不存在的房产ID: 15415HH
+2025-07-18 10:18:44,729 - WARNING - 跳过不存在的房产ID: 10919RC
+2025-07-18 10:18:44,729 - WARNING - 跳过不存在的房产ID: 18153RH
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 18153RH
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 10919RC
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 18513RH
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 2115LV
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: EOCR
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 807P
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 17447R
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 17447R
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 1101MP
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 148I
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 325WC
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 4061O
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 4096O
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 7931R
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 5934CD
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 14349VN
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 11701O
+2025-07-18 10:18:44,730 - WARNING - 跳过不存在的房产ID: 1606LA
+2025-07-18 10:18:47,517 - INFO - ✅ 成功导入 55 条房产-业主关系
+2025-07-18 10:18:47,549 - INFO - 开始导入财务数据...
+2025-07-18 10:18:47,551 - INFO - 读取到 92 条财务记录
+2025-07-18 10:18:50,900 - INFO - ✅ 成功导入 92 条财务记录
+2025-07-18 10:18:50,900 - INFO - 更新业主统计信息...
+2025-07-18 10:18:50,988 - INFO - ✅ 统计信息更新完成
+2025-07-18 10:18:50,989 - INFO - 验证导入的数据...
+2025-07-18 10:18:51,056 - INFO -  properties: 92 条记录
+2025-07-18 10:18:51,092 - INFO -  owners_master: 69 条记录
+2025-07-18 10:18:51,131 - INFO -  property_owners: 55 条记录
+2025-07-18 10:18:51,170 - INFO -  financial_reports: 92 条记录
+2025-07-18 10:18:51,205 - INFO - 📋 数据样例:
+2025-07-18 10:18:51,205 - INFO -   房产: 10654 El Monte, 业主: Wenjie Bi, 管理费率: 20.00%
+2025-07-18 10:18:51,205 - INFO -   房产: 10961 North Tustin, 业主: Coral 10961 Limetree LLC, 管理费率: 20.00%
+2025-07-18 10:18:51,205 - INFO -   房产: 109 Irvine, 业主: Victor Ge, 管理费率: 无
+2025-07-18 10:18:51,205 - INFO -   房产: 1101 B Monterey Park, 业主: None, 管理费率: 10.00%
+2025-07-18 10:18:51,205 - INFO -   房产: 1101 C Monterey Park, 业主: None, 管理费率: 10.00%
+2025-07-18 10:18:51,205 - INFO - 🎉 数据导入完成！数据库已准备就绪。
+2025-07-18 10:18:51,205 - INFO - 数据库连接已关闭
+2025-07-18 10:18:51,206 - INFO - SSL证书临时文件已删除

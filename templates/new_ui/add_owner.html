@@ -1,0 +1,48 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}添加新业主{% endblock %}
+
+{% block page_title %}添加新业主{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="POST" action="{{ url_for('add_owner') }}">
+        <h4>基本信息</h4>
+        <div class="form-group">
+            <label for="name">姓名 <span class="text-danger">*</span></label>
+            <input type="text" id="name" name="name" value="{{ owner_data.name if owner_data else '' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="email">邮箱 <span class="text-danger">*</span></label>
+            <input type="email" id="email" name="email" value="{{ owner_data.email if owner_data else '' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="phone">电话号码</label>
+            <input type="tel" id="phone" name="phone" value="{{ owner_data.phone if owner_data else '' }}">
+        </div>
+
+        <hr style="margin: 20px 0;">
+
+        <h4>偏好设置</h4>
+        <div class="form-group">
+            <label for="preferences_strategy">投资策略</label>
+            <select id="preferences_strategy" name="preferences_strategy">
+                <option value="">请选择投资策略</option>
+                <option value="Long-term Rental" {{ 'selected' if owner_data and owner_data.preferences_strategy == 'Long-term Rental' else '' }}>长期租赁</option>
+                <option value="Short-term Rental" {{ 'selected' if owner_data and owner_data.preferences_strategy == 'Short-term Rental' else '' }}>短期租赁</option>
+                <option value="Mixed Strategy" {{ 'selected' if owner_data and owner_data.preferences_strategy == 'Mixed Strategy' else '' }}>混合策略</option>
+                <option value="Buy and Hold" {{ 'selected' if owner_data and owner_data.preferences_strategy == 'Buy and Hold' else '' }}>买入持有</option>
+                <option value="Flip" {{ 'selected' if owner_data and owner_data.preferences_strategy == 'Flip' else '' }}>翻新转售</option>
+            </select>
+        </div>
+
+
+        <hr style="margin: 20px 0;">
+
+        <div class="d-flex justify-content-end">
+            <a href="{{ url_for('owners_fixed') }}" class="btn btn-secondary" style="margin-right: 10px;">取消</a>
+            <button type="submit" class="btn btn-primary">保存业主</button>
+        </div>
+    </form>
+</div>
+{% endblock %} 

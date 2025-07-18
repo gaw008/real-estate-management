@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>短租公司操作系统 UI</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+    :root {
+      --main-blue: #5784e6;
+      --main-yellow: #ffcf54;
+      --light-beige: #fcf7ef;
+      --dark-blue: #0e1534;
+      --text: #333;
+      --light-gray: #f5f6fa;
+      --border: #e0e0e0;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      font-weight: 400;
+    }
+    body {
+      background-color: var(--light-gray);
+      display: flex;
+      color: var(--text);
+    }
+    .sidebar {
+      width: 220px;
+      background-color: white;
+      border-right: 1px solid var(--border);
+      height: 100vh;
+      padding-top: 20px;
+    }
+    .sidebar h2 {
+      color: var(--main-blue);
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 32px;
+      font-weight: 600;
+    }
+    .nav-item {
+      padding: 12px 24px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      font-size: 15px;
+    }
+    .nav-item:hover, .nav-item.active {
+      background-color: var(--main-blue);
+      color: white;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--light-gray);
+    }
+    .topbar {
+      background-color: white;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .topbar h1 {
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 24px;
+    }
+    .card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    .card h3 {
+      color: var(--main-blue);
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .card p {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .table {
+      background-color: white;
+      margin: 0 24px;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    .table h3 {
+      margin-bottom: 12px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    th {
+      background-color: var(--light-gray);
+      color: #666;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>短租管理</h2>
+    <div class="nav-item active">控制面板</div>
+    <div class="nav-item">房产管理</div>
+    <div class="nav-item">员工分组</div>
+    <div class="nav-item">业主查询</div>
+    <div class="nav-item">财务分析</div>
+    <div class="nav-item">系统设置</div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <h1>操作系统数据概览</h1>
+      <div>📅 2025-07-17</div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>总房产</h3>
+        <p>168</p>
+      </div>
+      <div class="card">
+        <h3>总单元</h3>
+        <p>322</p>
+      </div>
+      <div class="card">
+        <h3>纯收入</h3>
+        <p>$76,542</p>
+      </div>
+      <div class="card">
+        <h3>综合支出</h3>
+        <p>$28,610</p>
+      </div>
+    </div>
+    <div class="table">
+      <h3>支付记录</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>金额</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2023-09</td>
+            <td>$4,568</td>
+            <td>已支付</td>
+          </tr>
+          <tr>
+            <td>2023-10</td>
+            <td>$4,568</td>
+            <td>已支付</td>
+          </tr>
+          <tr>
+            <td>2023-11</td>
+            <td>$4,568</td>
+            <td>已支付</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

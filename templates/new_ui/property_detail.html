@@ -1,0 +1,79 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}房产详情: {{ property.name }}{% endblock %}
+
+{% block page_title %}房产详情: {{ property.name }}{% endblock %}
+
+{% block content %}
+<div class="action-bar" style="margin-bottom: 20px;">
+    <a href="{{ url_for('properties_fixed') }}" class="btn btn-secondary">
+        ← 返回房产列表
+    </a>
+</div>
+
+<div class="table-container">
+    <h3>基本信息</h3>
+    <table class="table">
+        <tr>
+            <td><strong>房产ID</strong></td>
+            <td>{{ property.id }}</td>
+            <td><strong>地址</strong></td>
+            <td>{{ property.street_address or 'N/A' }}, {{ property.city }}, {{ property.state }}</td>
+        </tr>
+        <tr>
+            <td><strong>房型布局</strong></td>
+            <td>{{ property.layout or 'N/A' }}</td>
+            <td><strong>面积</strong></td>
+            <td>{{ property.property_size or 'N/A' }} sqft</td>
+        </tr>
+        <tr>
+            <td><strong>卧室数</strong></td>
+            <td>{{ parse_layout(property.layout).bedrooms }}</td>
+            <td><strong>浴室数</strong></td>
+            <td>{{ parse_layout(property.layout).bathrooms }}</td>
+        </tr>
+        <tr>
+            <td><strong>床位配置</strong></td>
+            <td>{{ format_beds(property.beds) }}</td>
+            <td><strong>最大入住人数</strong></td>
+            <td>{{ property.occupancy or 'N/A' }} 人</td>
+        </tr>
+    </table>
+
+    <h3 style="margin-top: 20px;">财务信息</h3>
+    <table class="table">
+        <tr>
+            <td><strong>清洁费</strong></td>
+            <td>${{ property.cleaning_fee or 'N/A' }}</td>
+            <td><strong>管理费</strong></td>
+            <td>{{ format_management_fee(property.management_fee_rate, property.management_fee_type) }}</td>
+        </tr>
+    </table>
+
+    <h3 style="margin-top: 20px;">业主信息</h3>
+    {% if owners %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>姓名</th>
+                <th>电话</th>
+                <th>邮箱</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for owner in owners %}
+            <tr>
+                <td>{{ owner.name }}</td>
+                <td>{{ owner.phone or 'N/A' }}</td>
+                <td>{{ owner.email or 'N/A' }}</td>
+                <td><a href="{{ url_for('owner_detail_fixed', owner_id=owner.owner_id) }}" class="btn btn-sm btn-secondary">查看</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>暂无关联业主</p>
+    {% endif %}
+</div>
+{% endblock %} 
