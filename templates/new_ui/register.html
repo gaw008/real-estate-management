@@ -1,111 +1,164 @@
 {% extends "new_ui/base.html" %}
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户注册 - 短租公司操作系统</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/new_style.css') }}">
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: var(--light-gray);
-            padding: 20px 0;
-        }
-        .register-card {
-            background-color: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            width: 100%;
-            max-width: 600px;
-            border: 1px solid var(--border);
-        }
-        .register-card h1 {
-            color: var(--main-blue);
-            font-size: 24px;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 24px;
-        }
-    </style>
-</head>
-<body>
-    <div class="register-card">
-        <h1>创建您的账户</h1>
-        <form method="POST" action="{{ url_for('register') }}">
-            <div class="form-group">
-                <label for="user_type">账户类型</label>
-                <select id="user_type" name="user_type" required>
-                    <option value="owner" selected>我是业主 (Owner)</option>
-                    <option value="admin">我是公司员工 (Admin)</option>
-                </select>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="username">用户名 <span class="text-danger">*</span></label>
-                        <input type="text" id="username" name="username" required>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="full_name">全名 <span class="text-danger">*</span></label>
-                        <input type="text" id="full_name" name="full_name" required>
-                    </div>
-                </div>
-            </div>
 
-            <div class="form-group">
-                <label for="email">邮箱 <span class="text-danger">*</span></label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6">
+{% block title %}用户注册申请{% endblock %}
+
+{% block page_title %}用户注册申请{% endblock %}
+
+{% block content %}
+<div class="form-section">
+    <div class="form-container">
+        <div class="form-header">
+            <h3><i class="fas fa-user-plus"></i> 用户注册申请</h3>
+        </div>
+        <div class="form-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" id="registrationForm">
+                <div class="form-grid">
+                    <!-- 基本信息 -->
                     <div class="form-group">
-                        <label for="password">密码 <span class="text-danger">*</span></label>
-                        <input type="password" id="password" name="password" required>
+                        <h4><i class="fas fa-info-circle"></i> 基本信息</h4>
+                        
+                        <div class="input-group">
+                            <label for="username">用户名 <span class="required">*</span></label>
+                            <input type="text" id="username" name="username" required>
+                            <small>用户名将用于登录系统</small>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="email">邮箱地址 <span class="required">*</span></label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="full_name">姓名 <span class="required">*</span></label>
+                            <input type="text" id="full_name" name="full_name" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="phone">联系电话</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
+                    </div>
+
+                    <!-- 工作信息 -->
+                    <div class="form-group">
+                        <h4><i class="fas fa-briefcase"></i> 工作信息</h4>
+
+                        <div class="input-group">
+                            <label for="department">申请部门 <span class="required">*</span></label>
+                            <select id="department" name="department" required>
+                                <option value="">请选择部门</option>
+                                <option value="销售部">销售部</option>
+                                <option value="房产管理部">房产管理部</option>
+                                <option value="会计部">会计部</option>
+                                <option value="市场部">市场部</option>
+                                <option value="管理员">管理员</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="job_title">职位</label>
+                            <input type="text" id="job_title" name="job_title" placeholder="例如：销售代表、会计专员等">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="notes">申请说明</label>
+                            <textarea id="notes" name="notes" rows="3" placeholder="请简要说明申请理由或相关经验"></textarea>
+                        </div>
                     </div>
                 </div>
-                 <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="confirm_password">确认密码 <span class="text-danger">*</span></label>
-                        <input type="password" id="confirm_password" name="confirm_password" required>
-                    </div>
-                </div>
-            </div>
 
-            <div id="admin-fields" style="display:none;">
-                <hr>
-                <h4>管理员信息</h4>
-                <div class="form-group">
-                    <label for="department">部门</label>
-                    <input type="text" id="department" name="department">
+                <div class="form-actions">
+                    <a href="{{ url_for('login') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回登录
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> 提交申请
+                    </button>
                 </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">注册</button>
-        </form>
-         <div style="text-align: center; margin-top: 20px;">
-            <p style="color: #666;">
-                已有账户？ <a href="{{ url_for('login') }}" style="color: var(--main-blue); text-decoration: none; font-weight: 500;">立即登录</a>
-            </p>
+            </form>
         </div>
     </div>
-    <script>
-        document.getElementById('user_type').addEventListener('change', function() {
-            var adminFields = document.getElementById('admin-fields');
-            if (this.value === 'admin') {
-                adminFields.style.display = 'block';
-            } else {
-                adminFields.style.display = 'none';
-            }
-        });
-    </script>
-</body>
-</html> 
+
+    <!-- 申请说明 -->
+    <div class="info-section">
+        <div class="info-header">
+            <h4><i class="fas fa-info-circle"></i> 申请说明</h4>
+        </div>
+        <div class="info-content">
+            <ul>
+                <li>提交申请后，管理员将审核您的申请</li>
+                <li>审核通过后，系统将自动创建您的账户</li>
+                <li>您将收到账户激活通知和初始密码</li>
+                <li>请使用初始密码登录系统，并及时修改密码</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('registrationForm').addEventListener('submit', function(e) {
+    // 基本验证
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const fullName = document.getElementById('full_name').value.trim();
+    const department = document.getElementById('department').value;
+
+    if (!username || !email || !fullName || !department) {
+        e.preventDefault();
+        alert('请填写所有必填字段');
+        return;
+    }
+
+    // 用户名格式验证
+    if (username.length < 3 || username.length > 20) {
+        e.preventDefault();
+        alert('用户名长度应在3-20个字符之间');
+        return;
+    }
+
+    // 邮箱格式验证
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        e.preventDefault();
+        alert('请输入有效的邮箱地址');
+        return;
+    }
+
+    // 显示提交确认
+    if (!confirm('确认提交注册申请吗？')) {
+        e.preventDefault();
+    }
+});
+
+// 部门选择联动
+document.getElementById('department').addEventListener('change', function() {
+    const department = this.value;
+    const jobTitleField = document.getElementById('job_title');
+    
+    // 根据部门设置默认职位建议
+    const suggestions = {
+        '销售部': '销售代表',
+        '房产管理部': '房产管理专员',
+        '会计部': '会计专员',
+        '市场部': '市场专员',
+        '管理员': '系统管理员'
+    };
+    
+    if (department && suggestions[department]) {
+        jobTitleField.placeholder = `建议：${suggestions[department]}`;
+    } else {
+        jobTitleField.placeholder = '例如：销售代表、会计专员等';
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,803 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}维修工单管理{% endblock %}
+
+{% block page_title %}维修工单管理{% endblock %}
+
+{% block content %}
+<!-- 统计卡片 -->
+<div class="stats-section">
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-content">
+                <h3>总工单数</h3>
+                <p class="stat-number">{{ stats.total_orders or 0 }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+                <h3>本月新增</h3>
+                <p class="stat-number">{{ stats.this_month_orders or 0 }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-content">
+                <h3>逾期工单</h3>
+                <p class="stat-number">{{ stats.overdue_orders or 0 }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-content">
+                <h3>进行中</h3>
+                <p class="stat-number">{{ stats.status_counts.get('进行中', 0) }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 搜索和操作栏 -->
+<div class="search-section">
+    <form method="GET" class="search-form">
+        <div class="search-row">
+            <div class="search-group">
+                <input type="text" class="search-input" id="search" name="search" 
+                       value="{{ request.args.get('search', '') }}" placeholder="搜索工单标题或描述">
+            </div>
+            <div class="filter-group">
+                <select class="filter-select" id="property_id" name="property_id">
+                    <option value="">所有房产</option>
+                    {% for property in properties %}
+                    <option value="{{ property.id }}" 
+                            {% if request.args.get('property_id') == property.id %}selected{% endif %}>
+                        {{ property.address }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <select class="filter-select" id="status" name="status">
+                    <option value="">所有状态</option>
+                    <option value="待处理" {% if request.args.get('status') == '待处理' %}selected{% endif %}>待处理</option>
+                    <option value="进行中" {% if request.args.get('status') == '进行中' %}selected{% endif %}>进行中</option>
+                    <option value="已完成" {% if request.args.get('status') == '已完成' %}selected{% endif %}>已完成</option>
+                    <option value="已取消" {% if request.args.get('status') == '已取消' %}selected{% endif %}>已取消</option>
+                </select>
+                <select class="filter-select" id="priority" name="priority">
+                    <option value="">所有优先级</option>
+                    <option value="低" {% if request.args.get('priority') == '低' %}selected{% endif %}>低</option>
+                    <option value="中" {% if request.args.get('priority') == '中' %}selected{% endif %}>中</option>
+                    <option value="高" {% if request.args.get('priority') == '高' %}selected{% endif %}>高</option>
+                    <option value="紧急" {% if request.args.get('priority') == '紧急' %}selected{% endif %}>紧急</option>
+                </select>
+                <button type="submit" class="search-btn">搜索</button>
+            </div>
+            <div class="action-group">
+                <button type="button" class="btn btn-primary" onclick="toggleForm()">添加工单</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 添加工单表单 -->
+<div class="form-section" id="addOrderForm" style="display: none;">
+    <div class="form-card">
+        <div class="form-header">
+            <h3>添加维修工单</h3>
+            <button type="button" class="close-btn" onclick="toggleForm()">&times;</button>
+        </div>
+        <div class="form-body">
+            <form method="POST" action="{{ url_for('add_maintenance_order') }}">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="property_id">选择房产 *</label>
+                        <select name="property_id" id="property_id" required>
+                            <option value="">请选择房产</option>
+                            {% for property in properties %}
+                            <option value="{{ property.id }}">
+                                {{ property.address }} - {{ property.city }}, {{ property.state }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="title">工单标题 *</label>
+                        <input type="text" name="title" id="title" required placeholder="请输入工单标题">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">维修描述 *</label>
+                    <textarea name="description" id="description" rows="4" required placeholder="请详细描述需要维修的内容"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="assigned_to">负责人姓名 *</label>
+                        <input type="text" name="assigned_to" id="assigned_to" class="form-control" 
+                               placeholder="请输入负责人姓名" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="assigned_phone">负责人电话</label>
+                        <input type="tel" name="assigned_phone" id="assigned_phone" class="form-control" 
+                               placeholder="请输入负责人电话">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tracked_by">追踪人 *</label>
+                        <select name="tracked_by" id="tracked_by" required>
+                            <option value="">请选择追踪人</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.full_name }} ({{ user.user_type }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="priority">紧急程度 *</label>
+                        <select name="priority" id="priority" required>
+                            <option value="低">低</option>
+                            <option value="中" selected>中</option>
+                            <option value="高">高</option>
+                            <option value="紧急">紧急</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="estimated_cost">预计费用</label>
+                        <input type="number" name="estimated_cost" id="estimated_cost" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="estimated_completion_date">预计完成日期</label>
+                        <input type="date" name="estimated_completion_date" id="estimated_completion_date">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">备注</label>
+                    <textarea name="notes" id="notes" rows="3" placeholder="其他备注信息"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">创建工单</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleForm()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 工单列表 -->
+<div class="table-section">
+    <div class="table-header">
+        <h3>维修工单列表 <span class="count-badge">{{ orders|length }} 个</span></h3>
+    </div>
+    
+    {% if orders %}
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>工单ID</th>
+                    <th>房产地址</th>
+                    <th>标题</th>
+                    <th>负责人</th>
+                    <th>负责人电话</th>
+                    <th>追踪人</th>
+                    <th>优先级</th>
+                    <th>状态</th>
+                    <th>预计费用</th>
+                    <th>预计完成</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>#{{ order.id }}</td>
+                    <td>
+                        <div class="property-info">
+                            <strong>{{ order.property_address }}</strong>
+                            <small>{{ order.property_city }}, {{ order.property_state }}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="order-title">
+                            <strong>{{ order.title }}</strong>
+                            {% if order.description|length > 50 %}
+                            <small>{{ order.description[:50] }}...</small>
+                            {% else %}
+                            <small>{{ order.description }}</small>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>{{ order.assigned_name }}</td>
+                    <td>{{ order.assigned_phone or '-' }}</td>
+                    <td>{{ order.tracked_name }}</td>
+                    <td>
+                        <span class="priority-badge priority-{{ order.priority }}">
+                            {{ order.priority }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ order.status }}">
+                            {{ order.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if order.estimated_cost %}
+                        ${{ "%.2f"|format(order.estimated_cost) }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if order.estimated_completion_date %}
+                        {{ order.estimated_completion_date.strftime('%Y-%m-%d') }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td class="action-buttons">
+                        <a href="{{ url_for('maintenance_order_detail', order_id=order.id) }}" 
+                           class="btn btn-sm btn-secondary">查看</a>
+                        <a href="{{ url_for('edit_maintenance_order', order_id=order.id) }}" 
+                           class="btn btn-sm btn-primary">编辑</a>
+                        <button class="btn btn-sm btn-danger delete-btn" 
+                                data-order-id="{{ order.id }}" 
+                                data-order-title="{{ order.title }}">
+                            删除
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>暂无维修工单数据</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 分页 -->
+{% if total_pages > 1 %}
+<div class="pagination-section">
+    <nav class="pagination-nav">
+        {% if page > 1 %}
+        <a href="{{ url_for('maintenance_orders', page=page-1, search=request.args.get('search', ''), property_id=request.args.get('property_id', ''), status=request.args.get('status', ''), priority=request.args.get('priority', '')) }}" class="page-link">上一页</a>
+        {% endif %}
+        
+        <div class="page-numbers">
+            {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <span class="page-link active">{{ p }}</span>
+            {% else %}
+            <a href="{{ url_for('maintenance_orders', page=p, search=request.args.get('search', ''), property_id=request.args.get('property_id', ''), status=request.args.get('status', ''), priority=request.args.get('priority', '')) }}" class="page-link">{{ p }}</a>
+            {% endif %}
+            {% endfor %}
+        </div>
+        
+        {% if page < total_pages %}
+        <a href="{{ url_for('maintenance_orders', page=page+1, search=request.args.get('search', ''), property_id=request.args.get('property_id', ''), status=request.args.get('status', ''), priority=request.args.get('priority', '')) }}" class="page-link">下一页</a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 切换添加表单显示
+function toggleForm() {
+    const form = document.getElementById('addOrderForm');
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+    } else {
+        form.style.display = 'none';
+    }
+}
+
+// 删除工单
+function deleteOrder(orderId, orderTitle) {
+    if (confirm('您确定要删除维修工单 "' + orderTitle + '" 吗？此操作不可恢复。')) {
+        const formData = new FormData();
+        formData.append('order_id', orderId);
+        
+        fetch('{{ url_for("delete_maintenance_order") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected || response.url.includes('/login')) {
+                alert('会话已过期，请重新登录');
+                window.location.href = '/login';
+                return;
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                return response.text().then(text => {
+                    throw new Error('服务器返回了非JSON响应');
+                });
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message || '删除成功！');
+                window.location.reload();
+            } else {
+                alert('删除失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('删除操作失败:', error);
+            if (error.message.includes('非JSON响应')) {
+                alert('会话已过期，请重新登录');
+                window.location.href = '/login';
+            } else {
+                alert('删除过程中发生网络或服务器错误。');
+            }
+        });
+    }
+}
+
+// 搜索输入防抖
+let searchTimeout;
+document.getElementById('search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 500);
+});
+
+// 筛选器自动提交（只对筛选表单生效）
+document.querySelectorAll('.search-section select[name="property_id"], .search-section select[name="status"], .search-section select[name="priority"]').forEach(select => {
+    select.addEventListener('change', function() {
+        this.form.submit();
+    });
+});
+
+// 删除按钮事件监听
+document.querySelectorAll('.delete-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const orderId = this.getAttribute('data-order-id');
+        const orderTitle = this.getAttribute('data-order-title');
+        deleteOrder(orderId, orderTitle);
+    });
+});
+</script>
+
+<style>
+/* 统计卡片样式 */
+.stats-section {
+    margin-bottom: 1.5rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 50%;
+}
+
+.stat-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: normal;
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #007bff;
+    margin: 0;
+}
+
+/* 搜索和操作栏样式 */
+.search-section {
+    background: white;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.search-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.filter-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.filter-select {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    min-width: 120px;
+}
+
+.search-btn {
+    padding: 0.75rem 1.5rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.search-btn:hover {
+    background: #0056b3;
+}
+
+.action-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* 表单样式 */
+.form-section {
+    margin-bottom: 1.5rem;
+}
+
+.form-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.form-header {
+    background: #f8f9fa;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #aaa;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    color: #000;
+}
+
+.form-body {
+    padding: 1.5rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+/* 表格样式 */
+.table-section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.table-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    background: #f8f9fa;
+}
+
+.table-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.count-badge {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.data-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* 优先级徽章样式 */
+.priority-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.priority-低 { background-color: #d4edda; color: #155724; }
+.priority-中 { background-color: #fff3cd; color: #856404; }
+.priority-高 { background-color: #f8d7da; color: #721c24; }
+.priority-紧急 { background-color: #721c24; color: #fff; }
+
+/* 状态徽章样式 */
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.status-待处理 { background-color: #e2e3e5; color: #383d41; }
+.status-进行中 { background-color: #cce5ff; color: #004085; }
+.status-已完成 { background-color: #d4edda; color: #155724; }
+.status-已取消 { background-color: #f8d7da; color: #721c24; }
+
+/* 工单信息样式 */
+.order-title strong {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.order-title small {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.property-info strong {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.property-info small {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+/* 空状态样式 */
+.empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+/* 分页样式 */
+.pagination-section {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+.pagination-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-link {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #007bff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.page-link:hover {
+    background: #e9ecef;
+}
+
+.page-link.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.page-numbers {
+    display: flex;
+    gap: 0.25rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .search-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        flex-wrap: wrap;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .data-table {
+        font-size: 0.8rem;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 0.5rem;
+    }
+}
+</style>
+{% endblock %} 

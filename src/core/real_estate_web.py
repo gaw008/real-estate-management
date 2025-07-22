@@ -33,7 +33,10 @@ from modules.department_modules import (
 )
 
 # 导入用户注册系统
-from modules.user_registration import registration_system
+from modules.registration_manager import registration_manager
+
+# 导入用户模块权限管理系统
+from modules.user_module_permissions import init_user_module_permissions, get_user_module_permissions
 
 # 导入密码管理系统
 from modules.password_manager import password_manager
@@ -44,11 +47,24 @@ from modules.language_manager import language_manager, get_text, get_current_lan
 # 导入财务报表系统
 from modules.financial_reports import financial_reports_manager
 
+# 导入维修工单系统
+from modules.maintenance_orders import maintenance_orders_manager
+
+# 导入客户追踪系统
+from modules.customer_tracking import customer_tracking_manager
+
 # 注册模板函数
 @app.template_filter('format_fee')
 def format_fee_filter(rate, fee_type=None):
     """模板过滤器：格式化管理费显示"""
     return format_management_fee(rate, fee_type)
+
+@app.template_filter('nl2br')
+def nl2br_filter(text):
+    """模板过滤器：将换行符转换为HTML的br标签"""
+    if text is None:
+        return ''
+    return text.replace('\n', '<br>')
 
 # 注册多语言模板函数
 @app.template_global()
@@ -93,6 +109,12 @@ def get_department_display_name(department):
 
 # 从配置加载器导入数据库配置
 from .config_loader import DB_CONFIG, CA_CERTIFICATE
+
+# 初始化注册申请系统
+registration_manager.create_tables()
+
+# 初始化用户模块权限管理系统
+init_user_module_permissions(DB_CONFIG)
 
 def get_db_connection():
     """获取数据库连接 - 生产环境版本"""
@@ -319,131 +341,11 @@ def logout():
     flash('您已成功退出登录', 'info')
     return redirect(url_for('login'))
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    """处理用户注册"""
-    if request.method == 'POST':
-        form_data = request.form.to_dict()
-        
-        # 验证密码
-        if form_data.get('password') != form_data.get('confirm_password'):
-            flash('两次输入的密码不匹配。', 'error')
-            return render_template('new_ui/register.html', data=form_data)
-        
-        # 调用注册系统处理
-        success, message = registration_system.register_user(form_data)
-        
-        if success:
-            flash(message, 'success')
-            return redirect(url_for('login'))
-        else:
-            flash(message, 'error')
-            return render_template('new_ui/register.html', data=form_data)
-            
-    return render_template('new_ui/register.html')
+
 
 # ==================== 管理员审核路由 ====================
 
-@app.route('/admin/registrations')
-@super_admin_required
-def admin_registrations():
-    """管理员查看注册申请列表"""
-    page = request.args.get('page', 1, type=int)
-    status = request.args.get('status', '')
-    per_page = 20
-    
-    # 获取注册申请列表
-    registrations, total_count = registration_system.get_all_registrations(
-        status=status if status else None,
-        page=page,
-        per_page=per_page
-    )
-    
-    # 获取统计信息
-    stats = registration_system.get_registration_stats()
-    
-    # 计算分页信息
-    total_pages = (total_count + per_page - 1) // per_page
-    
-    return render_template('admin_registrations.html',
-                         registrations=registrations,
-                         stats=stats,
-                         current_page=page,
-                         total_pages=total_pages,
-                         total_count=total_count)
 
-@app.route('/admin/registration/<int:registration_id>')
-@super_admin_required
-def registration_detail(registration_id):
-    """查看注册申请详情"""
-    conn = registration_system.get_db_connection()
-    if not conn:
-        flash('数据库连接失败', 'error')
-        return redirect(url_for('admin_registrations'))
-    
-    cursor = conn.cursor(dictionary=True)
-    
-    try:
-        # 获取注册申请详情
-        cursor.execute("""
-            SELECT ur.*, u.username as reviewed_by_username
-            FROM user_registrations ur
-            LEFT JOIN users u ON ur.reviewed_by = u.id
-            WHERE ur.id = %s
-        """, (registration_id,))
-        
-        registration = cursor.fetchone()
-        
-        if not registration:
-            flash('注册申请不存在', 'error')
-            return redirect(url_for('admin_registrations'))
-        
-        return render_template('registration_detail.html', registration=registration)
-        
-    except Exception as e:
-        print(f"获取注册详情失败: {e}")
-        flash('获取注册详情失败', 'error')
-        return redirect(url_for('admin_registrations'))
-    finally:
-        cursor.close()
-        conn.close()
-
-@app.route('/admin/review_registration', methods=['POST'])
-@super_admin_required
-def review_registration():
-    """审核注册申请"""
-    registration_id = request.form.get('registration_id')
-    action = request.form.get('action')
-    admin_notes = request.form.get('admin_notes', '')
-    
-    if not registration_id or not action:
-        flash('参数错误', 'error')
-        return redirect(url_for('admin_registrations'))
-    
-    admin_id = session['user_id']
-    
-    if action == 'approve':
-        success, message = registration_system.approve_registration(
-            registration_id, admin_id, admin_notes
-        )
-    elif action == 'reject':
-        if not admin_notes.strip():
-            flash('拒绝申请时必须填写拒绝理由', 'error')
-            return redirect(url_for('registration_detail', registration_id=registration_id))
-        
-        success, message = registration_system.reject_registration(
-            registration_id, admin_id, admin_notes
-        )
-    else:
-        flash('无效的操作', 'error')
-        return redirect(url_for('admin_registrations'))
-    
-    if success:
-        flash(message, 'success')
-    else:
-        flash(message, 'error')
-    
-    return redirect(url_for('admin_registrations'))
 
 @app.route('/dashboard')
 @login_required
@@ -1110,80 +1012,292 @@ def demo_index():
     """演示首页"""
     return render_template('demo_index.html')
 
+# ==================== 用户注册功能 ====================
+
+
+
 # ==================== 用户管理功能 ====================
 
 @app.route('/admin/user_management', methods=['GET'])
 @module_required('user_management')
 def admin_user_management():
     """用户管理页面"""
-    connection = get_db_connection()
-    if not connection:
-        flash('数据库连接失败，请稍后重试。', 'error')
-        return render_template('new_ui/admin_user_management.html', users=[], stats={})
-
-    try:
-        cursor = connection.cursor(dictionary=True)
-        
-        # 获取所有用户
-        cursor.execute("SELECT id, username, full_name, user_type, department, email FROM users")
-        users = cursor.fetchall()
-        
-        # 获取统计数据
-        cursor.execute("SELECT COUNT(*) as total_users FROM users")
-        total_users = cursor.fetchone()['total_users']
-        
-        cursor.execute("SELECT COUNT(*) as admin_count FROM users WHERE user_type = 'admin'")
-        admin_count = cursor.fetchone()['admin_count']
-        
-        cursor.execute("SELECT COUNT(*) as owner_count FROM users WHERE user_type = 'owner'")
-        owner_count = cursor.fetchone()['owner_count']
-
-        cursor.execute("SELECT COUNT(*) as unassigned_count FROM users WHERE department IS NULL OR department = ''")
-        unassigned_count = cursor.fetchone()['unassigned_count']
-
-        stats = {
-            'total_users': total_users,
-            'admin_count': admin_count,
-            'owner_count': owner_count,
-            'unassigned_count': unassigned_count
-        }
-
-    except Exception as e:
-        flash(f"加载用户数据时出错: {e}", 'error')
-        users = []
-        stats = {'total_users': 0, 'admin_count': 0, 'owner_count': 0, 'unassigned_count': 0}
-    finally:
-        cursor.close()
-        connection.close()
-        
-    return render_template('new_ui/admin_user_management.html', users=users, stats=stats)
-
-@app.route('/admin/delete_user', methods=['POST'])
-@module_required('user_management')
-def admin_delete_user():
-    """删除用户账号"""
-    
-    user_id = request.form.get('user_id')
-    confirm_username = request.form.get('confirm_username')
-    
-    if not user_id or not confirm_username:
-        flash('请提供完整的删除信息', 'error')
-        return redirect(url_for('admin_user_management'))
-    
-    # 防止删除自己的账号
-    if int(user_id) == session.get('user_id'):
-        flash('不能删除自己的账号', 'error')
-        return redirect(url_for('admin_user_management'))
-    
     conn = get_db_connection()
     if not conn:
         flash('数据库连接失败', 'error')
-        return redirect(url_for('admin_user_management'))
+        return render_template('new_ui/user_management.html', users=[], pagination={})
     
     cursor = conn.cursor(dictionary=True)
     
     try:
-        # 获取要删除的用户信息
+        # 获取分页参数
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
+        offset = (page - 1) * per_page
+        
+        # 构建查询条件
+        search = request.args.get('search', '')
+        user_type = request.args.get('user_type', '')
+        status = request.args.get('status', '')
+        
+        where_conditions = []
+        params = []
+        
+        if search:
+            where_conditions.append("(username LIKE %s OR full_name LIKE %s OR email LIKE %s)")
+            params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
+        
+        if user_type:
+            where_conditions.append("user_type = %s")
+            params.append(user_type)
+        
+        if status == 'active':
+            where_conditions.append("is_active = TRUE")
+        elif status == 'inactive':
+            where_conditions.append("is_active = FALSE")
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        # 获取总数
+        count_sql = f"SELECT COUNT(*) as count FROM users WHERE {where_clause}"
+        cursor.execute(count_sql, params)
+        total_count = cursor.fetchone()['count']
+        
+        # 获取用户列表
+        query_sql = f"""
+        SELECT id, username, email, user_type, department, full_name, 
+               is_active, created_at, updated_at
+        FROM users 
+        WHERE {where_clause}
+        ORDER BY created_at DESC
+        LIMIT %s OFFSET %s
+        """
+        
+        cursor.execute(query_sql, params + [per_page, offset])
+        users = cursor.fetchall()
+        
+        # 添加显示名称
+        for user in users:
+            user['user_type_display'] = {
+                'admin': '管理员',
+                'property_manager': '房产管理',
+                'sales': '销售',
+                'accounting': '会计',
+                'marketing': '市场部'
+            }.get(user['user_type'], user['user_type'])
+            
+            user['department_display'] = user['department'] or '未分配'
+        
+        # 创建分页对象
+        total_pages = (total_count + per_page - 1) // per_page
+        pagination = {
+            'page': page,
+            'per_page': per_page,
+            'total': total_count,
+            'pages': total_pages,
+            'has_prev': page > 1,
+            'has_next': page < total_pages,
+            'prev_num': page - 1 if page > 1 else None,
+            'next_num': page + 1 if page < total_pages else None,
+            'iter_pages': lambda left_edge=1, right_edge=1, left_current=2, right_current=2: range(1, total_pages + 1)
+        }
+        
+        return render_template('new_ui/user_management.html', 
+                             users=users, 
+                             pagination=pagination)
+        
+    except Exception as e:
+        print(f"❌ 获取用户列表失败: {e}")
+        flash('获取用户列表失败', 'error')
+        return render_template('new_ui/user_management.html', users=[], pagination={})
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
+@app.route('/admin/user_details/<int:user_id>')
+@admin_required
+def admin_user_details(user_id):
+    """获取用户详情"""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': '数据库连接失败'})
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        cursor.execute("""
+            SELECT id, username, email, user_type, department, full_name, 
+                   is_active, created_at, updated_at
+            FROM users 
+            WHERE id = %s
+        """, (user_id,))
+        
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify({'success': False, 'message': '用户不存在'})
+        
+        return jsonify({'success': True, 'user': user})
+        
+    except Exception as e:
+        print(f"❌ 获取用户详情失败: {e}")
+        return jsonify({'success': False, 'message': '获取用户详情失败'})
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/admin/edit_user', methods=['POST'])
+@admin_required
+def admin_edit_user():
+    """编辑用户信息"""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': '数据库连接失败'})
+    
+    cursor = conn.cursor()
+    
+    try:
+        user_id = request.form.get('user_id')
+        username = request.form.get('username')
+        full_name = request.form.get('full_name')
+        email = request.form.get('email')
+        user_type = request.form.get('user_type')
+        department = request.form.get('department')
+        is_active = request.form.get('is_active') == '1'
+        
+        if not all([user_id, username, full_name, email, user_type, department]):
+            return jsonify({'success': False, 'message': '请填写所有必填字段'})
+        
+        # 检查用户名是否已被其他用户使用
+        cursor.execute("""
+            SELECT id FROM users 
+            WHERE username = %s AND id != %s
+        """, (username, user_id))
+        
+        if cursor.fetchone():
+            return jsonify({'success': False, 'message': '用户名已被使用'})
+        
+        # 检查邮箱是否已被其他用户使用
+        cursor.execute("""
+            SELECT id FROM users 
+            WHERE email = %s AND id != %s
+        """, (email, user_id))
+        
+        if cursor.fetchone():
+            return jsonify({'success': False, 'message': '邮箱已被使用'})
+        
+        # 更新用户信息
+        cursor.execute("""
+            UPDATE users 
+            SET username = %s, full_name = %s, email = %s, 
+                user_type = %s, department = %s, is_active = %s, 
+                updated_at = NOW()
+            WHERE id = %s
+        """, (username, full_name, email, user_type, department, is_active, user_id))
+        
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'message': '用户不存在'})
+        
+        conn.commit()
+        print(f"✅ 用户信息更新成功: {username}")
+        
+        return jsonify({'success': True, 'message': '用户信息更新成功'})
+        
+    except Exception as e:
+        print(f"❌ 更新用户信息失败: {e}")
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'更新失败: {e}'})
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/admin/reset_user_password', methods=['POST'])
+@admin_required
+def admin_reset_user_password():
+    """重置用户密码"""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': '数据库连接失败'})
+    
+    cursor = conn.cursor()
+    
+    try:
+        user_id = request.form.get('user_id')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not all([user_id, new_password, confirm_password]):
+            return jsonify({'success': False, 'message': '请填写所有字段'})
+        
+        if new_password != confirm_password:
+            return jsonify({'success': False, 'message': '两次输入的密码不匹配'})
+        
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'message': '密码长度至少6位'})
+        
+        # 密码哈希
+        import hashlib
+        import os
+        
+        # 生成盐值
+        salt = os.urandom(32)
+        # 使用PBKDF2进行密码哈希
+        password_hash = hashlib.pbkdf2_hmac(
+            'sha256', 
+            new_password.encode('utf-8'), 
+            salt, 
+            100000
+        )
+        # 将盐值和哈希值组合存储
+        password_hash = salt.hex() + password_hash.hex()
+        
+        # 更新密码
+        cursor.execute("""
+            UPDATE users 
+            SET password_hash = %s, updated_at = NOW()
+            WHERE id = %s
+        """, (password_hash, user_id))
+        
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'message': '用户不存在'})
+        
+        conn.commit()
+        print(f"✅ 用户密码重置成功: ID {user_id}")
+        
+        return jsonify({'success': True, 'message': '密码重置成功'})
+        
+    except Exception as e:
+        print(f"❌ 重置密码失败: {e}")
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'重置失败: {e}'})
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/admin/delete_user', methods=['POST'])
+@admin_required
+def admin_delete_user():
+    """删除用户"""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': '数据库连接失败'})
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        user_id = request.form.get('user_id')
+        confirm_username = request.form.get('confirm_username')
+        
+        if not all([user_id, confirm_username]):
+            return jsonify({'success': False, 'message': '请提供完整的删除信息'})
+        
+        # 防止删除自己的账号
+        if int(user_id) == session.get('user_id'):
+            return jsonify({'success': False, 'message': '不能删除自己的账号'})
+        
+        # 获取用户信息
         cursor.execute("""
             SELECT id, username, full_name, user_type
             FROM users 
@@ -1193,13 +1307,11 @@ def admin_delete_user():
         user = cursor.fetchone()
         
         if not user:
-            flash('用户不存在或已被删除', 'error')
-            return redirect(url_for('admin_user_management'))
+            return jsonify({'success': False, 'message': '用户不存在或已被删除'})
         
         # 验证用户名确认
         if user['username'] != confirm_username:
-            flash('用户名确认不匹配', 'error')
-            return redirect(url_for('admin_user_management'))
+            return jsonify({'success': False, 'message': '用户名确认不匹配'})
         
         # 防止删除最后一个管理员
         if user['user_type'] == 'admin':
@@ -1211,8 +1323,7 @@ def admin_delete_user():
             admin_count = cursor.fetchone()['admin_count']
             
             if admin_count <= 1:
-                flash('不能删除最后一个管理员账号', 'error')
-                return redirect(url_for('admin_user_management'))
+                return jsonify({'success': False, 'message': '不能删除最后一个管理员账号'})
         
         # 软删除用户（将is_active设为FALSE）
         cursor.execute("""
@@ -1223,21 +1334,18 @@ def admin_delete_user():
         
         if cursor.rowcount > 0:
             conn.commit()
-            flash(f'成功删除用户: {user["full_name"]} ({user["username"]})', 'success')
-            
-            # 记录操作日志
             print(f"🗑️ 管理员 {session.get('username')} 删除了用户: {user['username']} ({user['full_name']})")
+            return jsonify({'success': True, 'message': f'成功删除用户: {user["full_name"]} ({user["username"]})'})
         else:
-            flash('删除失败', 'error')
-    
+            return jsonify({'success': False, 'message': '删除失败'})
+        
     except Exception as e:
         print(f"❌ 删除用户失败: {e}")
-        flash('删除用户时发生错误', 'error')
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'删除失败: {e}'})
     finally:
         cursor.close()
         conn.close()
-    
-    return redirect(url_for('admin_user_management'))
 
 @app.route('/demo/user_management', methods=['GET'])
 def demo_user_management():
@@ -1642,9 +1750,74 @@ def add_property():
 
     # 生产模式
     if request.method == 'POST':
-        # ... (此处省略了生产模式下的数据库插入逻辑)
-        flash('房产添加成功！', 'success')
-        return redirect(url_for('properties_fixed'))
+        try:
+            # 获取表单数据
+            property_data = {
+                'name': request.form.get('name'),
+                'street_address': request.form.get('street_address'),
+                'city': request.form.get('city'),
+                'state': request.form.get('state'),
+                'bedrooms': int(request.form.get('bedrooms', 0)) if request.form.get('bedrooms') else None,
+                'bathrooms': float(request.form.get('bathrooms', 0)) if request.form.get('bathrooms') else None,
+                'square_feet': int(request.form.get('square_feet', 0)) if request.form.get('square_feet') else None
+            }
+            
+            # 验证必填字段
+            if not property_data['name'] or not property_data['street_address'] or not property_data['city'] or not property_data['state']:
+                flash('房产名称、街道地址、城市和州是必填项', 'error')
+                return render_template('new_ui/add_property.html', property_data=property_data)
+            
+            # 连接数据库
+            conn = get_db_connection()
+            if not conn:
+                flash('数据库连接失败', 'error')
+                return render_template('new_ui/add_property.html', property_data=property_data)
+            
+            cursor = conn.cursor()
+            
+            # 生成唯一的房产ID
+            import uuid
+            property_id = str(uuid.uuid4()).replace('-', '')[:10]
+            
+            # 插入房产数据
+            insert_query = """
+                INSERT INTO properties (
+                    id, name, street_address, city, state, layout, 
+                    property_size, land_size, occupancy, beds
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            
+            # 将表单数据映射到数据库字段
+            layout = f"{property_data['bedrooms']}b{property_data['bathrooms']}b" if property_data['bedrooms'] and property_data['bathrooms'] else None
+            property_size = property_data['square_feet']
+            land_size = None  # 表单中没有这个字段
+            occupancy = None  # 表单中没有这个字段
+            beds = None  # 表单中没有这个字段
+            
+            cursor.execute(insert_query, (
+                property_id,
+                property_data['name'],
+                property_data['street_address'],
+                property_data['city'],
+                property_data['state'],
+                layout,
+                property_size,
+                land_size,
+                occupancy,
+                beds
+            ))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            flash(f'房产 "{property_data["name"]}" 添加成功！', 'success')
+            return redirect(url_for('properties_fixed'))
+            
+        except Exception as e:
+            print(f"添加房产错误: {e}")
+            flash(f'添加房产失败: {str(e)}', 'error')
+            return render_template('new_ui/add_property.html', property_data=property_data)
     
     return render_template('new_ui/add_property.html')
 
@@ -4672,7 +4845,784 @@ def edit_owner(owner_id):
         flash(f'获取业主信息时出错: {e}', 'error')
         return redirect(url_for('owners_fixed'))
     finally:
+        if 'connection' in locals():
+            connection.close()
+
+# ==================== 维修工单管理路由 ====================
+
+@app.route('/maintenance_orders')
+@module_required('maintenance_records')
+def maintenance_orders():
+    """维修工单管理页面"""
+    try:
+        # 获取查询参数
+        page = int(request.args.get('page', 1))
+        search = request.args.get('search', '')
+        property_id = request.args.get('property_id', '')
+        status = request.args.get('status', '')
+        priority = request.args.get('priority', '')
+        
+        # 获取工单列表
+        orders, total = maintenance_orders_manager.get_all_orders(
+            page=page, per_page=20,
+            search=search, property_id=property_id,
+            status=status, priority=priority
+        )
+        
+        # 获取统计数据
+        stats = maintenance_orders_manager.get_order_stats()
+        
+        # 获取房产和用户列表用于筛选
+        properties = maintenance_orders_manager.get_properties_for_select()
+        users = maintenance_orders_manager.get_users_for_select()
+        
+        # 计算分页
+        total_pages = (total + 19) // 20  # 每页20条
+        
+        return render_template('new_ui/maintenance_orders.html',
+                             orders=orders,
+                             stats=stats,
+                             properties=properties,
+                             users=users,
+                             page=page,
+                             total_pages=total_pages,
+                             total=total)
+                             
+    except Exception as e:
+        print(f"获取维修工单列表失败: {e}")
+        flash(f'获取维修工单列表失败: {e}', 'error')
+        return render_template('new_ui/maintenance_orders.html',
+                             orders=[],
+                             stats={
+                                 'total_orders': 0,
+                                 'status_counts': {},
+                                 'priority_counts': {},
+                                 'this_month_orders': 0,
+                                 'overdue_orders': 0
+                             },
+                             properties=[],
+                             users=[],
+                             page=1,
+                             total_pages=1,
+                             total=0)
+
+@app.route('/add_maintenance_order', methods=['POST'])
+@module_required('maintenance_records')
+def add_maintenance_order():
+    """添加维修工单"""
+    try:
+        # 获取表单数据
+        assigned_to = request.form.get('assigned_to')
+        assigned_phone = request.form.get('assigned_phone', '')
+        tracked_by = request.form.get('tracked_by')
+        
+        # 验证必填字段
+        if not assigned_to or not tracked_by:
+            flash('请填写负责人姓名和选择追踪人', 'error')
+            return redirect(url_for('maintenance_orders'))
+        
+        try:
+            tracked_by = int(tracked_by)
+        except ValueError:
+            flash('追踪人必须是有效的用户ID', 'error')
+            return redirect(url_for('maintenance_orders'))
+        
+        order_data = {
+            'property_id': request.form.get('property_id'),
+            'title': request.form.get('title'),
+            'description': request.form.get('description'),
+            'assigned_to': assigned_to,
+            'assigned_phone': assigned_phone,
+            'tracked_by': tracked_by,
+            'priority': request.form.get('priority'),
+            'estimated_cost': float(request.form.get('estimated_cost', 0) or 0),
+            'estimated_completion_date': request.form.get('estimated_completion_date'),
+            'created_by': session['user_id'],
+            'notes': request.form.get('notes', '')
+        }
+        
+        # 验证必填字段
+        if not all([order_data['property_id'], order_data['title'], 
+                   order_data['description'], order_data['assigned_to'], 
+                   order_data['tracked_by'], order_data['priority']]):
+            flash('请填写所有必填字段', 'error')
+            return redirect(url_for('maintenance_orders'))
+        
+        # 处理日期
+        if order_data['estimated_completion_date']:
+            try:
+                order_data['estimated_completion_date'] = datetime.strptime(
+                    order_data['estimated_completion_date'], '%Y-%m-%d'
+                ).date()
+            except ValueError:
+                flash('预计完成日期格式错误', 'error')
+                return redirect(url_for('maintenance_orders'))
+        else:
+            order_data['estimated_completion_date'] = None
+        
+        # 创建工单
+        success, message = maintenance_orders_manager.add_maintenance_order(order_data)
+        
+        if success:
+            flash(message, 'success')
+        else:
+            flash(message, 'error')
+            
+        return redirect(url_for('maintenance_orders'))
+        
+    except Exception as e:
+        print(f"添加维修工单失败: {e}")
+        flash(f'添加维修工单失败: {e}', 'error')
+        return redirect(url_for('maintenance_orders'))
+
+@app.route('/maintenance_order/<int:order_id>')
+@module_required('maintenance_records')
+def maintenance_order_detail(order_id):
+    """维修工单详情页面"""
+    try:
+        order = maintenance_orders_manager.get_order_by_id(order_id)
+        
+        if not order:
+            flash('维修工单不存在', 'error')
+            return redirect(url_for('maintenance_orders'))
+            
+        return render_template('new_ui/maintenance_order_detail.html', order=order)
+        
+    except Exception as e:
+        print(f"获取维修工单详情失败: {e}")
+        flash(f'获取维修工单详情失败: {e}', 'error')
+        return redirect(url_for('maintenance_orders'))
+
+@app.route('/edit_maintenance_order/<int:order_id>', methods=['GET', 'POST'])
+@module_required('maintenance_records')
+def edit_maintenance_order(order_id):
+    """编辑维修工单"""
+    if request.method == 'POST':
+        try:
+            # 获取表单数据
+            assigned_to = request.form.get('assigned_to')
+            assigned_phone = request.form.get('assigned_phone', '')
+            tracked_by = request.form.get('tracked_by')
+            
+            # 验证必填字段
+            if not assigned_to or not tracked_by:
+                flash('请填写负责人姓名和选择追踪人', 'error')
+                return redirect(url_for('edit_maintenance_order', order_id=order_id))
+            
+            try:
+                tracked_by = int(tracked_by)
+            except ValueError:
+                flash('追踪人必须是有效的用户ID', 'error')
+                return redirect(url_for('edit_maintenance_order', order_id=order_id))
+            
+            update_data = {
+                'property_id': request.form.get('property_id'),
+                'title': request.form.get('title'),
+                'description': request.form.get('description'),
+                'assigned_to': assigned_to,
+                'assigned_phone': assigned_phone,
+                'tracked_by': tracked_by,
+                'priority': request.form.get('priority'),
+                'status': request.form.get('status'),
+                'estimated_cost': float(request.form.get('estimated_cost', 0) or 0),
+                'actual_cost': float(request.form.get('actual_cost', 0) or 0) if request.form.get('actual_cost') else None,
+                'estimated_completion_date': request.form.get('estimated_completion_date'),
+                'actual_completion_date': request.form.get('actual_completion_date'),
+                'notes': request.form.get('notes', '')
+            }
+            
+            # 验证必填字段
+            if not all([update_data['property_id'], update_data['title'], 
+                       update_data['description'], update_data['assigned_to'], 
+                       update_data['tracked_by'], update_data['priority'], 
+                       update_data['status']]):
+                flash('请填写所有必填字段', 'error')
+                return redirect(url_for('edit_maintenance_order', order_id=order_id))
+            
+            # 处理日期
+            for date_field in ['estimated_completion_date', 'actual_completion_date']:
+                if update_data[date_field]:
+                    try:
+                        update_data[date_field] = datetime.strptime(
+                            update_data[date_field], '%Y-%m-%d'
+                        ).date()
+                    except ValueError:
+                        flash(f'{date_field} 日期格式错误', 'error')
+                        return redirect(url_for('edit_maintenance_order', order_id=order_id))
+                else:
+                    update_data[date_field] = None
+            
+            # 更新工单
+            success, message = maintenance_orders_manager.update_order(order_id, update_data)
+            
+            if success:
+                flash(message, 'success')
+                return redirect(url_for('maintenance_orders'))
+            else:
+                flash(message, 'error')
+                return redirect(url_for('edit_maintenance_order', order_id=order_id))
+                
+        except Exception as e:
+            print(f"更新维修工单失败: {e}")
+            flash(f'更新维修工单失败: {e}', 'error')
+            return redirect(url_for('edit_maintenance_order', order_id=order_id))
+    
+    # GET请求：显示编辑表单
+    try:
+        order = maintenance_orders_manager.get_order_by_id(order_id)
+        
+        if not order:
+            flash('维修工单不存在', 'error')
+            return redirect(url_for('maintenance_orders'))
+        
+        # 获取房产和用户列表
+        properties = maintenance_orders_manager.get_properties_for_select()
+        users = maintenance_orders_manager.get_users_for_select()
+        
+        return render_template('new_ui/edit_maintenance_order.html',
+                             order=order,
+                             properties=properties,
+                             users=users)
+                             
+    except Exception as e:
+        print(f"获取维修工单信息失败: {e}")
+        flash(f'获取维修工单信息失败: {e}', 'error')
+        return redirect(url_for('maintenance_orders'))
+
+@app.route('/delete_maintenance_order', methods=['POST'])
+@module_required('maintenance_records')
+def delete_maintenance_order():
+    """删除维修工单"""
+    try:
+        order_id = request.form.get('order_id')
+        
+        if not order_id:
+            return jsonify({'success': False, 'message': '工单ID不能为空'})
+        
+        success, message = maintenance_orders_manager.delete_order(
+            order_id=int(order_id),
+            admin_id=session['user_id']
+        )
+        
+        return jsonify({'success': success, 'message': message})
+        
+    except Exception as e:
+        print(f"删除维修工单失败: {e}")
+        return jsonify({'success': False, 'message': f'删除维修工单失败: {e}'})
+
+# ==================== 客户追踪路由 ====================
+
+@app.route('/customer_tracking')
+@module_required('customer_tracking')
+def customer_tracking():
+    """客户追踪主页面"""
+    try:
+        # 获取查询参数
+        page = int(request.args.get('page', 1))
+        search = request.args.get('search', '')
+        status = request.args.get('status', '')
+        
+        # 获取客户列表
+        result = customer_tracking_manager.get_all_customers(
+            page=page, 
+            per_page=20, 
+            search=search, 
+            status=status
+        )
+        
+        # 获取统计数据
+        total_customers = result['total']
+        active_customers = len([c for c in result['customers'] if c['tracking_status'] in ['签约完成', '跟进服务']])
+        following_customers = len([c for c in result['customers'] if c['tracking_status'] in ['看房安排', '价格谈判', '合同准备']])
+        
+        # 计算本月新增（简化计算）
+        from datetime import datetime
+        current_month = datetime.now().month
+        new_this_month = len([c for c in result['customers'] 
+                            if c['created_at'] and c['created_at'].month == current_month])
+        
+        # 获取选项数据
+        status_options = customer_tracking_manager.get_tracking_status_options()
+        rental_type_options = customer_tracking_manager.get_rental_type_options()
+        
+        return render_template('new_ui/customer_tracking.html',
+                             customers=result['customers'],
+                             total_customers=total_customers,
+                             active_customers=active_customers,
+                             following_customers=following_customers,
+                             new_this_month=new_this_month,
+                             pages=result['pages'],
+                             current_page=result['current_page'],
+                             status_options=status_options,
+                             rental_type_options=rental_type_options)
+                             
+    except Exception as e:
+        print(f"获取客户列表失败: {e}")
+        flash(f'获取客户列表失败: {e}', 'error')
+        return render_template('new_ui/customer_tracking.html',
+                             customers=[],
+                             total_customers=0,
+                             active_customers=0,
+                             following_customers=0,
+                             new_this_month=0,
+                             pages=0,
+                             current_page=1,
+                             status_options=[],
+                             rental_type_options=[])
+
+@app.route('/add_customer_tracking', methods=['POST'])
+@module_required('customer_tracking')
+def add_customer_tracking():
+    """添加客户"""
+    try:
+        # 获取表单数据
+        customer_data = {
+            'name': request.form.get('name'),
+            'phone': request.form.get('phone', ''),
+            'email': request.form.get('email', ''),
+            'property_address': request.form.get('property_address', ''),
+            'rental_types': request.form.getlist('rental_types'),
+            'tracking_status': request.form.get('tracking_status', '初始接触'),
+            'notes': request.form.get('notes', '')
+        }
+        
+        # 验证必填字段
+        if not customer_data['name']:
+            flash('请填写客户姓名', 'error')
+            return redirect(url_for('customer_tracking'))
+        
+        # 添加客户
+        customer_id = customer_tracking_manager.add_customer(customer_data)
+        
+        if customer_id:
+            flash(f'客户 "{customer_data["name"]}" 添加成功', 'success')
+        else:
+            flash('添加客户失败', 'error')
+            
+        return redirect(url_for('customer_tracking'))
+        
+    except Exception as e:
+        print(f"添加客户失败: {e}")
+        flash(f'添加客户失败: {e}', 'error')
+        return redirect(url_for('customer_tracking'))
+
+@app.route('/customer_tracking_detail/<int:customer_id>')
+@module_required('customer_tracking')
+def customer_tracking_detail(customer_id):
+    """客户详情页面"""
+    try:
+        # 获取客户信息
+        customer = customer_tracking_manager.get_customer_by_id(customer_id)
+        
+        if not customer:
+            flash('客户不存在', 'error')
+            return redirect(url_for('customer_tracking'))
+        
+        # 获取跟踪记录
+        tracking_records = customer_tracking_manager.get_tracking_records(customer_id)
+        
+        # 获取今天日期
+        from datetime import date
+        today = date.today().strftime('%Y-%m-%d')
+        
+        return render_template('new_ui/customer_detail.html',
+                             customer=customer,
+                             tracking_records=tracking_records,
+                             today=today)
+                             
+    except Exception as e:
+        print(f"获取客户详情失败: {e}")
+        flash(f'获取客户详情失败: {e}', 'error')
+        return redirect(url_for('customer_tracking'))
+
+@app.route('/edit_customer_tracking/<int:customer_id>', methods=['GET', 'POST'])
+@module_required('customer_tracking')
+def edit_customer_tracking(customer_id):
+    """编辑客户"""
+    if request.method == 'POST':
+        try:
+            # 获取表单数据
+            customer_data = {
+                'name': request.form.get('name'),
+                'phone': request.form.get('phone', ''),
+                'email': request.form.get('email', ''),
+                'property_address': request.form.get('property_address', ''),
+                'rental_types': request.form.getlist('rental_types'),
+                'tracking_status': request.form.get('tracking_status', '初始接触'),
+                'notes': request.form.get('notes', '')
+            }
+            
+            # 验证必填字段
+            if not customer_data['name']:
+                flash('请填写客户姓名', 'error')
+                return redirect(url_for('edit_customer', customer_id=customer_id))
+            
+            # 更新客户
+            success = customer_tracking_manager.update_customer(customer_id, customer_data)
+            
+            if success:
+                flash(f'客户 "{customer_data["name"]}" 更新成功', 'success')
+                return redirect(url_for('customer_tracking_detail', customer_id=customer_id))
+            else:
+                flash('更新客户失败', 'error')
+                return redirect(url_for('edit_customer_tracking', customer_id=customer_id))
+                
+        except Exception as e:
+            print(f"更新客户失败: {e}")
+            flash(f'更新客户失败: {e}', 'error')
+            return redirect(url_for('edit_customer', customer_id=customer_id))
+    
+    # GET请求：显示编辑表单
+    try:
+        customer = customer_tracking_manager.get_customer_by_id(customer_id)
+        
+        if not customer:
+            flash('客户不存在', 'error')
+            return redirect(url_for('customer_tracking'))
+        
+        # 获取选项数据
+        status_options = customer_tracking_manager.get_tracking_status_options()
+        rental_type_options = customer_tracking_manager.get_rental_type_options()
+        
+        return render_template('new_ui/edit_customer.html',
+                             customer=customer,
+                             status_options=status_options,
+                             rental_type_options=rental_type_options)
+                             
+    except Exception as e:
+        print(f"获取客户信息失败: {e}")
+        flash(f'获取客户信息失败: {e}', 'error')
+        return redirect(url_for('customer_tracking'))
+
+@app.route('/delete_customer_tracking', methods=['POST'])
+@module_required('customer_tracking')
+def delete_customer_tracking():
+    """删除客户"""
+    try:
+        customer_id = request.form.get('customer_id')
+        
+        if not customer_id:
+            return jsonify({'success': False, 'message': '客户ID不能为空'})
+        
+        success = customer_tracking_manager.delete_customer(int(customer_id))
+        
+        if success:
+            return jsonify({'success': True, 'message': '客户删除成功'})
+        else:
+            return jsonify({'success': False, 'message': '客户删除失败'})
+        
+    except Exception as e:
+        print(f"删除客户失败: {e}")
+        return jsonify({'success': False, 'message': f'删除客户失败: {e}'})
+
+@app.route('/add_tracking_record/<int:customer_id>', methods=['POST'])
+@module_required('customer_tracking')
+def add_tracking_record(customer_id):
+    """添加跟踪记录"""
+    try:
+        # 获取表单数据
+        record_data = {
+            'record_date': request.form.get('record_date'),
+            'content': request.form.get('content')
+        }
+        
+        # 验证必填字段
+        if not record_data['record_date'] or not record_data['content']:
+            flash('请填写记录日期和内容', 'error')
+            return redirect(url_for('customer_detail', customer_id=customer_id))
+        
+        # 转换日期格式
+        from datetime import datetime
+        try:
+            record_data['record_date'] = datetime.strptime(
+                record_data['record_date'], '%Y-%m-%d'
+            ).date()
+        except ValueError:
+            flash('日期格式错误', 'error')
+            return redirect(url_for('customer_detail', customer_id=customer_id))
+        
+        # 添加记录
+        record_id = customer_tracking_manager.add_tracking_record(customer_id, record_data)
+        
+        if record_id:
+            flash('跟踪记录添加成功', 'success')
+        else:
+            flash('添加跟踪记录失败', 'error')
+            
+        return redirect(url_for('customer_detail', customer_id=customer_id))
+        
+    except Exception as e:
+        print(f"添加跟踪记录失败: {e}")
+        flash(f'添加跟踪记录失败: {e}', 'error')
+        return redirect(url_for('customer_detail', customer_id=customer_id))
+
+@app.route('/update_tracking_record', methods=['POST'])
+@module_required('customer_tracking')
+def update_tracking_record():
+    """更新跟踪记录"""
+    try:
+        # 获取表单数据
+        record_id = request.form.get('record_id')
+        record_data = {
+            'record_date': request.form.get('record_date'),
+            'content': request.form.get('content')
+        }
+        
+        # 验证必填字段
+        if not record_id or not record_data['record_date'] or not record_data['content']:
+            flash('请填写所有必填字段', 'error')
+            return redirect(url_for('customer_tracking'))
+        
+        # 转换日期格式
+        from datetime import datetime
+        try:
+            record_data['record_date'] = datetime.strptime(
+                record_data['record_date'], '%Y-%m-%d'
+            ).date()
+        except ValueError:
+            flash('日期格式错误', 'error')
+            return redirect(url_for('customer_tracking'))
+        
+        # 更新记录
+        success = customer_tracking_manager.update_tracking_record(int(record_id), record_data)
+        
+        if success:
+            flash('跟踪记录更新成功', 'success')
+        else:
+            flash('更新跟踪记录失败', 'error')
+            
+        return redirect(url_for('customer_tracking'))
+        
+    except Exception as e:
+        print(f"更新跟踪记录失败: {e}")
+        flash(f'更新跟踪记录失败: {e}', 'error')
+        return redirect(url_for('customer_tracking'))
+
+@app.route('/delete_tracking_record', methods=['POST'])
+@module_required('customer_tracking')
+def delete_tracking_record():
+    """删除跟踪记录"""
+    try:
+        record_id = request.form.get('record_id')
+        
+        if not record_id:
+            return jsonify({'success': False, 'message': '记录ID不能为空'})
+        
+        success = customer_tracking_manager.delete_tracking_record(int(record_id))
+        
+        if success:
+            return jsonify({'success': True, 'message': '跟踪记录删除成功'})
+        else:
+            return jsonify({'success': False, 'message': '跟踪记录删除失败'})
+        
+    except Exception as e:
+        print(f"删除跟踪记录失败: {e}")
+        return jsonify({'success': False, 'message': f'删除跟踪记录失败: {e}'})
+
+# ==================== 注册申请系统路由 ====================
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """用户注册申请页面"""
+    if request.method == 'POST':
+        # 获取表单数据
+        application_data = {
+            'username': request.form.get('username', '').strip(),
+            'email': request.form.get('email', '').strip(),
+            'full_name': request.form.get('full_name', '').strip(),
+            'phone': request.form.get('phone', '').strip(),
+            'department': request.form.get('department', '').strip(),
+            'job_title': request.form.get('job_title', '').strip(),
+            'notes': request.form.get('notes', '').strip()
+        }
+        
+        # 验证必填字段
+        if not all([application_data['username'], application_data['email'], 
+                   application_data['full_name'], application_data['department']]):
+            flash('请填写所有必填字段', 'error')
+            return render_template('new_ui/register.html')
+        
+        # 提交申请
+        result = registration_manager.submit_application(application_data)
+        
+        if result['success']:
+            flash('注册申请提交成功！请等待管理员审核。', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash(f'申请提交失败：{result["message"]}', 'error')
+            return render_template('new_ui/register.html')
+    
+    return render_template('new_ui/register.html')
+
+@app.route('/admin/registration_management')
+@admin_required
+def admin_registration_management():
+    """管理员注册申请管理页面"""
+    # 获取申请列表和统计信息
+    applications = registration_manager.get_applications()
+    stats = registration_manager.get_statistics()
+    
+    return render_template('new_ui/registration_management.html', 
+                         applications=applications, stats=stats)
+
+@app.route('/admin/registration_details/<int:application_id>')
+@admin_required
+def admin_registration_details(application_id):
+    """获取申请详情API"""
+    application = registration_manager.get_application_by_id(application_id)
+    
+    if application:
+        # 格式化时间
+        if application['created_at']:
+            application['created_at'] = application['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+        if application['reviewed_at']:
+            application['reviewed_at'] = application['reviewed_at'].strftime('%Y-%m-%d %H:%M:%S')
+        
+        return jsonify({
+            'success': True,
+            'application': application
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': '申请不存在'
+        })
+
+@app.route('/admin/review_registration', methods=['POST'])
+@admin_required
+def admin_review_registration():
+    """审核注册申请API"""
+    try:
+        application_id = int(request.form.get('application_id'))
+        action = request.form.get('action')  # 'approve' 或 'reject'
+        review_notes = request.form.get('review_notes', '')
+        initial_password = request.form.get('initial_password', '')
+        
+        # 获取当前管理员ID
+        reviewer_id = session.get('user_id')
+        
+        if not reviewer_id:
+            return jsonify({
+                'success': False,
+                'message': '管理员身份验证失败'
+            })
+        
+        # 执行审核
+        result = registration_manager.review_application(
+            application_id, action, reviewer_id, review_notes, initial_password
+        )
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'审核失败：{str(e)}'
+        })
+
+@app.route('/admin/delete_registration', methods=['POST'])
+@admin_required
+def admin_delete_registration():
+    """删除注册申请API"""
+    try:
+        application_id = int(request.form.get('application_id'))
+        
+        result = registration_manager.delete_application(application_id)
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'删除失败：{str(e)}'
+        })
+
+# ==================== 用户模块权限管理 ====================
+
+@app.route('/admin/user_modules/<int:user_id>')
+@admin_required
+def admin_user_modules(user_id):
+    """获取用户的模块权限信息"""
+    try:
+        user_module_permissions = get_user_module_permissions()
+        if not user_module_permissions:
+            return jsonify({'success': False, 'message': '模块权限管理器未初始化'})
+        
+        summary = user_module_permissions.get_user_modules_summary(user_id)
+        if not summary:
+            return jsonify({'success': False, 'message': '用户不存在'})
+        
+        return jsonify({
+            'success': True,
+            'user_info': summary['user_info'],
+            'modules': summary['modules'],
+            'all_modules': summary['all_modules']
+        })
+        
+    except Exception as e:
+        logger.error(f"获取用户模块权限失败: {e}")
+        return jsonify({'success': False, 'message': f'获取失败: {str(e)}'})
+
+@app.route('/admin/save_user_modules', methods=['POST'])
+@admin_required
+def admin_save_user_modules():
+    """保存用户的模块权限"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        modules = data.get('modules', [])
+        
+        if not user_id:
+            return jsonify({'success': False, 'message': '缺少用户ID'})
+        
+        user_module_permissions = get_user_module_permissions()
+        if not user_module_permissions:
+            return jsonify({'success': False, 'message': '模块权限管理器未初始化'})
+        
+        success = user_module_permissions.set_user_modules(user_id, modules)
+        if success:
+            return jsonify({'success': True, 'message': '模块权限保存成功'})
+        else:
+            return jsonify({'success': False, 'message': '模块权限保存失败'})
+            
+    except Exception as e:
+        logger.error(f"保存用户模块权限失败: {e}")
+        return jsonify({'success': False, 'message': f'保存失败: {str(e)}'})
+
+@app.route('/admin/initialize_user_modules/<int:user_id>', methods=['POST'])
+@admin_required
+def admin_initialize_user_modules(user_id):
+    """根据用户类型初始化用户模块权限"""
+    try:
+        user_module_permissions = get_user_module_permissions()
+        if not user_module_permissions:
+            return jsonify({'success': False, 'message': '模块权限管理器未初始化'})
+        
+        # 获取用户信息
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({'success': False, 'message': '数据库连接失败'})
+        
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT user_type, department FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
         connection.close()
+        
+        if not user:
+            return jsonify({'success': False, 'message': '用户不存在'})
+        
+        success = user_module_permissions.initialize_user_modules(
+            user_id, user['user_type'], user['department']
+        )
+        
+        if success:
+            return jsonify({'success': True, 'message': '用户模块权限初始化成功'})
+        else:
+            return jsonify({'success': False, 'message': '用户模块权限初始化失败'})
+            
+    except Exception as e:
+        logger.error(f"初始化用户模块权限失败: {e}")
+        return jsonify({'success': False, 'message': f'初始化失败: {str(e)}'})
 
 if __name__ == '__main__':
     import os
@@ -4689,72 +5639,33 @@ if __name__ == '__main__':
             print("🔧 初始化用户认证系统...")
             try:
                 # 创建用户表
-                if auth_system.create_users_table():
-                    print("✅ 用户表创建/检查完成")
+                auth_system.create_users_table()
+                print("✅ 用户表创建成功")
                 
-                # 初始化用户注册系统
-                print("🔧 初始化用户注册系统...")
-                if registration_system.create_registration_tables():
-                    print("✅ 用户注册表创建/检查完成")
+                # 创建会话表
+                auth_system.create_sessions_table()
+                print("✅ 会话表创建成功")
                 
-                # 初始化密码管理系统
-                print("🔧 初始化密码管理系统...")
-                if password_manager.create_password_tables():
-                    print("✅ 密码管理表创建/检查完成")
-                    
-                    # 初始化财务报表系统
-                    print("🔧 初始化财务报表系统...")
-                    # 导入财务报表系统
-                    if financial_reports_manager.create_reports_table():
-                        print("✅ 财务报表表创建/检查完成")
-                    else:
-                        print("❌ 财务报表表创建失败")
-                    
-                    # 创建默认管理员账户
-                    admin_created = auth_system.create_admin_user(
-                        username="admin",
-                        email="admin@company.com", 
-                        password="admin123",
-                        full_name="系统管理员"
-                    )
-                    
-                    if admin_created:
-                        print("✅ 默认管理员账户创建成功")
-                        print("   用户名: admin")
-                        print("   密码: admin123")
-                    else:
-                        print("ℹ️  管理员账户已存在")
-                    
-                    # 为现有业主创建用户账户
-                    if auth_system.create_owner_users_from_existing():
-                        print("✅ 业主用户账户创建/更新完成")
-                    else:
-                        print("⚠️  业主用户账户创建失败")
-                    
-                    # 调试用户表状态
-                    print("\n📋 用户表状态:")
-                    auth_system.debug_users_table()
-                        
-                else:
-                    print("❌ 用户表创建失败")
-                    
+                # 创建默认管理员账户
+                auth_system.create_default_admin()
+                print("✅ 默认管理员账户创建成功")
+                
             except Exception as e:
-                print(f"❌ 用户系统初始化失败: {e}")
-                print("⚠️  继续启动应用，将使用演示模式")
+                print(f"⚠️  初始化用户认证系统时出现问题: {e}")
+                
+            # 自动初始化客户追踪表
+            print("🔧 初始化客户追踪表...")
+            try:
+                customer_tracking_manager.create_customer_tracking_tables()
+                print("✅ 客户追踪表创建成功")
+            except Exception as e:
+                print(f"⚠️  初始化客户追踪表时出现问题: {e}")
+                
         else:
-            print("❌ 启动时数据库连接测试失败")
-            print("⚠️  继续启动应用，将使用演示模式")
+            print("⚠️  启动时数据库连接测试失败，但继续启动")
+            
     except Exception as e:
-        print(f"❌ 数据库连接测试异常: {e}")
-        print("⚠️  继续启动应用，将使用演示模式")
+        print(f"⚠️  启动时数据库连接测试异常: {e}")
     
-    # 无论数据库连接是否成功，都启动Flask应用
-    print("\n🚀 启动Flask应用...")
-    port = int(os.environ.get('PORT', 8888))
-    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    print(f"📍 服务器将在端口 {port} 启动")
-    print(f"🔧 调试模式: {debug}")
-    print(f"🌍 访问地址: http://0.0.0.0:{port}")
-    
-    app.run(debug=debug, host='0.0.0.0', port=port) 
+    # 启动Flask应用
+    app.run(host='127.0.0.1', port=8888, debug=True)

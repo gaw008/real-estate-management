@@ -1,0 +1,396 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}维修工单详情{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="page-header">
+        <h1>维修工单详情</h1>
+        <p>查看维修工单的完整信息</p>
+    </div>
+
+    {% if order %}
+    <div class="order-detail-container">
+        <!-- 工单基本信息 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="header-content">
+                    <div class="order-title">
+                        <h2>工单 #{{ order.id }} - {{ order.title }}</h2>
+                        <div class="order-meta">
+                            <span class="status-badge status-{{ order.status }}">{{ order.status }}</span>
+                            <span class="priority-badge priority-{{ order.priority }}">{{ order.priority }}</span>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <a href="{{ url_for('edit_maintenance_order', order_id=order.id) }}" class="btn btn-warning">编辑</a>
+                        <a href="{{ url_for('maintenance_orders') }}" class="btn btn-secondary">返回列表</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="detail-grid">
+                    <div class="detail-section">
+                        <h3>基本信息</h3>
+                        <div class="detail-item">
+                            <label>工单标题：</label>
+                            <span>{{ order.title }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>维修描述：</label>
+                            <span>{{ order.description }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>创建人：</label>
+                            <span>{{ order.creator_name }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>创建时间：</label>
+                            <span>{{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>最后更新：</label>
+                            <span>{{ order.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>房产信息</h3>
+                        <div class="detail-item">
+                            <label>房产地址：</label>
+                            <span>{{ order.property_address }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>城市：</label>
+                            <span>{{ order.property_city }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>州：</label>
+                            <span>{{ order.property_state }}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>人员分配</h3>
+                        <div class="detail-item">
+                            <label>负责人：</label>
+                            <span>{{ order.assigned_name }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>负责人电话：</label>
+                            <span>{{ order.assigned_phone or '未提供' }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>追踪人：</label>
+                            <span>{{ order.tracked_name }}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>费用信息</h3>
+                        <div class="detail-item">
+                            <label>预计费用：</label>
+                            <span>
+                                {% if order.estimated_cost %}
+                                ${{ "%.2f"|format(order.estimated_cost) }}
+                                {% else %}
+                                未设置
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <label>实际费用：</label>
+                            <span>
+                                {% if order.actual_cost %}
+                                ${{ "%.2f"|format(order.actual_cost) }}
+                                {% else %}
+                                未设置
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>时间安排</h3>
+                        <div class="detail-item">
+                            <label>预计完成：</label>
+                            <span>
+                                {% if order.estimated_completion_date %}
+                                {{ order.estimated_completion_date.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                未设置
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <label>实际完成：</label>
+                            <span>
+                                {% if order.actual_completion_date %}
+                                {{ order.actual_completion_date.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                未完成
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if order.notes %}
+                    <div class="detail-section full-width">
+                        <h3>备注</h3>
+                        <div class="detail-item">
+                            <span>{{ order.notes }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态时间线 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>工单状态</h3>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker completed"></div>
+                        <div class="timeline-content">
+                            <h4>工单创建</h4>
+                            <p>{{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                            <p>由 {{ order.creator_name }} 创建</p>
+                        </div>
+                    </div>
+                    
+                    {% if order.status != '待处理' %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker {% if order.status in ['进行中', '已完成', '已取消'] %}completed{% endif %}"></div>
+                        <div class="timeline-content">
+                            <h4>开始处理</h4>
+                            <p>状态变更为：{{ order.status }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if order.status == '已完成' %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker completed"></div>
+                        <div class="timeline-content">
+                            <h4>工单完成</h4>
+                            {% if order.actual_completion_date %}
+                            <p>{{ order.actual_completion_date.strftime('%Y-%m-%d') }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if order.status == '已取消' %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker cancelled"></div>
+                        <div class="timeline-content">
+                            <h4>工单取消</h4>
+                            <p>工单已被取消</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-danger">
+        <h4>工单不存在</h4>
+        <p>指定的维修工单不存在或已被删除。</p>
+        <a href="{{ url_for('maintenance_orders') }}" class="btn btn-primary">返回列表</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.order-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.order-title h2 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+
+.order-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.detail-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid #007bff;
+}
+
+.detail-section h3 {
+    margin: 0 0 1rem 0;
+    color: #007bff;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.detail-section.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-item {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.detail-item label {
+    font-weight: bold;
+    color: #495057;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.detail-item span {
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+/* 优先级徽章样式 */
+.priority-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.priority-低 { background-color: #d4edda; color: #155724; }
+.priority-中 { background-color: #fff3cd; color: #856404; }
+.priority-高 { background-color: #f8d7da; color: #721c24; }
+.priority-紧急 { background-color: #721c24; color: #fff; }
+
+/* 状态徽章样式 */
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.status-待处理 { background-color: #e2e3e5; color: #383d41; }
+.status-进行中 { background-color: #cce5ff; color: #004085; }
+.status-已完成 { background-color: #d4edda; color: #155724; }
+.status-已取消 { background-color: #f8d7da; color: #721c24; }
+
+/* 时间线样式 */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.5rem;
+    top: 0.5rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.timeline-marker.completed {
+    background-color: #28a745;
+    box-shadow: 0 0 0 2px #28a745;
+}
+
+.timeline-marker.cancelled {
+    background-color: #dc3545;
+    box-shadow: 0 0 0 2px #dc3545;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border-left: 3px solid #007bff;
+}
+
+.timeline-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-size: 1rem;
+}
+
+.timeline-content p {
+    margin: 0.25rem 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .header-actions {
+        justify-content: flex-start;
+    }
+    
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %} 
+    }
+}
+</style>
+{% endblock %} 

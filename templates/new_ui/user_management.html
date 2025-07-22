@@ -1,0 +1,790 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}用户管理{% endblock %}
+
+{% block page_title %}用户管理{% endblock %}
+
+{% block content %}
+<!-- 统计概览 -->
+<div class="overview-section">
+    <div class="overview-grid">
+        <div class="overview-card total">
+            <div class="overview-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="overview-content">
+                <div class="overview-number">{{ users|length }}</div>
+                <div class="overview-label">总用户数</div>
+            </div>
+        </div>
+        <div class="overview-card active">
+            <div class="overview-icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="overview-content">
+                <div class="overview-number">{{ users|selectattr('is_active', 'equalto', true)|list|length }}</div>
+                <div class="overview-label">活跃用户</div>
+            </div>
+        </div>
+        <div class="overview-card admin">
+            <div class="overview-icon">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="overview-content">
+                <div class="overview-number">{{ users|selectattr('user_type', 'equalto', 'admin')|list|length }}</div>
+                <div class="overview-label">管理员</div>
+            </div>
+        </div>
+        <div class="overview-card staff">
+            <div class="overview-icon">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="overview-content">
+                <div class="overview-number">{{ users|selectattr('user_type', 'ne', 'admin')|selectattr('user_type', 'ne', 'owner')|list|length }}</div>
+                <div class="overview-label">员工用户</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 搜索和筛选 -->
+<div class="control-section">
+    <div class="control-row">
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索用户名、姓名或邮箱...">
+        </div>
+        <div class="filter-tabs">
+            <button type="button" class="filter-tab active" onclick="filterUsers('all')">
+                <span class="tab-text">全部</span>
+                <span class="tab-count">{{ users|length }}</span>
+            </button>
+            <button type="button" class="filter-tab" onclick="filterUsers('admin')">
+                <span class="tab-text">管理员</span>
+                <span class="tab-count">{{ users|selectattr('user_type', 'equalto', 'admin')|list|length }}</span>
+            </button>
+            <button type="button" class="filter-tab" onclick="filterUsers('active')">
+                <span class="tab-text">活跃</span>
+                <span class="tab-count">{{ users|selectattr('is_active', 'equalto', true)|list|length }}</span>
+            </button>
+            <button type="button" class="filter-tab" onclick="filterUsers('inactive')">
+                <span class="tab-text">非活跃</span>
+                <span class="tab-count">{{ users|selectattr('is_active', 'equalto', false)|list|length }}</span>
+            </button>
+        </div>
+        <div class="action-buttons">
+            <button type="button" class="btn btn-primary" onclick="showAddUserModal()">
+                <i class="fas fa-plus"></i>
+                <span>添加用户</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 用户列表 -->
+<div class="users-section">
+    <div class="section-header">
+        <h3>用户列表</h3>
+        <span class="users-count">{{ users|length }} 个用户</span>
+    </div>
+    
+    {% if users %}
+    <div class="users-table">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-id">ID</th>
+                    <th class="col-username">用户名</th>
+                    <th class="col-name">姓名</th>
+                    <th class="col-email">邮箱</th>
+                    <th class="col-type">用户类型</th>
+                    <th class="col-department">部门</th>
+                    <th class="col-status">状态</th>
+                    <th class="col-time">创建时间</th>
+                    <th class="col-actions">操作</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                {% for user in users %}
+                <tr class="user-row" data-type="{{ user.user_type }}" data-status="{{ 'active' if user.is_active else 'inactive' }}">
+                    <td class="col-id">{{ user.id }}</td>
+                    <td class="col-username">{{ user.username }}</td>
+                    <td class="col-name">{{ user.full_name }}</td>
+                    <td class="col-email">{{ user.email }}</td>
+                    <td class="col-type">
+                        {% if user.user_type == 'admin' %}
+                            <span class="user-type-badge admin">管理员</span>
+                        {% elif user.user_type == 'owner' %}
+                            <span class="user-type-badge owner">业主</span>
+                        {% else %}
+                            <span class="user-type-badge staff">{{ user.user_type_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-department">
+                        {% if user.department %}
+                            <span class="department-tag">{{ user.department_display }}</span>
+                        {% else %}
+                            <span class="no-department">未分配</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-status">
+                        {% if user.is_active %}
+                            <span class="status-badge active">活跃</span>
+                        {% else %}
+                            <span class="status-badge inactive">非活跃</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-time">{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</td>
+                    <td class="col-actions">
+                        <div class="action-buttons">
+                            <button type="button" class="action-btn view-btn" 
+                                    onclick="viewUser({{ user.id }})" 
+                                    title="查看详情">
+                                <i class="fas fa-eye"></i>
+                                <span>查看</span>
+                            </button>
+                            <button type="button" class="action-btn edit-btn" 
+                                    onclick="editUser({{ user.id }})" 
+                                    title="编辑用户">
+                                <i class="fas fa-edit"></i>
+                                <span>编辑</span>
+                            </button>
+                            <button type="button" class="action-btn modules-btn" 
+                                    onclick="manageUserModules({{ user.id }})" 
+                                    title="管理模块权限">
+                                <i class="fas fa-key"></i>
+                                <span>模块</span>
+                            </button>
+                            <button type="button" class="action-btn reset-btn" 
+                                    onclick="resetPassword({{ user.id }})" 
+                                    title="重置密码">
+                                <i class="fas fa-key"></i>
+                                <span>重置</span>
+                            </button>
+                            {% if user.id != session.user_id %}
+                            <button type="button" class="action-btn delete-btn" 
+                                    onclick="deleteUser({{ user.id }}, '{{ user.username }}')" 
+                                    title="删除用户">
+                                <i class="fas fa-trash"></i>
+                                <span>删除</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <h4>暂无用户</h4>
+        <p>当前没有用户数据</p>
+    </div>
+    {% endif %}
+</div>
+</div>
+
+<!-- 用户详情模态框 -->
+<div class="modal-overlay" id="userDetailModal">
+    <div class="modal-container large">
+        <div class="modal-header">
+            <h3>用户详情</h3>
+            <button type="button" class="modal-close" onclick="closeModal('userDetailModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="userDetailContent">
+            <!-- 内容将通过AJAX加载 -->
+        </div>
+    </div>
+</div>
+
+<!-- 编辑用户模态框 -->
+<div class="modal-overlay" id="editUserModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>编辑用户</h3>
+            <button type="button" class="modal-close" onclick="closeModal('editUserModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId" name="user_id">
+                
+                <div class="form-group">
+                    <label for="editUsername">用户名 <span class="required">*</span></label>
+                    <input type="text" id="editUsername" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editFullName">姓名 <span class="required">*</span></label>
+                    <input type="text" id="editFullName" name="full_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editEmail">邮箱 <span class="required">*</span></label>
+                    <input type="email" id="editEmail" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editUserType">用户类型 <span class="required">*</span></label>
+                    <select id="editUserType" name="user_type" required>
+                        <option value="admin">管理员</option>
+                        <option value="property_manager">房产管理</option>
+                        <option value="sales">销售</option>
+                        <option value="accounting">会计</option>
+                        <option value="marketing">市场部</option>
+                        <option value="owner">业主</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editDepartment">部门</label>
+                    <select id="editDepartment" name="department">
+                        <option value="">请选择部门</option>
+                        <option value="销售">销售</option>
+                        <option value="房产管理">房产管理</option>
+                        <option value="会计">会计</option>
+                        <option value="管理员">管理员</option>
+                        <option value="市场部">市场部</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editIsActive">状态</label>
+                    <select id="editIsActive" name="is_active">
+                        <option value="1">活跃</option>
+                        <option value="0">非活跃</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal')">取消</button>
+            <button type="submit" form="editUserForm" class="btn btn-primary">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 重置密码模态框 -->
+<div class="modal-overlay" id="resetPasswordModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>重置密码</h3>
+            <button type="button" class="modal-close" onclick="closeModal('resetPasswordModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="resetPasswordForm">
+                <input type="hidden" id="resetUserId" name="user_id">
+                
+                <div class="form-group">
+                    <label for="newPassword">新密码 <span class="required">*</span></label>
+                    <input type="password" id="newPassword" name="new_password" required minlength="6">
+                    <div class="form-hint">密码长度至少6位</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码 <span class="required">*</span></label>
+                    <input type="password" id="confirmPassword" name="confirm_password" required minlength="6">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">取消</button>
+            <button type="submit" form="resetPasswordForm" class="btn btn-warning">重置密码</button>
+        </div>
+    </div>
+</div>
+
+<!-- 删除用户模态框 -->
+<div class="modal-overlay" id="deleteUserModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>删除用户</h3>
+            <button type="button" class="modal-close" onclick="closeModal('deleteUserModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="delete-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h4>确定要删除用户吗？</h4>
+                <p>用户：<strong id="deleteUserName"></strong></p>
+                <p class="warning-text">此操作不可撤销！删除后用户将无法登录系统。</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmUsername">请输入用户名确认删除：</label>
+                <input type="text" id="confirmUsername" placeholder="请输入用户名">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteUserModal')">取消</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteUser()">删除用户</button>
+        </div>
+    </div>
+</div>
+
+<!-- 模块权限管理模态框 -->
+<div class="modal-overlay" id="userModulesModal">
+    <div class="modal-container large">
+        <div class="modal-header">
+            <h3>管理用户模块权限</h3>
+            <button type="button" class="modal-close" onclick="closeModal('userModulesModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="user-modules-info">
+                <div class="user-basic-info">
+                    <h4 id="modulesUserName"></h4>
+                    <p id="modulesUserType"></p>
+                </div>
+                <div class="modules-summary">
+                    <span class="modules-count">已分配 <span id="modulesCount">0</span> 个模块</span>
+                </div>
+            </div>
+            
+            <div class="modules-grid" id="modulesGrid">
+                <!-- 模块列表将通过JavaScript动态加载 -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('userModulesModal')">取消</button>
+            <button type="button" class="btn btn-primary" onclick="saveUserModules()">保存权限</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentDeleteUserId = null;
+let currentDeleteUsername = null;
+
+// 模态框控制函数
+function showModal(modalId) {
+    document.getElementById(modalId).style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// 点击模态框背景关闭
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-overlay')) {
+        closeModal(e.target.id);
+    }
+});
+
+function filterUsers(filterType) {
+    const search = document.getElementById('searchInput').value;
+    
+    // 更新按钮状态
+    document.querySelectorAll('.filter-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // 筛选表格行
+    const rows = document.querySelectorAll('.user-row');
+    
+    rows.forEach(row => {
+        const userType = row.getAttribute('data-type');
+        const status = row.getAttribute('data-status');
+        const searchText = row.textContent.toLowerCase();
+        
+        let showRow = true;
+        
+        // 搜索筛选
+        if (search && !searchText.includes(search.toLowerCase())) {
+            showRow = false;
+        }
+        
+        // 类型筛选
+        if (filterType === 'admin' && userType !== 'admin') {
+            showRow = false;
+        } else if (filterType === 'active' && status !== 'active') {
+            showRow = false;
+        } else if (filterType === 'inactive' && status !== 'inactive') {
+            showRow = false;
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+    });
+}
+
+function viewUser(userId) {
+    // 获取用户数据并显示详情
+    Promise.all([
+        fetch(`/admin/user_details/${userId}`).then(r => r.json()),
+        fetch(`/admin/user_modules/${userId}`).then(r => r.json())
+    ])
+    .then(([userData, modulesData]) => {
+        if (userData.success && modulesData.success) {
+            const user = userData.user;
+            const modules = modulesData.modules;
+                const content = `
+                    <div class="detail-grid">
+                        <div class="detail-section">
+                            <h4><i class="fas fa-user"></i> 基本信息</h4>
+                            <div class="detail-table">
+                                <div class="detail-row">
+                                    <span class="detail-label">用户ID：</span>
+                                    <span class="detail-value">${user.id}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">用户名：</span>
+                                    <span class="detail-value">${user.username}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">姓名：</span>
+                                    <span class="detail-value">${user.full_name}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">邮箱：</span>
+                                    <span class="detail-value">${user.email}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h4><i class="fas fa-briefcase"></i> 工作信息</h4>
+                            <div class="detail-table">
+                                <div class="detail-row">
+                                    <span class="detail-label">用户类型：</span>
+                                    <span class="detail-value">
+                                        ${user.user_type === 'admin' ? '<span class="user-type-badge admin">管理员</span>' :
+                                          user.user_type === 'owner' ? '<span class="user-type-badge owner">业主</span>' :
+                                          '<span class="user-type-badge staff">' + (user.user_type_display || user.user_type) + '</span>'}
+                                    </span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">部门：</span>
+                                    <span class="detail-value">
+                                        ${user.department ? '<span class="department-tag">' + (user.department_display || user.department) + '</span>' : '<span class="no-department">未分配</span>'}
+                                    </span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">状态：</span>
+                                    <span class="detail-value">
+                                        ${user.is_active ? '<span class="status-badge active">活跃</span>' : '<span class="status-badge inactive">非活跃</span>'}
+                                    </span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">创建时间：</span>
+                                    <span class="detail-value">${user.created_at || 'N/A'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h4><i class="fas fa-key"></i> 模块权限</h4>
+                            <div class="modules-display">
+                                ${user.modules && user.modules.length > 0 ? 
+                                    user.modules.map(module => `
+                                        <span class="module-badge" style="background: ${module.color}">
+                                            <i class="${module.icon}"></i>
+                                            ${module.name}
+                                        </span>
+                                    `).join('') : 
+                                    '<span class="no-modules">暂无模块权限</span>'
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('userDetailContent').innerHTML = content;
+                showModal('userDetailModal');
+            } else {
+                alert('获取用户信息失败: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('获取用户信息失败');
+        });
+}
+
+function editUser(userId) {
+    // 获取用户数据并填充表单
+    fetch(`/admin/user_details/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editUsername').value = user.username;
+                document.getElementById('editFullName').value = user.full_name;
+                document.getElementById('editEmail').value = user.email;
+                document.getElementById('editUserType').value = user.user_type;
+                document.getElementById('editDepartment').value = user.department || '';
+                document.getElementById('editIsActive').value = user.is_active ? '1' : '0';
+                
+                showModal('editUserModal');
+            } else {
+                alert('获取用户信息失败: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('获取用户信息失败');
+        });
+}
+
+function resetPassword(userId) {
+    document.getElementById('resetUserId').value = userId;
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    showModal('resetPasswordModal');
+}
+
+function deleteUser(userId, username) {
+    currentDeleteUserId = userId;
+    currentDeleteUsername = username;
+    document.getElementById('deleteUserName').textContent = username;
+    document.getElementById('confirmUsername').value = '';
+    showModal('deleteUserModal');
+}
+
+function confirmDeleteUser() {
+    const confirmUsername = document.getElementById('confirmUsername').value;
+    
+    if (confirmUsername !== currentDeleteUsername) {
+        alert('用户名确认不匹配');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('user_id', currentDeleteUserId);
+    formData.append('confirm_username', confirmUsername);
+    
+    fetch('/admin/delete_user', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('用户删除成功');
+            location.reload();
+        } else {
+            alert('删除失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('删除失败');
+    });
+}
+
+// 编辑用户表单提交
+document.getElementById('editUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/admin/edit_user', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('用户信息更新成功');
+            closeModal('editUserModal');
+            location.reload();
+        } else {
+            alert('更新失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('更新失败');
+    });
+});
+
+// 重置密码表单提交
+document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (newPassword !== confirmPassword) {
+        alert('两次输入的密码不匹配');
+        return;
+    }
+    
+    const formData = new FormData(this);
+    
+    fetch('/admin/reset_user_password', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('密码重置成功');
+            closeModal('resetPasswordModal');
+        } else {
+            alert('密码重置失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('密码重置失败');
+    });
+});
+
+// 搜索功能
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        filterUsers('all');
+    }
+});
+
+// 实时搜索
+document.getElementById('searchInput').addEventListener('input', function() {
+    filterUsers('all');
+});
+
+// 模块权限管理相关变量
+let currentModulesUserId = null;
+let allModules = [];
+let userModules = [];
+
+function manageUserModules(userId) {
+    currentModulesUserId = userId;
+    
+    // 获取用户模块权限信息
+    fetch(`/admin/user_modules/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const userInfo = data.user_info;
+                const modules = data.modules;
+                allModules = data.all_modules;
+                userModules = modules.map(m => m.module_name);
+                
+                // 更新用户信息
+                document.getElementById('modulesUserName').textContent = userInfo.full_name;
+                document.getElementById('modulesUserType').textContent = `${userInfo.user_type} - ${userInfo.department || '未分配部门'}`;
+                document.getElementById('modulesCount').textContent = userModules.length;
+                
+                // 渲染模块网格
+                renderModulesGrid();
+                
+                showModal('userModulesModal');
+            } else {
+                alert('获取用户模块权限失败: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('获取用户模块权限失败');
+        });
+}
+
+function renderModulesGrid() {
+    const grid = document.getElementById('modulesGrid');
+    grid.innerHTML = '';
+    
+    allModules.forEach(module => {
+        const isAssigned = userModules.includes(module.module_name);
+        const moduleCard = document.createElement('div');
+        moduleCard.className = `module-card ${isAssigned ? 'assigned' : ''}`;
+        moduleCard.innerHTML = `
+            <div class="module-header">
+                <div class="module-icon" style="background: ${module.color}">
+                    <i class="${module.icon}"></i>
+                </div>
+                <div class="module-info">
+                    <h5>${module.name}</h5>
+                    <p>${module.description}</p>
+                </div>
+                <div class="module-toggle">
+                    <label class="switch">
+                        <input type="checkbox" ${isAssigned ? 'checked' : ''} 
+                               onchange="toggleModule('${module.module_name}', this.checked)">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+        `;
+        grid.appendChild(moduleCard);
+    });
+}
+
+function toggleModule(moduleName, isEnabled) {
+    if (isEnabled) {
+        if (!userModules.includes(moduleName)) {
+            userModules.push(moduleName);
+        }
+    } else {
+        const index = userModules.indexOf(moduleName);
+        if (index > -1) {
+            userModules.splice(index, 1);
+        }
+    }
+    
+    // 更新计数
+    document.getElementById('modulesCount').textContent = userModules.length;
+    
+    // 更新卡片样式
+    const moduleCards = document.querySelectorAll('.module-card');
+    moduleCards.forEach(card => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox && checkbox.getAttribute('onchange').includes(moduleName)) {
+            card.classList.toggle('assigned', isEnabled);
+        }
+    });
+}
+
+function saveUserModules() {
+    if (!currentModulesUserId) {
+        alert('用户ID无效');
+        return;
+    }
+    
+    const modules = allModules
+        .filter(module => userModules.includes(module.module_name))
+        .map(module => ({
+            module_name: module.module_name,
+            can_access: true,
+            can_edit: false,  // 默认只有查看权限
+            can_delete: false
+        }));
+    
+    fetch('/admin/save_user_modules', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: currentModulesUserId,
+            modules: modules
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('用户模块权限保存成功');
+            closeModal('userModulesModal');
+        } else {
+            alert('保存失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('保存失败');
+    });
+}
+</script>
+{% endblock %} 

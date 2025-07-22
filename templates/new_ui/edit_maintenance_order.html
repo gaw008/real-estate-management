@@ -1,0 +1,205 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}编辑维修工单{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="page-header">
+        <h1>编辑维修工单</h1>
+        <p>修改维修工单信息</p>
+    </div>
+
+    {% if order %}
+    <div class="form-section">
+        <div class="card">
+            <div class="card-header">
+                <h3>工单 #{{ order.id }} - {{ order.title }}</h3>
+                <a href="{{ url_for('maintenance_orders') }}" class="btn btn-secondary">返回列表</a>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('edit_maintenance_order', order_id=order.id) }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="property_id">选择房产 *</label>
+                            <select name="property_id" id="property_id" required>
+                                <option value="">请选择房产</option>
+                                {% for property in properties %}
+                                <option value="{{ property.id }}" {% if property.id == order.property_id %}selected{% endif %}>
+                                    {{ property.address }} - {{ property.city }}, {{ property.state }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="title">工单标题 *</label>
+                            <input type="text" name="title" id="title" value="{{ order.title }}" required placeholder="请输入工单标题">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">维修描述 *</label>
+                        <textarea name="description" id="description" rows="4" required placeholder="请详细描述需要维修的内容">{{ order.description }}</textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="assigned_to">负责人姓名 *</label>
+                            <input type="text" name="assigned_to" id="assigned_to" 
+                                   value="{{ order.assigned_name }}" required placeholder="请输入负责人姓名">
+                        </div>
+                        <div class="form-group">
+                            <label for="assigned_phone">负责人电话</label>
+                            <input type="tel" name="assigned_phone" id="assigned_phone" 
+                                   value="{{ order.assigned_phone or '' }}" placeholder="请输入负责人电话">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tracked_by">追踪人 *</label>
+                            <select name="tracked_by" id="tracked_by" required>
+                                <option value="">请选择追踪人</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if user.id == order.tracked_by %}selected{% endif %}>
+                                    {{ user.full_name }} ({{ user.user_type }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="priority">紧急程度 *</label>
+                            <select name="priority" id="priority" required>
+                                <option value="低" {% if order.priority == '低' %}selected{% endif %}>低</option>
+                                <option value="中" {% if order.priority == '中' %}selected{% endif %}>中</option>
+                                <option value="高" {% if order.priority == '高' %}selected{% endif %}>高</option>
+                                <option value="紧急" {% if order.priority == '紧急' %}selected{% endif %}>紧急</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="status">状态 *</label>
+                            <select name="status" id="status" required>
+                                <option value="待处理" {% if order.status == '待处理' %}selected{% endif %}>待处理</option>
+                                <option value="进行中" {% if order.status == '进行中' %}selected{% endif %}>进行中</option>
+                                <option value="已完成" {% if order.status == '已完成' %}selected{% endif %}>已完成</option>
+                                <option value="已取消" {% if order.status == '已取消' %}selected{% endif %}>已取消</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="estimated_cost">预计费用</label>
+                            <input type="number" name="estimated_cost" id="estimated_cost" step="0.01" min="0" 
+                                   value="{{ order.estimated_cost or '' }}" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="actual_cost">实际费用</label>
+                            <input type="number" name="actual_cost" id="actual_cost" step="0.01" min="0" 
+                                   value="{{ order.actual_cost or '' }}" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="estimated_completion_date">预计完成日期</label>
+                            <input type="date" name="estimated_completion_date" id="estimated_completion_date" 
+                                   value="{{ order.estimated_completion_date.strftime('%Y-%m-%d') if order.estimated_completion_date else '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="actual_completion_date">实际完成日期</label>
+                            <input type="date" name="actual_completion_date" id="actual_completion_date" 
+                                   value="{{ order.actual_completion_date.strftime('%Y-%m-%d') if order.actual_completion_date else '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notes">备注</label>
+                        <textarea name="notes" id="notes" rows="3" placeholder="其他备注信息">{{ order.notes or '' }}</textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">更新工单</button>
+                        <a href="{{ url_for('maintenance_orders') }}" class="btn btn-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 工单详情 -->
+    <div class="details-section">
+        <div class="card">
+            <div class="card-header">
+                <h3>工单详情</h3>
+            </div>
+            <div class="card-body">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>创建人：</label>
+                        <span>{{ order.creator_name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>创建时间：</label>
+                        <span>{{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>最后更新：</label>
+                        <span>{{ order.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>房产地址：</label>
+                        <span>{{ order.property_address }}, {{ order.property_city }}, {{ order.property_state }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-danger">
+        <h4>工单不存在</h4>
+        <p>指定的维修工单不存在或已被删除。</p>
+        <a href="{{ url_for('maintenance_orders') }}" class="btn btn-primary">返回列表</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.detail-item label {
+    font-weight: bold;
+    min-width: 120px;
+    margin-right: 1rem;
+}
+
+.detail-item span {
+    color: #666;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.details-section {
+    margin-top: 2rem;
+}
+</style>
+{% endblock %} 

@@ -70,11 +70,14 @@
             </div>
             <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">登录</button>
         </form>
-         <div style="text-align: center; margin-top: 20px;">
-            <p style="color: #666;">
-                还没有账户？ <a href="{{ url_for('register') }}" style="color: var(--main-blue); text-decoration: none; font-weight: 500;">立即注册</a>
-            </p>
+
+        <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <p style="color: #666; margin-bottom: 10px;">还没有账户？</p>
+            <a href="{{ url_for('register') }}" class="btn btn-outline-primary" style="width: 100%;">
+                <i class="fas fa-user-plus"></i> 申请注册
+            </a>
         </div>
+
     </div>
 </body>
 </html> 

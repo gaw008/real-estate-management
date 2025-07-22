@@ -1,0 +1,136 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}编辑客户 - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-edit mr-2"></i>编辑客户
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('customer_tracking') }}">客户追踪</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('customer_tracking_detail', customer_id=customer.id) }}">{{ customer.name }}</a></li>
+                    <li class="breadcrumb-item active">编辑</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ url_for('customer_tracking_detail', customer_id=customer.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i>返回详情
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-edit mr-2"></i>编辑客户信息
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('edit_customer_tracking', customer_id=customer.id) }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="name">客户姓名 *</label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ customer.name }}" required placeholder="请输入客户姓名">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="phone">联系电话</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" 
+                                           value="{{ customer.phone or '' }}" placeholder="请输入联系电话">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="email">邮箱地址</label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{{ customer.email or '' }}" placeholder="请输入邮箱地址">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="tracking_status">跟踪状态</label>
+                                    <select class="form-control" id="tracking_status" name="tracking_status">
+                                        {% for status in status_options %}
+                                        <option value="{{ status }}" {% if customer.tracking_status == status %}selected{% endif %}>
+                                            {{ status }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="property_address">房产地址</label>
+                            <textarea class="form-control" id="property_address" name="property_address" 
+                                      rows="3" placeholder="请输入房产地址">{{ customer.property_address or '' }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>租赁类别（可多选）</label>
+                            <div class="row">
+                                {% for type in rental_type_options %}
+                                <div class="col-md-3">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input" 
+                                               id="rental_{{ loop.index }}" name="rental_types" value="{{ type }}"
+                                               {% if type in customer.rental_types %}checked{% endif %}>
+                                        <label class="custom-control-label" for="rental_{{ loop.index }}">{{ type }}</label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="notes">备注</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="4" 
+                                      placeholder="请输入备注信息">{{ customer.notes or '' }}</textarea>
+                        </div>
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save mr-1"></i>保存修改
+                            </button>
+                            <a href="{{ url_for('customer_tracking_detail', customer_id=customer.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-times mr-1"></i>取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 表单验证
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const nameInput = document.getElementById('name');
+    
+    form.addEventListener('submit', function(e) {
+        if (!nameInput.value.trim()) {
+            e.preventDefault();
+            alert('请填写客户姓名');
+            nameInput.focus();
+            return false;
+        }
+    });
+    
+    // 自动聚焦到姓名输入框
+    nameInput.focus();
+});
+</script>
+{% endblock %} 

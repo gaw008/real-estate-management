@@ -1,0 +1,282 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}客户详情 - {{ customer.name }}{% endblock %}
+
+{% block page_title %}客户详情 - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<!-- 操作栏 -->
+<div class="action-bar" style="margin-bottom: 20px;">
+    <a href="{{ url_for('customer_tracking') }}" class="btn btn-secondary">
+        ← 返回客户列表
+    </a>
+    <a href="{{ url_for('edit_customer_tracking', customer_id=customer.id) }}" class="btn btn-primary">
+        ✏️ 编辑客户
+    </a>
+</div>
+
+<!-- 客户基本信息 -->
+<div class="table-container">
+    <h3>基本信息</h3>
+    <table class="table">
+        <tr>
+            <td><strong>客户姓名</strong></td>
+            <td>{{ customer.name }}</td>
+            <td><strong>联系电话</strong></td>
+            <td>{{ customer.phone or '未提供' }}</td>
+        </tr>
+        <tr>
+            <td><strong>邮箱地址</strong></td>
+            <td>{{ customer.email or '未提供' }}</td>
+            <td><strong>跟踪状态</strong></td>
+            <td>
+                <span class="status-badge status-{{ 
+                    'completed' if customer.tracking_status in ['签约完成'] 
+                    else 'active' if customer.tracking_status in ['跟进服务', '价格谈判', '合同准备'] 
+                    else 'pending' if customer.tracking_status in ['看房安排', '初始接触'] 
+                    else 'default' 
+                }}">
+                    {{ customer.tracking_status }}
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td><strong>创建时间</strong></td>
+            <td>{{ customer.created_at.strftime('%Y-%m-%d %H:%M') if customer.created_at else '-' }}</td>
+            <td><strong>最后更新</strong></td>
+            <td>{{ customer.updated_at.strftime('%Y-%m-%d %H:%M') if customer.updated_at else '-' }}</td>
+        </tr>
+    </table>
+
+    <!-- 房产信息 -->
+    <h3 style="margin-top: 20px;">房产信息</h3>
+    <table class="table">
+        <tr>
+            <td><strong>房产地址</strong></td>
+            <td colspan="3">
+                {% if customer.property_address %}
+                    {{ customer.property_address|nl2br }}
+                {% else %}
+                    未提供
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td><strong>租赁类别</strong></td>
+            <td colspan="3">
+                {% if customer.rental_types %}
+                    {% for type in customer.rental_types %}
+                    <span class="status-badge status-active" style="margin-right: 5px;">{{ type }}</span>
+                    {% endfor %}
+                {% else %}
+                    未选择
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <!-- 备注信息 -->
+    {% if customer.notes %}
+    <h3 style="margin-top: 20px;">备注</h3>
+    <div class="notes-section">
+        {{ customer.notes|nl2br }}
+    </div>
+    {% endif %}
+
+    <!-- 跟踪记录 -->
+    <h3 style="margin-top: 20px;">跟踪记录</h3>
+    <div class="action-bar" style="margin-bottom: 15px;">
+        <button class="btn btn-primary" onclick="toggleAddRecordForm()">
+            ➕ 添加记录
+        </button>
+    </div>
+
+    <!-- 添加记录表单 -->
+    <div id="addRecordForm" class="form-section" style="display: none;">
+        <div class="form-card">
+            <div class="form-header">
+                <h4>添加跟踪记录</h4>
+                <button type="button" class="close-btn" onclick="toggleAddRecordForm()">×</button>
+            </div>
+            <form method="POST" action="{{ url_for('add_tracking_record', customer_id=customer.id) }}">
+                <div class="form-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="record_date">记录日期 *</label>
+                            <input type="date" class="form-input" id="record_date" name="record_date" 
+                                   value="{{ today }}" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="content">记录内容 *</label>
+                            <textarea class="form-input" id="content" name="content" rows="6" 
+                                      placeholder="请详细记录与客户的沟通情况、进展、下一步计划等..." required></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="toggleAddRecordForm()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存记录</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 跟踪记录列表 -->
+    {% if tracking_records %}
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>记录内容</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in tracking_records %}
+                <tr>
+                    <td>{{ record.record_date.strftime('%Y年%m月%d日') }}</td>
+                    <td>{{ record.content|nl2br }}</td>
+                    <td>{{ record.created_at.strftime('%H:%M') if record.created_at else '' }}</td>
+                    <td class="action-buttons">
+                        <button type="button" class="btn btn-sm btn-primary" 
+                                data-record-id="{{ record.id }}"
+                                data-record-date="{{ record.record_date.strftime('%Y-%m-%d') }}"
+                                data-record-content="{{ record.content|replace('\n', '\\n')|replace('"', '\\"')|replace("'", "\\'") }}"
+                                onclick="editRecordFromData(this)">
+                            ✏️ 编辑
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" 
+                                onclick="deleteRecord({{ record.id }}, '{{ record.record_date.strftime('%Y年%m月%d日') }}')">
+                            🗑️ 删除
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>暂无跟踪记录</p>
+        <p>点击"添加记录"开始记录与客户的沟通情况</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 编辑记录表单 -->
+<div id="editRecordForm" class="form-section" style="display: none;">
+    <div class="form-card">
+        <div class="form-header">
+            <h4>编辑跟踪记录</h4>
+            <button type="button" class="close-btn" onclick="toggleEditRecordForm()">×</button>
+        </div>
+        <form method="POST" action="{{ url_for('update_tracking_record') }}">
+            <input type="hidden" id="edit_record_id" name="record_id">
+            <div class="form-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_record_date">记录日期 *</label>
+                        <input type="date" class="form-input" id="edit_record_date" name="record_date" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_content">记录内容 *</label>
+                        <textarea class="form-input" id="edit_content" name="content" rows="6" required></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="toggleEditRecordForm()">取消</button>
+                <button type="submit" class="btn btn-primary">更新记录</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 删除确认对话框 -->
+<div id="deleteDialog" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4>确认删除</h4>
+            <button type="button" class="close-btn" onclick="closeDeleteDialog()">×</button>
+        </div>
+        <div class="modal-body">
+            <p>确定要删除这条跟踪记录吗？此操作无法撤销。</p>
+            <p><strong>记录日期：</strong><span id="deleteRecordDate"></span></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteDialog()">取消</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteRecord()">确认删除</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentRecordId = null;
+
+function toggleAddRecordForm() {
+    const form = document.getElementById('addRecordForm');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleEditRecordForm() {
+    const form = document.getElementById('editRecordForm');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function editRecordFromData(button) {
+    const recordId = button.dataset.recordId;
+    const recordDate = button.dataset.recordDate;
+    const recordContent = button.dataset.recordContent;
+
+    document.getElementById('edit_record_id').value = recordId;
+    document.getElementById('edit_record_date').value = recordDate;
+    document.getElementById('edit_content').value = recordContent;
+    toggleEditRecordForm();
+}
+
+function deleteRecord(recordId, recordDate) {
+    currentRecordId = recordId;
+    document.getElementById('deleteRecordDate').textContent = recordDate;
+    document.getElementById('deleteDialog').style.display = 'block';
+}
+
+function closeDeleteDialog() {
+    document.getElementById('deleteDialog').style.display = 'none';
+    currentRecordId = null;
+}
+
+function confirmDeleteRecord() {
+    if (!currentRecordId) return;
+    
+    fetch('{{ url_for("delete_tracking_record") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `record_id=${currentRecordId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('记录删除成功');
+            location.reload();
+        } else {
+            alert('删除失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('删除失败，请重试');
+    });
+    closeDeleteDialog();
+}
+</script>
+{% endblock %} 

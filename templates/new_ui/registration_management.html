@@ -1,0 +1,462 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}注册申请管理{% endblock %}
+
+{% block page_title %}注册申请管理{% endblock %}
+
+{% block content %}
+<!-- 统计概览 -->
+<div class="overview-section">
+    <div class="overview-grid">
+        <div class="overview-card total">
+            <div class="overview-icon">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="overview-content">
+                <div class="overview-number">{{ stats.total }}</div>
+                <div class="overview-label">总申请数</div>
+            </div>
+        </div>
+        <div class="overview-card pending">
+            <div class="overview-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="overview-content">
+                <div class="overview-number">{{ stats.pending }}</div>
+                <div class="overview-label">待审核</div>
+            </div>
+        </div>
+        <div class="overview-card approved">
+            <div class="overview-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="overview-content">
+                <div class="overview-number">{{ stats.approved }}</div>
+                <div class="overview-label">已批准</div>
+            </div>
+        </div>
+        <div class="overview-card rejected">
+            <div class="overview-icon">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="overview-content">
+                <div class="overview-number">{{ stats.rejected }}</div>
+                <div class="overview-label">已拒绝</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 搜索和筛选 -->
+<div class="control-section">
+    <div class="control-row">
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索用户名、姓名或邮箱...">
+        </div>
+        <div class="filter-tabs">
+            <button type="button" class="filter-tab active" onclick="filterApplications('all')">
+                <span class="tab-text">全部</span>
+                <span class="tab-count">{{ stats.total }}</span>
+            </button>
+            <button type="button" class="filter-tab" onclick="filterApplications('pending')">
+                <span class="tab-text">待审核</span>
+                <span class="tab-count">{{ stats.pending }}</span>
+            </button>
+            <button type="button" class="filter-tab" onclick="filterApplications('approved')">
+                <span class="tab-text">已批准</span>
+                <span class="tab-count">{{ stats.approved }}</span>
+            </button>
+            <button type="button" class="filter-tab" onclick="filterApplications('rejected')">
+                <span class="tab-text">已拒绝</span>
+                <span class="tab-count">{{ stats.rejected }}</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 申请列表 -->
+<div class="applications-section">
+    <div class="section-header">
+        <h3>注册申请列表</h3>
+        <span class="applications-count">{{ applications|length }} 个申请</span>
+    </div>
+    
+    {% if applications %}
+    <div class="applications-table">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-id">ID</th>
+                    <th class="col-username">用户名</th>
+                    <th class="col-name">姓名</th>
+                    <th class="col-email">邮箱</th>
+                    <th class="col-department">部门</th>
+                    <th class="col-time">申请时间</th>
+                    <th class="col-status">状态</th>
+                    <th class="col-actions">操作</th>
+                </tr>
+            </thead>
+            <tbody id="applicationsTable">
+                {% for app in applications %}
+                <tr class="application-row" data-status="{{ app.status }}">
+                    <td class="col-id">{{ app.id }}</td>
+                    <td class="col-username">{{ app.username }}</td>
+                    <td class="col-name">{{ app.full_name }}</td>
+                    <td class="col-email">{{ app.email }}</td>
+                    <td class="col-department">
+                        <span class="department-tag">{{ app.department }}</span>
+                    </td>
+                    <td class="col-time">{{ app.created_at.strftime('%Y-%m-%d %H:%M') if app.created_at else 'N/A' }}</td>
+                    <td class="col-status">
+                        {% if app.status == 'pending' %}
+                            <span class="status-badge pending">待审核</span>
+                        {% elif app.status == 'approved' %}
+                            <span class="status-badge approved">已批准</span>
+                        {% elif app.status == 'rejected' %}
+                            <span class="status-badge rejected">已拒绝</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-actions">
+                        <div class="action-buttons">
+                            <button type="button" class="action-btn view-btn" 
+                                    onclick="viewApplication({{ app.id }})" 
+                                    title="查看详情">
+                                <i class="fas fa-eye"></i>
+                                <span>查看</span>
+                            </button>
+                            {% if app.status == 'pending' %}
+                            <button type="button" class="action-btn approve-btn" 
+                                    onclick="reviewApplication({{ app.id }}, 'approve')" 
+                                    title="批准申请">
+                                <i class="fas fa-check"></i>
+                                <span>批准</span>
+                            </button>
+                            <button type="button" class="action-btn reject-btn" 
+                                    onclick="reviewApplication({{ app.id }}, 'reject')" 
+                                    title="拒绝申请">
+                                <i class="fas fa-times"></i>
+                                <span>拒绝</span>
+                            </button>
+                            {% endif %}
+                            {% if app.status != 'approved' %}
+                            <button type="button" class="action-btn delete-btn" 
+                                    onclick="deleteApplication({{ app.id }})" 
+                                    title="删除申请">
+                                <i class="fas fa-trash"></i>
+                                <span>删除</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-clipboard-list"></i>
+        </div>
+        <h4>暂无注册申请</h4>
+        <p>当前没有待处理的注册申请</p>
+    </div>
+    {% endif %}
+</div>
+</div>
+
+<!-- 申请详情模态框 -->
+<div class="modal-overlay" id="applicationDetailModal">
+    <div class="modal-container large">
+        <div class="modal-header">
+            <h3>申请详情</h3>
+            <button type="button" class="modal-close" onclick="closeModal('applicationDetailModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="applicationDetailContent">
+            <!-- 内容将通过AJAX加载 -->
+        </div>
+    </div>
+</div>
+
+<!-- 审核模态框 -->
+<div class="modal-overlay" id="reviewModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="reviewModalTitle">审核申请</h3>
+            <button type="button" class="modal-close" onclick="closeModal('reviewModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="reviewForm">
+                <input type="hidden" id="applicationId" name="application_id">
+                <input type="hidden" id="reviewAction" name="action">
+                
+                <div id="approveFields" class="approve-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="initialPassword">初始密码 <span class="required">*</span></label>
+                        <div class="password-input-group">
+                            <input type="text" id="initialPassword" name="initial_password" 
+                                   placeholder="设置用户初始密码" required>
+                            <button type="button" class="generate-btn" onclick="generatePassword()">
+                                <i class="fas fa-random"></i>
+                                <span>生成密码</span>
+                            </button>
+                        </div>
+                        <div class="form-hint">用户将使用此密码首次登录系统</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reviewNotes">审核备注</label>
+                    <textarea id="reviewNotes" name="review_notes" rows="4" 
+                              placeholder="请输入审核意见或说明（可选）"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('reviewModal')">取消</button>
+            <button type="button" class="btn btn-primary" onclick="submitReview()">确认审核</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentFilter = 'all';
+
+// 筛选申请
+function filterApplications(status) {
+    currentFilter = status;
+    const rows = document.querySelectorAll('.application-row');
+    
+    rows.forEach(row => {
+        const rowStatus = row.getAttribute('data-status');
+        if (status === 'all' || rowStatus === status) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // 更新按钮状态
+    document.querySelectorAll('.filter-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+// 搜索申请
+function searchApplications() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('.application-row');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const matchesSearch = text.includes(searchTerm);
+        const matchesFilter = currentFilter === 'all' || row.getAttribute('data-status') === currentFilter;
+        
+        row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+    });
+}
+
+// 查看申请详情
+function viewApplication(applicationId) {
+    fetch(`/admin/registration_details/${applicationId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const application = data.application;
+                const content = `
+                    <div class="detail-grid">
+                        <div class="detail-section">
+                            <h4><i class="fas fa-user"></i> 基本信息</h4>
+                            <div class="detail-table">
+                                <div class="detail-row">
+                                    <span class="detail-label">用户名：</span>
+                                    <span class="detail-value">${application.username}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">姓名：</span>
+                                    <span class="detail-value">${application.full_name}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">邮箱：</span>
+                                    <span class="detail-value">${application.email}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">电话：</span>
+                                    <span class="detail-value">${application.phone || '未提供'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h4><i class="fas fa-briefcase"></i> 工作信息</h4>
+                            <div class="detail-table">
+                                <div class="detail-row">
+                                    <span class="detail-label">申请部门：</span>
+                                    <span class="detail-value">
+                                        <span class="department-tag">${application.department}</span>
+                                    </span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">职位：</span>
+                                    <span class="detail-value">${application.job_title || '未指定'}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">申请时间：</span>
+                                    <span class="detail-value">${application.created_at}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">状态：</span>
+                                    <span class="detail-value">
+                                        ${application.status === 'pending' ? '<span class="status-badge pending">待审核</span>' :
+                                          application.status === 'approved' ? '<span class="status-badge approved">已批准</span>' :
+                                          '<span class="status-badge rejected">已拒绝</span>'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ${application.notes ? `
+                    <div class="detail-section">
+                        <h4><i class="fas fa-comment"></i> 申请说明</h4>
+                        <div class="detail-content">${application.notes}</div>
+                    </div>
+                    ` : ''}
+                    ${application.review_notes ? `
+                    <div class="detail-section">
+                        <h4><i class="fas fa-clipboard-check"></i> 审核备注</h4>
+                        <div class="detail-content">${application.review_notes}</div>
+                    </div>
+                    ` : ''}
+                    ${application.initial_password ? `
+                    <div class="detail-section">
+                        <h4><i class="fas fa-key"></i> 初始密码</h4>
+                        <div class="password-display">
+                            <code>${application.initial_password}</code>
+                            <small>用户将使用此密码首次登录系统</small>
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+                document.getElementById('applicationDetailContent').innerHTML = content;
+                showModal('applicationDetailModal');
+            } else {
+                alert('获取申请详情失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('获取申请详情失败');
+        });
+}
+
+// 审核申请
+function reviewApplication(applicationId, action) {
+    document.getElementById('applicationId').value = applicationId;
+    document.getElementById('reviewAction').value = action;
+    
+    const approveFields = document.getElementById('approveFields');
+    const modalTitle = document.getElementById('reviewModalTitle');
+    
+    if (action === 'approve') {
+        modalTitle.textContent = '批准申请';
+        approveFields.style.display = 'block';
+        document.getElementById('initialPassword').required = true;
+    } else {
+        modalTitle.textContent = '拒绝申请';
+        approveFields.style.display = 'none';
+        document.getElementById('initialPassword').required = false;
+    }
+    
+    showModal('reviewModal');
+}
+
+// 生成随机密码
+function generatePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('initialPassword').value = password;
+}
+
+// 提交审核
+function submitReview() {
+    const formData = new FormData(document.getElementById('reviewForm'));
+    
+    fetch('/admin/review_registration', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('审核完成：' + data.message);
+            location.reload();
+        } else {
+            alert('审核失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('审核失败');
+    });
+}
+
+// 删除申请
+function deleteApplication(applicationId) {
+    if (confirm('确认删除此申请吗？此操作不可恢复。')) {
+        fetch('/admin/delete_registration', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `application_id=${applicationId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('申请删除成功');
+                location.reload();
+            } else {
+                alert('删除失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败');
+        });
+    }
+}
+
+// 模态框控制函数
+function showModal(modalId) {
+    document.getElementById(modalId).style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// 点击模态框背景关闭
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-overlay')) {
+        closeModal(e.target.id);
+    }
+});
+
+// 搜索框回车事件
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchApplications();
+    }
+});
+</script>
+{% endblock %} 

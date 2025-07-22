@@ -11,18 +11,18 @@ from flask import session, flash, redirect, url_for
 # 部门权限映射表
 DEPARTMENT_PERMISSIONS = {
     'Admin': {
-        'modules': ['property_info', 'customer_management', 'maintenance_records', 
+        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
                    'cleaning_records', 'financial_records', 'owner_info', 
                    'user_management', 'employee_departments', 'system_settings'],
         'description': '系统管理员 - 拥有全部权限'
     },
     'Property Management Department': {
-        'modules': ['property_info', 'customer_management', 'maintenance_records', 
+        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
                    'cleaning_records', 'financial_records_view', 'employee_departments'],
         'description': '房产管理部 - 房产运营核心'
     },
     'Sales Department': {
-        'modules': ['property_info', 'customer_management', 'owner_info'],
+        'modules': ['property_info', 'customer_management', 'customer_tracking', 'owner_info'],
         'description': '销售部 - 客户关系管理'
     },
     'Accounting Department': {
@@ -44,6 +44,12 @@ MODULE_DESCRIPTIONS = {
         'description': '客户信息、租户管理、客户关系维护',
         'icon': '👥',
         'color': 'primary'
+    },
+    'customer_tracking': {
+        'name': '客户追踪管理',
+        'description': '客户跟踪、进度管理、沟通记录',
+        'icon': '📋',
+        'color': 'info'
     },
     'maintenance_records': {
         'name': '维修记录管理',
@@ -216,7 +222,8 @@ def generate_department_dashboard_data():
 MODULE_ROUTES = {
     'property_info': '/properties',
     'customer_management': '/customers',
-    'maintenance_records': '/maintenance',
+    'customer_tracking': '/customer_tracking',
+    'maintenance_records': '/maintenance_orders',
     'cleaning_records': '/cleaning',
     'financial_records': '/admin/financial_reports',
     'financial_records_view': '/admin/financial_reports',  # 共享财务报表，但只读

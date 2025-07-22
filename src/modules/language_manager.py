@@ -71,18 +71,16 @@ class LanguageManager:
             'super_admin_required': '此功能仅限超级管理员访问',
             
             # 注册相关
-            'user_registration': '用户注册',
-            'registration_review': '注册审核',
-            'pending_registrations': '待审核注册',
+            
             'approved': '已批准',
             'rejected': '已拒绝',
             'pending': '待审核',
             'approve': '批准',
             'reject': '拒绝',
-            'registration_date': '注册日期',
+        
             'review_date': '审核日期',
             'reviewer': '审核人',
-            'registration_notes': '注册说明',
+        
             'review_notes': '审核备注',
             
             # 房产管理
@@ -149,16 +147,14 @@ class LanguageManager:
             'data_saved': '数据已保存',
             'data_deleted': '数据已删除',
             'password_changed': '密码修改成功',
-            'registration_submitted': '注册申请已提交',
-            'registration_approved': '注册申请已批准',
-            'registration_rejected': '注册申请已拒绝',
+            
             
             # 页面标题
             'login_page_title': '登录 - 房地产管理系统',
             'dashboard_page_title': '仪表板 - 房地产管理系统',
             'register_page_title': '注册 - 房地产管理系统',
             'change_password_page_title': '修改密码 - 房地产管理系统',
-            'admin_registrations_page_title': '注册审核 - 房地产管理系统',
+        
             'reset_password_page_title': '重置密码 - 房地产管理系统',
             
             # 额外翻译
@@ -307,19 +303,16 @@ class LanguageManager:
             'admin_required': 'Administrator privileges required',
             'super_admin_required': 'This feature is restricted to super administrators only',
             
-            # Registration
-            'user_registration': 'User Registration',
-            'registration_review': 'Registration Review',
-            'pending_registrations': 'Pending Registrations',
+            
             'approved': 'Approved',
             'rejected': 'Rejected',
             'pending': 'Pending',
             'approve': 'Approve',
             'reject': 'Reject',
-            'registration_date': 'Registration Date',
+        
             'review_date': 'Review Date',
             'reviewer': 'Reviewer',
-            'registration_notes': 'Registration Notes',
+        
             'review_notes': 'Review Notes',
             
             # Property Management
@@ -386,16 +379,14 @@ class LanguageManager:
             'data_saved': 'Data saved',
             'data_deleted': 'Data deleted',
             'password_changed': 'Password changed successfully',
-            'registration_submitted': 'Registration application submitted',
-            'registration_approved': 'Registration application approved',
-            'registration_rejected': 'Registration application rejected',
+            
             
             # Page Titles
             'login_page_title': 'Login - Real Estate Management System',
             'dashboard_page_title': 'Dashboard - Real Estate Management System',
             'register_page_title': 'Register - Real Estate Management System',
             'change_password_page_title': 'Change Password - Real Estate Management System',
-            'admin_registrations_page_title': 'Registration Review - Real Estate Management System',
+        
             'reset_password_page_title': 'Reset Password - Real Estate Management System',
             
             # Additional translations
