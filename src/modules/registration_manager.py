@@ -85,15 +85,14 @@ class RegistrationManager:
             return False
     
     def hash_password(self, password: str) -> str:
-        """密码哈希"""
-        salt = os.urandom(32)
-        password_hash = hashlib.pbkdf2_hmac(
-            'sha256', 
-            password.encode('utf-8'), 
-            salt, 
-            100000
-        )
-        return salt.hex() + password_hash.hex()
+        """密码哈希 - 与认证系统保持一致"""
+        import secrets
+        salt = secrets.token_hex(16)
+        password_hash = hashlib.pbkdf2_hmac('sha256', 
+                                          password.encode('utf-8'), 
+                                          salt.encode('utf-8'), 
+                                          100000)
+        return salt + password_hash.hex()
     
     def submit_application(self, application_data: Dict[str, Any]) -> Dict[str, Any]:
         """提交注册申请"""

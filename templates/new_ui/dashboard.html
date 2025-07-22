@@ -24,6 +24,24 @@
             <h3>州数量</h3>
             <p>{{ stats.states_count }}</p>
         </div>
+    {% elif session.user_type in ['sales', 'accounting', 'property_manager'] %}
+        <!-- 员工统计 -->
+        <div class="card">
+            <h3>房产总数</h3>
+            <p>{{ stats.properties_count }}</p>
+        </div>
+        <div class="card">
+            <h3>业主总数</h3>
+            <p>{{ stats.owners_count }}</p>
+        </div>
+        <div class="card">
+            <h3>城市数量</h3>
+            <p>{{ stats.cities_count }}</p>
+        </div>
+        <div class="card">
+            <h3>州数量</h3>
+            <p>{{ stats.states_count }}</p>
+        </div>
     {% else %}
         <!-- 业主统计 -->
         <div class="card">

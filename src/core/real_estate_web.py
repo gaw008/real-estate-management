@@ -279,11 +279,15 @@ def login():
         
         # 验证用户
         print(f"🔍 尝试登录: {username}, 类型: {user_type}")
-        user = auth_system.authenticate_user(username, password)
         
-        # 如果数据库认证失败，尝试演示模式认证
-        if not user:
-            print("⚠️ 数据库认证失败，尝试演示模式认证...")
+        # 首先检查数据库连接状态
+        db_conn = auth_system.get_db_connection()
+        if db_conn:
+            print("✅ 数据库连接正常，使用数据库认证")
+            db_conn.close()
+            user = auth_system.authenticate_user(username, password)
+        else:
+            print("⚠️ 数据库连接失败，使用演示模式认证")
             user = auth_system._demo_authenticate(username, password)
             if user:
                 print(f"✅ 演示模式认证成功: {user}")
@@ -389,6 +393,7 @@ def dashboard():
         
     cursor = connection.cursor(dictionary=True)
     
+    # 初始化变量，避免模板渲染错误
     stats = {}
     owner_stats = {}
     owner_info = None
@@ -441,6 +446,28 @@ def dashboard():
                 # 假设的收入和费率计算
                 owner_stats['total_income'] = 12345.67 # 示例数据
                 owner_stats['average_fee_rate'] = 8.5 # 示例数据
+        
+        elif session['user_type'] in ['sales', 'accounting', 'property_manager']:
+            print(f"👤 获取{session['user_type']}用户统计数据...")
+            
+            # 为销售、会计、房产管理用户提供基本统计数据
+            cursor.execute("SELECT COUNT(*) as count FROM properties")
+            result = cursor.fetchone()
+            stats['properties_count'] = result['count'] if result else 0
+            
+            cursor.execute("SELECT COUNT(*) as count FROM owners_master")
+            result = cursor.fetchone()
+            stats['owners_count'] = result['count'] if result else 0
+            
+            cursor.execute("SELECT COUNT(DISTINCT city) as count FROM properties")
+            result = cursor.fetchone()
+            stats['cities_count'] = result['count'] if result else 0
+            
+            cursor.execute("SELECT COUNT(DISTINCT state) as count FROM properties")
+            result = cursor.fetchone()
+            stats['states_count'] = result['count'] if result else 0
+            
+            print(f"📊 {session['user_type']}用户统计数据获取完成: {stats}")
 
     except Exception as e:
         print(f"❌ Error fetching dashboard data: {e}")
