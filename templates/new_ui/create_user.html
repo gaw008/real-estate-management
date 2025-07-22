@@ -1,0 +1,157 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}创建用户 - 房地产管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-plus"></i> 创建新用户
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('admin_user_management') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> 返回用户管理
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible">
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert">
+                                        <span>&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('admin_create_user') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="username">用户名 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           placeholder="输入用户名" required>
+                                    <small class="form-text text-muted">用户名必须唯一，用于登录系统</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="email">邮箱 <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           placeholder="输入邮箱地址" required>
+                                    <small class="form-text text-muted">邮箱地址必须唯一</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="password">密码 <span class="text-danger">*</span></label>
+                                    <input type="password" class="form-control" id="password" name="password" 
+                                           placeholder="输入密码" required>
+                                    <small class="form-text text-muted">密码长度至少6位</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="full_name">姓名 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" 
+                                           placeholder="输入用户姓名" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="user_type">用户类型 <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="user_type" name="user_type" required>
+                                        <option value="">请选择用户类型</option>
+                                        <option value="admin">管理员</option>
+                                        <option value="sales">销售部</option>
+                                        <option value="accounting">会计部</option>
+                                        <option value="property_manager">房产管理部</option>
+                                        <option value="owner">业主</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="department">部门 <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="department" name="department" required>
+                                        <option value="">请选择部门</option>
+                                        <option value="管理员">管理员</option>
+                                        <option value="销售部">销售部</option>
+                                        <option value="会计部">会计部</option>
+                                        <option value="房产管理部">房产管理部</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> 创建用户
+                                </button>
+                                <a href="{{ url_for('admin_user_management') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> 取消
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 用户类型和部门联动
+document.getElementById('user_type').addEventListener('change', function() {
+    const userType = this.value;
+    const departmentSelect = document.getElementById('department');
+    
+    // 清空部门选择
+    departmentSelect.innerHTML = '<option value="">请选择部门</option>';
+    
+    if (userType === 'admin') {
+        departmentSelect.innerHTML += '<option value="管理员">管理员</option>';
+    } else if (userType === 'sales') {
+        departmentSelect.innerHTML += '<option value="销售部">销售部</option>';
+    } else if (userType === 'accounting') {
+        departmentSelect.innerHTML += '<option value="会计部">会计部</option>';
+    } else if (userType === 'property_manager') {
+        departmentSelect.innerHTML += '<option value="房产管理部">房产管理部</option>';
+    } else if (userType === 'owner') {
+        departmentSelect.innerHTML += '<option value="业主">业主</option>';
+    }
+});
+
+// 部门选择时自动设置用户类型
+document.getElementById('department').addEventListener('change', function() {
+    const department = this.value;
+    const userTypeSelect = document.getElementById('user_type');
+    
+    if (department === '管理员') {
+        userTypeSelect.value = 'admin';
+    } else if (department === '销售部') {
+        userTypeSelect.value = 'sales';
+    } else if (department === '会计部') {
+        userTypeSelect.value = 'accounting';
+    } else if (department === '房产管理部') {
+        userTypeSelect.value = 'property_manager';
+    } else if (department === '业主') {
+        userTypeSelect.value = 'owner';
+    }
+});
+</script>
+{% endblock %} 

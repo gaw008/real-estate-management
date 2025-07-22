@@ -32,8 +32,7 @@ from modules.department_modules import (
     get_user_accessible_modules, has_module_access, get_module_info
 )
 
-# 导入用户注册系统
-from modules.registration_manager import registration_manager
+# 用户注册系统已移除，改为直接创建用户
 
 # 导入用户模块权限管理系统
 from modules.user_module_permissions import init_user_module_permissions, get_user_module_permissions
@@ -110,8 +109,7 @@ def get_department_display_name(department):
 # 从配置加载器导入数据库配置
 from .config_loader import DB_CONFIG, CA_CERTIFICATE
 
-# 初始化注册申请系统
-registration_manager.create_tables()
+# 注册申请系统已移除，改为直接创建用户
 
 # 初始化用户模块权限管理系统
 init_user_module_permissions(DB_CONFIG)
@@ -5443,100 +5441,102 @@ def delete_tracking_record():
         print(f"删除跟踪记录失败: {e}")
         return jsonify({'success': False, 'message': f'删除跟踪记录失败: {e}'})
 
-# ==================== 注册申请系统路由 ====================
+# ==================== 直接创建用户系统路由 ====================
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    """用户注册申请页面"""
+@app.route('/admin/create_user', methods=['GET', 'POST'])
+@admin_required
+def admin_create_user():
+    """管理员直接创建用户页面"""
     if request.method == 'POST':
         # 获取表单数据
-        application_data = {
+        user_data = {
             'username': request.form.get('username', '').strip(),
             'email': request.form.get('email', '').strip(),
+            'password': request.form.get('password', '').strip(),
             'full_name': request.form.get('full_name', '').strip(),
-            'phone': request.form.get('phone', '').strip(),
-            'department': request.form.get('department', '').strip(),
-            'job_title': request.form.get('job_title', '').strip(),
-            'notes': request.form.get('notes', '').strip()
+            'user_type': request.form.get('user_type', '').strip(),
+            'department': request.form.get('department', '').strip()
         }
         
         # 验证必填字段
-        if not all([application_data['username'], application_data['email'], 
-                   application_data['full_name'], application_data['department']]):
+        if not all([user_data['username'], user_data['email'], 
+                   user_data['password'], user_data['full_name'], 
+                   user_data['user_type'], user_data['department']]):
             flash('请填写所有必填字段', 'error')
-            return render_template('new_ui/register.html')
+            return render_template('new_ui/create_user.html')
         
-        # 提交申请
-        result = registration_manager.submit_application(application_data)
+        # 创建用户
+        result = create_user_directly(user_data)
         
         if result['success']:
-            flash('注册申请提交成功！请等待管理员审核。', 'success')
-            return redirect(url_for('login'))
+            flash(f'用户创建成功！用户名: {user_data["username"]}', 'success')
+            return redirect(url_for('admin_user_management'))
         else:
-            flash(f'申请提交失败：{result["message"]}', 'error')
-            return render_template('new_ui/register.html')
+            flash(f'用户创建失败：{result["message"]}', 'error')
+            return render_template('new_ui/create_user.html')
     
-    return render_template('new_ui/register.html')
+    return render_template('new_ui/create_user.html')
 
-@app.route('/admin/registration_management')
-@admin_required
-def admin_registration_management():
-    """管理员注册申请管理页面"""
-    # 获取申请列表和统计信息
-    applications = registration_manager.get_applications()
-    stats = registration_manager.get_statistics()
-    
-    return render_template('new_ui/registration_management.html', 
-                         applications=applications, stats=stats)
-
-@app.route('/admin/registration_details/<int:application_id>')
-@admin_required
-def admin_registration_details(application_id):
-    """获取申请详情API"""
-    application = registration_manager.get_application_by_id(application_id)
-    
-    if application:
-        # 格式化时间
-        if application['created_at']:
-            application['created_at'] = application['created_at'].strftime('%Y-%m-%d %H:%M:%S')
-        if application['reviewed_at']:
-            application['reviewed_at'] = application['reviewed_at'].strftime('%Y-%m-%d %H:%M:%S')
-        
-        return jsonify({
-            'success': True,
-            'application': application
-        })
-    else:
-        return jsonify({
-            'success': False,
-            'message': '申请不存在'
-        })
-
-@app.route('/admin/review_registration', methods=['POST'])
-@admin_required
-def admin_review_registration():
-    """审核注册申请API"""
+def create_user_directly(user_data):
+    """直接创建用户"""
     try:
-        application_id = int(request.form.get('application_id'))
-        action = request.form.get('action')  # 'approve' 或 'reject'
-        review_notes = request.form.get('review_notes', '')
-        initial_password = request.form.get('initial_password', '')
+        from src.core.auth_system import AuthSystem
+        from src.modules.user_module_permissions import UserModulePermissions
         
-        # 获取当前管理员ID
-        reviewer_id = session.get('user_id')
+        auth = AuthSystem()
         
-        if not reviewer_id:
-            return jsonify({
-                'success': False,
-                'message': '管理员身份验证失败'
-            })
+        # 连接数据库
+        conn = auth.get_db_connection()
+        if not conn:
+            return {'success': False, 'message': '数据库连接失败'}
+            
+        cursor = conn.cursor()
         
-        # 执行审核
-        result = registration_manager.review_application(
-            application_id, action, reviewer_id, review_notes, initial_password
-        )
-        
-        return jsonify(result)
+        try:
+            # 检查用户是否已存在
+            cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", 
+                         (user_data['username'], user_data['email']))
+            
+            if cursor.fetchone():
+                return {'success': False, 'message': '用户名或邮箱已存在'}
+            
+            # 创建用户
+            password_hash = auth.hash_password(user_data['password'])
+            
+            cursor.execute("""
+                INSERT INTO users (username, email, password_hash, full_name, user_type, department)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                user_data['username'],
+                user_data['email'],
+                password_hash,
+                user_data['full_name'],
+                user_data['user_type'],
+                user_data['department']
+            ))
+            
+            user_id = cursor.lastrowid
+            conn.commit()
+            
+            # 初始化模块权限
+            ump = UserModulePermissions(DB_CONFIG)
+            success = ump.initialize_user_modules(user_id, user_data['user_type'], user_data['department'])
+            
+            if not success:
+                print(f"⚠️ 用户创建成功但模块权限初始化失败，用户ID: {user_id}")
+            
+            return {'success': True, 'message': f'用户创建成功，ID: {user_id}'}
+                
+        except Exception as e:
+            print(f"❌ 创建用户失败: {e}")
+            conn.rollback()
+            return {'success': False, 'message': f'创建用户失败: {e}'}
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        return {'success': False, 'message': f'系统错误: {e}'}
         
     except Exception as e:
         return jsonify({
@@ -5544,21 +5544,7 @@ def admin_review_registration():
             'message': f'审核失败：{str(e)}'
         })
 
-@app.route('/admin/delete_registration', methods=['POST'])
-@admin_required
-def admin_delete_registration():
-    """删除注册申请API"""
-    try:
-        application_id = int(request.form.get('application_id'))
-        
-        result = registration_manager.delete_application(application_id)
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'删除失败：{str(e)}'
-        })
+
 
 # ==================== 用户模块权限管理 ====================
 
