@@ -1337,4 +1337,271 @@ input:checked + .slider:before {
     .action-buttons {
         flex-direction: column;
     }
+}
+
+/* ==================== 公告栏样式 ==================== */
+
+.announcements-section {
+    margin: 24px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    border: 1px solid var(--border);
+}
+
+.announcements-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.announcements-header h2 {
+    color: var(--main-blue);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.announcements-header h2 i {
+    margin-right: 8px;
+}
+
+.announcements-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.announcements-container {
+    padding: 20px 24px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.announcement-item {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-left: 4px solid #6c757d;
+    transition: all 0.2s ease;
+}
+
+.announcement-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.announcement-item.urgent {
+    border-left-color: #dc3545;
+    background-color: #fff5f5;
+}
+
+.announcement-item.high {
+    border-left-color: #fd7e14;
+    background-color: #fff8f0;
+}
+
+.announcement-item.medium {
+    border-left-color: #ffc107;
+    background-color: #fffdf0;
+}
+
+.announcement-item.low {
+    border-left-color: #28a745;
+    background-color: #f0fff4;
+}
+
+.announcement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.announcement-header h4 {
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+}
+
+.priority-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.priority-badge.urgent {
+    background-color: #dc3545;
+    color: white;
+}
+
+.priority-badge.high {
+    background-color: #fd7e14;
+    color: white;
+}
+
+.priority-badge.medium {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.priority-badge.low {
+    background-color: #28a745;
+    color: white;
+}
+
+.announcement-content {
+    margin-bottom: 12px;
+}
+
+.announcement-content p {
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.announcement-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.announcement-footer span {
+    display: flex;
+    align-items: center;
+}
+
+.announcement-footer .author {
+    font-weight: 500;
+}
+
+.announcement-footer .date {
+    font-style: italic;
+}
+
+.announcement-footer .property {
+    background-color: var(--main-blue);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+.no-announcements {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 40px 20px;
+}
+
+.loading {
+    text-align: center;
+    color: #6c757d;
+    padding: 40px 20px;
+}
+
+.error {
+    text-align: center;
+    color: #dc3545;
+    padding: 40px 20px;
+}
+
+/* 模态框样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    color: var(--main-blue);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.modal-header h3 i {
+    margin-right: 8px;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover {
+    color: var(--text);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .announcements-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+    
+    .announcements-actions {
+        justify-content: center;
+    }
+    
+    .announcement-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    
+    .announcement-footer {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
 } 

@@ -63,5 +63,188 @@
     {% endif %}
 </div>
 
+<!-- 公告栏 -->
+<div class="announcements-section">
+    <div class="announcements-header">
+        <h2><i class="fas fa-bullhorn"></i> 公司公告栏</h2>
+        <div class="announcements-actions">
+            <a href="{{ url_for('announcements') }}" class="btn btn-primary">
+                <i class="fas fa-eye"></i> 查看全部
+            </a>
+            <button class="btn btn-success" onclick="showAddAnnouncementModal()">
+                <i class="fas fa-plus"></i> 发布公告
+            </button>
+        </div>
+    </div>
+    
+    <div id="announcements-container" class="announcements-container">
+        <!-- 公告内容将通过JavaScript动态加载 -->
+        <div class="loading">正在加载公告...</div>
+    </div>
+</div>
 
+<!-- 发布公告模态框 -->
+<div id="addAnnouncementModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-plus"></i> 发布新公告</h3>
+            <span class="close" onclick="closeAddAnnouncementModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="addAnnouncementForm" method="POST" action="{{ url_for('add_announcement') }}">
+                <div class="form-group">
+                    <label for="title">公告标题 <span class="text-danger">*</span></label>
+                    <input type="text" id="title" name="title" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="content">公告内容 <span class="text-danger">*</span></label>
+                    <textarea id="content" name="content" class="form-control" rows="4" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="property_id">关联房产（可选）</label>
+                    <select id="property_id" name="property_id" class="form-control">
+                        <option value="">不关联特定房产</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="priority">优先级</label>
+                    <select id="priority" name="priority" class="form-control">
+                        <option value="low">低</option>
+                        <option value="medium" selected>中</option>
+                        <option value="high">高</option>
+                        <option value="urgent">紧急</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> 发布公告
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddAnnouncementModal()">
+                        <i class="fas fa-times"></i> 取消
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 加载公告列表
+function loadAnnouncements() {
+    fetch('/api/announcements')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('announcements-container');
+            
+            if (data.success && data.announcements.length > 0) {
+                let html = '';
+                data.announcements.forEach(announcement => {
+                    const priorityClass = getPriorityClass(announcement.priority);
+                    const priorityText = getPriorityText(announcement.priority);
+                    
+                    html += `
+                        <div class="announcement-item ${priorityClass}">
+                            <div class="announcement-header">
+                                <h4>${announcement.title}</h4>
+                                <span class="priority-badge ${priorityClass}">${priorityText}</span>
+                            </div>
+                            <div class="announcement-content">
+                                <p>${announcement.content}</p>
+                            </div>
+                            <div class="announcement-footer">
+                                <span class="author">发布者: ${announcement.author_name}</span>
+                                <span class="date">${announcement.created_at}</span>
+                                ${announcement.property_display_name ? `<span class="property">房产: ${announcement.property_display_name}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="no-announcements">暂无公告</div>';
+            }
+        })
+        .catch(error => {
+            console.error('加载公告失败:', error);
+            document.getElementById('announcements-container').innerHTML = 
+                '<div class="error">加载公告失败，请稍后重试</div>';
+        });
+}
+
+// 获取优先级样式类
+function getPriorityClass(priority) {
+    switch(priority) {
+        case 'urgent': return 'urgent';
+        case 'high': return 'high';
+        case 'medium': return 'medium';
+        case 'low': return 'low';
+        default: return 'medium';
+    }
+}
+
+// 获取优先级文本
+function getPriorityText(priority) {
+    switch(priority) {
+        case 'urgent': return '紧急';
+        case 'high': return '高';
+        case 'medium': return '中';
+        case 'low': return '低';
+        default: return '中';
+    }
+}
+
+// 显示发布公告模态框
+function showAddAnnouncementModal() {
+    document.getElementById('addAnnouncementModal').style.display = 'block';
+    loadProperties();
+}
+
+// 关闭发布公告模态框
+function closeAddAnnouncementModal() {
+    document.getElementById('addAnnouncementModal').style.display = 'none';
+    document.getElementById('addAnnouncementForm').reset();
+}
+
+// 加载房产列表
+function loadProperties() {
+    fetch('/api/properties')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('property_id');
+            select.innerHTML = '<option value="">不关联特定房产</option>';
+            
+            if (data.success && data.properties) {
+                data.properties.forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property.id;
+                    option.textContent = property.name;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('加载房产列表失败:', error);
+        });
+}
+
+// 页面加载时执行
+document.addEventListener('DOMContentLoaded', function() {
+    loadAnnouncements();
+    
+    // 点击模态框外部关闭
+    window.onclick = function(event) {
+        const modal = document.getElementById('addAnnouncementModal');
+        if (event.target === modal) {
+            closeAddAnnouncementModal();
+        }
+    }
+});
+</script>
 {% endblock %} 

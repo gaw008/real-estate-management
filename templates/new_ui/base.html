@@ -18,8 +18,9 @@
       <a href="{{ url_for('admin_employee_departments') }}" class="nav-item {% if 'admin_employee_departments' in request.endpoint %}active{% endif %}">员工分组</a>
       <a href="{{ url_for('owners_fixed') }}" class="nav-item {% if 'owner' in request.endpoint %}active{% endif %}">业主查询</a>
       <a href="{{ url_for('admin_financial_reports') }}" class="nav-item {% if 'admin_financial_reports' in request.endpoint %}active{% endif %}">财务分析</a>
+      <a href="{{ url_for('announcements') }}" class="nav-item {% if 'announcements' in request.endpoint %}active{% endif %}">公告栏</a>
       
-                      <a href="{{ url_for('admin_user_management') }}" class="nav-item {% if 'admin_user_management' in request.endpoint %}active{% endif %}">用户管理</a>
+      <a href="{{ url_for('admin_user_management') }}" class="nav-item {% if 'admin_user_management' in request.endpoint %}active{% endif %}">用户管理</a>
       <a href="{{ url_for('logout') }}" class="nav-item">登出</a>
     </nav>
   </div>

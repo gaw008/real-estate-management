@@ -5634,6 +5634,288 @@ def admin_initialize_user_modules(user_id):
         logger.error(f"初始化用户模块权限失败: {e}")
         return jsonify({'success': False, 'message': f'初始化失败: {str(e)}'})
 
+# ==================== 公告栏系统路由 ====================
+
+@app.route('/announcements')
+@login_required
+def announcements():
+    """公告栏页面"""
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败。', 'error')
+        return render_template('new_ui/announcements.html', announcements=[])
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # 获取所有活跃的公告，按优先级和创建时间排序
+        cursor.execute("""
+            SELECT a.*, p.name as property_display_name 
+            FROM announcements a 
+            LEFT JOIN properties p ON a.property_id = p.id 
+            WHERE a.status = 'active' 
+            ORDER BY 
+                CASE a.priority 
+                    WHEN 'urgent' THEN 1 
+                    WHEN 'high' THEN 2 
+                    WHEN 'medium' THEN 3 
+                    WHEN 'low' THEN 4 
+                END,
+                a.created_at DESC
+        """)
+        announcements = cursor.fetchall()
+        
+        # 获取所有房产用于选择
+        cursor.execute("SELECT id, name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+        properties = cursor.fetchall()
+        
+    except Exception as e:
+        flash(f'加载公告数据时出错: {e}', 'error')
+        announcements = []
+        properties = []
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return render_template('new_ui/announcements.html', 
+                         announcements=announcements, 
+                         properties=properties)
+
+@app.route('/announcements/add', methods=['POST'])
+@login_required
+def add_announcement():
+    """添加新公告"""
+    try:
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        property_id = request.form.get('property_id', '').strip() or None
+        priority = request.form.get('priority', 'medium')
+        
+        if not title or not content:
+            flash('请填写标题和内容', 'error')
+            return redirect(url_for('announcements'))
+        
+        connection = get_db_connection()
+        if not connection:
+            flash('数据库连接失败', 'error')
+            return redirect(url_for('announcements'))
+        
+        cursor = connection.cursor()
+        
+        # 获取房产名称
+        property_name = None
+        if property_id:
+            cursor.execute("SELECT name FROM properties WHERE id = %s", (property_id,))
+            property_result = cursor.fetchone()
+            if property_result:
+                property_name = property_result[0]
+        
+        # 插入公告
+        cursor.execute("""
+            INSERT INTO announcements (title, content, property_id, property_name, author_id, author_name, priority)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            title, content, property_id, property_name,
+            session['user_id'], session.get('username', '未知用户'), priority
+        ))
+        
+        connection.commit()
+        flash('公告发布成功！', 'success')
+        
+    except Exception as e:
+        flash(f'发布公告失败: {e}', 'error')
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+    
+    return redirect(url_for('announcements'))
+
+@app.route('/announcements/edit/<int:announcement_id>', methods=['GET', 'POST'])
+@login_required
+def edit_announcement(announcement_id):
+    """编辑公告"""
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('announcements'))
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        if request.method == 'POST':
+            title = request.form.get('title', '').strip()
+            content = request.form.get('content', '').strip()
+            property_id = request.form.get('property_id', '').strip() or None
+            priority = request.form.get('priority', 'medium')
+            
+            if not title or not content:
+                flash('请填写标题和内容', 'error')
+                return redirect(url_for('edit_announcement', announcement_id=announcement_id))
+            
+            # 检查权限（只有作者或管理员可以编辑）
+            cursor.execute("SELECT author_id FROM announcements WHERE id = %s", (announcement_id,))
+            announcement = cursor.fetchone()
+            
+            if not announcement:
+                flash('公告不存在', 'error')
+                return redirect(url_for('announcements'))
+            
+            if session['user_type'] != 'admin' and announcement['author_id'] != session['user_id']:
+                flash('您没有权限编辑此公告', 'error')
+                return redirect(url_for('announcements'))
+            
+            # 获取房产名称
+            property_name = None
+            if property_id:
+                cursor.execute("SELECT name FROM properties WHERE id = %s", (property_id,))
+                property_result = cursor.fetchone()
+                if property_result:
+                    property_name = property_result[0]
+            
+            # 更新公告
+            cursor.execute("""
+                UPDATE announcements 
+                SET title = %s, content = %s, property_id = %s, property_name = %s, priority = %s
+                WHERE id = %s
+            """, (title, content, property_id, property_name, priority, announcement_id))
+            
+            connection.commit()
+            flash('公告更新成功！', 'success')
+            return redirect(url_for('announcements'))
+        
+        else:
+            # GET请求，显示编辑表单
+            cursor.execute("SELECT * FROM announcements WHERE id = %s", (announcement_id,))
+            announcement = cursor.fetchone()
+            
+            if not announcement:
+                flash('公告不存在', 'error')
+                return redirect(url_for('announcements'))
+            
+            # 检查权限
+            if session['user_type'] != 'admin' and announcement['author_id'] != session['user_id']:
+                flash('您没有权限编辑此公告', 'error')
+                return redirect(url_for('announcements'))
+            
+            # 获取所有房产
+            cursor.execute("SELECT id, name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+            properties = cursor.fetchall()
+            
+            return render_template('new_ui/edit_announcement.html', 
+                                 announcement=announcement, 
+                                 properties=properties)
+    
+    except Exception as e:
+        flash(f'操作失败: {e}', 'error')
+        return redirect(url_for('announcements'))
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/announcements/delete/<int:announcement_id>', methods=['POST'])
+@login_required
+def delete_announcement(announcement_id):
+    """删除公告"""
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('announcements'))
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # 检查权限
+        cursor.execute("SELECT author_id FROM announcements WHERE id = %s", (announcement_id,))
+        announcement = cursor.fetchone()
+        
+        if not announcement:
+            flash('公告不存在', 'error')
+            return redirect(url_for('announcements'))
+        
+        if session['user_type'] != 'admin' and announcement['author_id'] != session['user_id']:
+            flash('您没有权限删除此公告', 'error')
+            return redirect(url_for('announcements'))
+        
+        # 软删除（标记为已归档）
+        cursor.execute("UPDATE announcements SET status = 'archived' WHERE id = %s", (announcement_id,))
+        connection.commit()
+        
+        flash('公告已删除', 'success')
+        
+    except Exception as e:
+        flash(f'删除失败: {e}', 'error')
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return redirect(url_for('announcements'))
+
+@app.route('/api/announcements')
+@login_required
+def api_announcements():
+    """API: 获取公告列表"""
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': '数据库连接失败'})
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # 获取活跃的公告
+        cursor.execute("""
+            SELECT a.*, p.name as property_display_name 
+            FROM announcements a 
+            LEFT JOIN properties p ON a.property_id = p.id 
+            WHERE a.status = 'active' 
+            ORDER BY 
+                CASE a.priority 
+                    WHEN 'urgent' THEN 1 
+                    WHEN 'high' THEN 2 
+                    WHEN 'medium' THEN 3 
+                    WHEN 'low' THEN 4 
+                END,
+                a.created_at DESC
+            LIMIT 10
+        """)
+        announcements = cursor.fetchall()
+        
+        # 格式化日期
+        for announcement in announcements:
+            announcement['created_at'] = announcement['created_at'].strftime('%Y-%m-%d %H:%M')
+            announcement['updated_at'] = announcement['updated_at'].strftime('%Y-%m-%d %H:%M')
+        
+        return jsonify({'success': True, 'announcements': announcements})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/api/properties')
+@login_required
+def api_properties():
+    """API: 获取房产列表"""
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': '数据库连接失败'})
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # 获取所有未删除的房产
+        cursor.execute("SELECT id, name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+        properties = cursor.fetchall()
+        
+        return jsonify({'success': True, 'properties': properties})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        cursor.close()
+        connection.close()
+
 if __name__ == '__main__':
     import os
     

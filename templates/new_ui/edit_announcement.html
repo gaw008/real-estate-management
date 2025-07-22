@@ -1,0 +1,89 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}编辑公告 - 房地产管理系统{% endblock %}
+
+{% block page_title %}编辑公告{% endblock %}
+
+{% block content %}
+<div class="edit-announcement-page">
+    <div class="page-header">
+        <div class="header-content">
+            <h1><i class="fas fa-edit"></i> 编辑公告</h1>
+            <p>修改公告内容，让信息更加准确和及时</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('announcements') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回公告栏
+            </a>
+        </div>
+    </div>
+
+    <div class="edit-form-container">
+        <form method="POST" action="{{ url_for('edit_announcement', announcement_id=announcement.id) }}">
+            <div class="form-group">
+                <label for="title">公告标题 <span class="text-danger">*</span></label>
+                <input type="text" id="title" name="title" class="form-control" required 
+                       value="{{ announcement.title }}" placeholder="请输入公告标题">
+            </div>
+            
+            <div class="form-group">
+                <label for="content">公告内容 <span class="text-danger">*</span></label>
+                <textarea id="content" name="content" class="form-control" rows="8" required 
+                          placeholder="请输入公告内容，支持换行">{{ announcement.content }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="property_id">关联房产（可选）</label>
+                <select id="property_id" name="property_id" class="form-control">
+                    <option value="">不关联特定房产</option>
+                    {% for property in properties %}
+                        <option value="{{ property.id }}" 
+                                {% if announcement.property_id == property.id %}selected{% endif %}>
+                            {{ property.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <small class="form-text text-muted">选择关联的房产，让公告更有针对性</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="priority">优先级</label>
+                <select id="priority" name="priority" class="form-control">
+                    <option value="low" {% if announcement.priority == 'low' %}selected{% endif %}>低 - 一般信息</option>
+                    <option value="medium" {% if announcement.priority == 'medium' %}selected{% endif %}>中 - 重要信息</option>
+                    <option value="high" {% if announcement.priority == 'high' %}selected{% endif %}>高 - 重要通知</option>
+                    <option value="urgent" {% if announcement.priority == 'urgent' %}selected{% endif %}>紧急 - 紧急通知</option>
+                </select>
+                <small class="form-text text-muted">选择合适的优先级，帮助员工快速识别重要程度</small>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 保存修改
+                </button>
+                <a href="{{ url_for('announcements') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> 取消
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 表单提交前验证
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
+        
+        if (!title || !content) {
+            e.preventDefault();
+            alert('请填写完整的公告信息');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %} 

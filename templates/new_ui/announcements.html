@@ -1,0 +1,232 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}公告栏 - 房地产管理系统{% endblock %}
+
+{% block page_title %}公司公告栏{% endblock %}
+
+{% block content %}
+<div class="announcements-page">
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1><i class="fas fa-bullhorn"></i> 公司公告栏</h1>
+            <p>发布和管理关于房产的重要信息，让所有员工及时了解最新动态</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="showAddAnnouncementModal()">
+                <i class="fas fa-plus"></i> 发布新公告
+            </button>
+        </div>
+    </div>
+
+    <!-- 公告列表 -->
+    <div class="announcements-list">
+        {% if announcements %}
+            {% for announcement in announcements %}
+                <div class="announcement-card {{ announcement.priority }}">
+                    <div class="announcement-card-header">
+                        <div class="announcement-title">
+                            <h3>{{ announcement.title }}</h3>
+                            <span class="priority-badge {{ announcement.priority }}">
+                                {% if announcement.priority == 'urgent' %}紧急
+                                {% elif announcement.priority == 'high' %}高
+                                {% elif announcement.priority == 'medium' %}中
+                                {% else %}低
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="announcement-actions">
+                            {% if session.user_type == 'admin' or announcement.author_id == session.user_id %}
+                                <a href="{{ url_for('edit_announcement', announcement_id=announcement.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i> 编辑
+                                </a>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="deleteAnnouncement({{ announcement.id }}, '{{ announcement.title }}')">
+                                    <i class="fas fa-trash"></i> 删除
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="announcement-card-body">
+                        <div class="announcement-content">
+                            {{ announcement.content|nl2br|safe }}
+                        </div>
+                        
+                        {% if announcement.property_name %}
+                            <div class="announcement-property">
+                                <i class="fas fa-home"></i>
+                                <span>关联房产: {{ announcement.property_name }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="announcement-card-footer">
+                        <div class="announcement-meta">
+                            <span class="author">
+                                <i class="fas fa-user"></i>
+                                发布者: {{ announcement.author_name }}
+                            </span>
+                            <span class="date">
+                                <i class="fas fa-clock"></i>
+                                {{ announcement.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </span>
+                            {% if announcement.updated_at != announcement.created_at %}
+                                <span class="updated">
+                                    <i class="fas fa-edit"></i>
+                                    更新于: {{ announcement.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-bullhorn"></i>
+                </div>
+                <h3>暂无公告</h3>
+                <p>还没有发布任何公告，点击上方按钮发布第一条公告吧！</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 发布公告模态框 -->
+<div id="addAnnouncementModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-plus"></i> 发布新公告</h3>
+            <span class="close" onclick="closeAddAnnouncementModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="addAnnouncementForm" method="POST" action="{{ url_for('add_announcement') }}">
+                <div class="form-group">
+                    <label for="title">公告标题 <span class="text-danger">*</span></label>
+                    <input type="text" id="title" name="title" class="form-control" required 
+                           placeholder="请输入公告标题">
+                </div>
+                
+                <div class="form-group">
+                    <label for="content">公告内容 <span class="text-danger">*</span></label>
+                    <textarea id="content" name="content" class="form-control" rows="6" required 
+                              placeholder="请输入公告内容，支持换行"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="property_id">关联房产（可选）</label>
+                    <select id="property_id" name="property_id" class="form-control">
+                        <option value="">不关联特定房产</option>
+                        {% for property in properties %}
+                            <option value="{{ property.id }}">{{ property.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted">选择关联的房产，让公告更有针对性</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="priority">优先级</label>
+                    <select id="priority" name="priority" class="form-control">
+                        <option value="low">低 - 一般信息</option>
+                        <option value="medium" selected>中 - 重要信息</option>
+                        <option value="high">高 - 重要通知</option>
+                        <option value="urgent">紧急 - 紧急通知</option>
+                    </select>
+                    <small class="form-text text-muted">选择合适的优先级，帮助员工快速识别重要程度</small>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> 发布公告
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddAnnouncementModal()">
+                        <i class="fas fa-times"></i> 取消
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div id="deleteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle"></i> 确认删除</h3>
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>您确定要删除公告 "<span id="deleteAnnouncementTitle"></span>" 吗？</p>
+            <p class="text-muted">此操作无法撤销，公告将被永久删除。</p>
+        </div>
+        <div class="modal-footer">
+            <form id="deleteForm" method="POST">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> 确认删除
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 显示发布公告模态框
+function showAddAnnouncementModal() {
+    document.getElementById('addAnnouncementModal').style.display = 'block';
+}
+
+// 关闭发布公告模态框
+function closeAddAnnouncementModal() {
+    document.getElementById('addAnnouncementModal').style.display = 'none';
+    document.getElementById('addAnnouncementForm').reset();
+}
+
+// 删除公告
+function deleteAnnouncement(id, title) {
+    document.getElementById('deleteAnnouncementTitle').textContent = title;
+    document.getElementById('deleteForm').action = '/announcements/delete/' + id;
+    document.getElementById('deleteModal').style.display = 'block';
+}
+
+// 关闭删除模态框
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+// 页面加载时执行
+document.addEventListener('DOMContentLoaded', function() {
+    // 点击模态框外部关闭
+    window.onclick = function(event) {
+        const addModal = document.getElementById('addAnnouncementModal');
+        const deleteModal = document.getElementById('deleteModal');
+        
+        if (event.target === addModal) {
+            closeAddAnnouncementModal();
+        }
+        if (event.target === deleteModal) {
+            closeDeleteModal();
+        }
+    }
+    
+    // 表单提交前验证
+    document.getElementById('addAnnouncementForm').addEventListener('submit', function(e) {
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
+        
+        if (!title || !content) {
+            e.preventDefault();
+            alert('请填写完整的公告信息');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %} 
