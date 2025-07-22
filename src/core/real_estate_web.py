@@ -278,7 +278,7 @@ def login():
             return render_template('new_ui/login.html')
         
         # 验证用户
-        print(f"🔍 尝试登录: {username}, 类型: {user_type}")
+        print(f"🔍 尝试登录: {username}")
         
         # 首先检查数据库连接状态
         db_conn = auth_system.get_db_connection()
@@ -294,13 +294,10 @@ def login():
         
         if user:
             print(f"✅ 用户认证成功: {user}")
-            # 检查用户类型是否匹配
-            if user['user_type'] != user_type:
-                print(f"❌ 用户类型不匹配: 期望{user_type}, 实际{user['user_type']}")
-                flash(get_text('user_type_mismatch') if get_current_language() == 'en' else '用户类型不匹配', 'error')
-                return render_template('new_ui/login.html')
+            # 自动匹配用户类型，不再验证表单中的user_type
+            print(f"✅ 用户类型: {user['user_type']}, 部门: {user['department']}")
             
-            print("✅ 用户类型匹配，创建会话...")
+            print("✅ 创建会话...")
             
             # 立即设置Flask会话信息（无论数据库会话是否创建成功）
             session['user_id'] = user['id']
