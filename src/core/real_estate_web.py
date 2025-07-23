@@ -2030,7 +2030,7 @@ def edit_property_impl(property_id):
         conn.close()
 
 @app.route('/property/<property_id>')
-@admin_required
+@module_required('property_info')
 def property_detail_fixed(property_id):
     """显示单个房产的详细信息"""
     connection = get_db_connection()
@@ -2338,7 +2338,7 @@ def add_owner():
     return render_template('new_ui/add_owner.html')
 
 @app.route('/owner/<owner_id>')
-@admin_required
+@module_required('owner_info')
 def owner_detail_fixed(owner_id):
     """显示单个业主的详细信息"""
     connection = get_db_connection()
