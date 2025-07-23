@@ -2717,7 +2717,7 @@ def customer_management():
                          customers=customers)
 
 @app.route('/maintenance')
-@module_required('customer_management')
+@module_required('maintenance_records')
 def maintenance_management():
     """维修记录管理 - Property Manager Only"""
     return render_template('maintenance_management.html')
@@ -2851,7 +2851,7 @@ def edit_customer(customer_id):
 # ==================== 维修管理路由 ====================
 
 @app.route('/maintenance/add', methods=['POST'])
-@module_required('customer_management')
+@module_required('maintenance_records')
 def add_maintenance():
     """新建维修工单"""
     try:
@@ -2901,7 +2901,7 @@ def add_maintenance():
         })
 
 @app.route('/maintenance/edit/<ticket_id>', methods=['GET', 'POST'])
-@module_required('customer_management')
+@module_required('maintenance_records')
 def edit_maintenance(ticket_id):
     """编辑维修工单"""
     if request.method == 'POST':
@@ -4900,7 +4900,7 @@ def edit_owner(owner_id):
 # ==================== 维修工单管理路由 ====================
 
 @app.route('/maintenance_orders')
-@module_required('customer_management')
+@module_required('maintenance_records')
 def maintenance_orders():
     """维修工单管理页面"""
     try:
@@ -4956,7 +4956,7 @@ def maintenance_orders():
                              total=0)
 
 @app.route('/add_maintenance_order', methods=['POST'])
-@module_required('customer_management')
+@module_required('maintenance_records')
 def add_maintenance_order():
     """添加维修工单"""
     try:
@@ -5025,7 +5025,7 @@ def add_maintenance_order():
         return redirect(url_for('maintenance_orders'))
 
 @app.route('/maintenance_order/<int:order_id>')
-@module_required('customer_management')
+@module_required('maintenance_records')
 def maintenance_order_detail(order_id):
     """维修工单详情页面"""
     try:
@@ -5043,7 +5043,7 @@ def maintenance_order_detail(order_id):
         return redirect(url_for('maintenance_orders'))
 
 @app.route('/edit_maintenance_order/<int:order_id>', methods=['GET', 'POST'])
-@module_required('customer_management')
+@module_required('maintenance_records')
 def edit_maintenance_order(order_id):
     """编辑维修工单"""
     if request.method == 'POST':
@@ -5139,7 +5139,7 @@ def edit_maintenance_order(order_id):
         return redirect(url_for('maintenance_orders'))
 
 @app.route('/delete_maintenance_order', methods=['POST'])
-@module_required('customer_management')
+@module_required('maintenance_records')
 def delete_maintenance_order():
     """删除维修工单"""
     try:
