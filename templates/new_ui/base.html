@@ -12,15 +12,35 @@
     <h2>短租管理</h2>
     <nav>
       <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">控制面板</a>
-      <a href="{{ url_for('properties_fixed') }}" class="nav-item {% if 'propert' in request.endpoint %}active{% endif %}">房产管理</a>
-      <a href="{{ url_for('maintenance_orders') }}" class="nav-item {% if 'maintenance' in request.endpoint %}active{% endif %}">维修工单</a>
-      <a href="{{ url_for('customer_tracking') }}" class="nav-item {% if 'customer_tracking' in request.endpoint %}active{% endif %}">客户追踪</a>
-      <a href="{{ url_for('admin_employee_departments') }}" class="nav-item {% if 'admin_employee_departments' in request.endpoint %}active{% endif %}">员工分组</a>
-      <a href="{{ url_for('owners_fixed') }}" class="nav-item {% if 'owner' in request.endpoint %}active{% endif %}">业主查询</a>
-      <a href="{{ url_for('admin_financial_reports') }}" class="nav-item {% if 'admin_financial_reports' in request.endpoint %}active{% endif %}">财务分析</a>
-
       
-      <a href="{{ url_for('admin_user_management') }}" class="nav-item {% if 'admin_user_management' in request.endpoint %}active{% endif %}">用户管理</a>
+      {% if check_module_access('property_info') %}
+        <a href="{{ url_for('properties_fixed') }}" class="nav-item {% if 'propert' in request.endpoint %}active{% endif %}">房产管理</a>
+      {% endif %}
+      
+      {% if check_module_access('maintenance_records') %}
+        <a href="{{ url_for('maintenance_orders') }}" class="nav-item {% if 'maintenance' in request.endpoint %}active{% endif %}">维修工单</a>
+      {% endif %}
+      
+      {% if check_module_access('customer_tracking') %}
+        <a href="{{ url_for('customer_tracking') }}" class="nav-item {% if 'customer_tracking' in request.endpoint %}active{% endif %}">客户追踪</a>
+      {% endif %}
+      
+      {% if check_module_access('user_management') %}
+        <a href="{{ url_for('admin_employee_departments') }}" class="nav-item {% if 'admin_employee_departments' in request.endpoint %}active{% endif %}">员工分组</a>
+      {% endif %}
+      
+      {% if check_module_access('owner_info') %}
+        <a href="{{ url_for('owners_fixed') }}" class="nav-item {% if 'owner' in request.endpoint %}active{% endif %}">业主查询</a>
+      {% endif %}
+      
+      {% if check_module_access('financial_records_view') %}
+        <a href="{{ url_for('admin_financial_reports') }}" class="nav-item {% if 'admin_financial_reports' in request.endpoint %}active{% endif %}">财务分析</a>
+      {% endif %}
+      
+      {% if check_module_access('user_management') %}
+        <a href="{{ url_for('admin_user_management') }}" class="nav-item {% if 'admin_user_management' in request.endpoint %}active{% endif %}">用户管理</a>
+      {% endif %}
+      
       <a href="{{ url_for('logout') }}" class="nav-item">登出</a>
     </nav>
   </div>
