@@ -1061,6 +1061,7 @@ def admin_user_management():
         search = request.args.get('search', '')
         user_type = request.args.get('user_type', '')
         status = request.args.get('status', '')
+        filter_type = request.args.get('filter', '')  # 新增筛选类型参数
         
         where_conditions = []
         params = []
@@ -1069,14 +1070,23 @@ def admin_user_management():
             where_conditions.append("(username LIKE %s OR full_name LIKE %s OR email LIKE %s)")
             params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
         
-        if user_type:
-            where_conditions.append("user_type = %s")
-            params.append(user_type)
-        
-        if status == 'active':
+        # 处理筛选类型
+        if filter_type == 'admin':
+            where_conditions.append("user_type = 'admin'")
+        elif filter_type == 'active':
             where_conditions.append("is_active = TRUE")
-        elif status == 'inactive':
+        elif filter_type == 'inactive':
             where_conditions.append("is_active = FALSE")
+        else:
+            # 如果没有筛选类型，使用原有的user_type和status参数
+            if user_type:
+                where_conditions.append("user_type = %s")
+                params.append(user_type)
+            
+            if status == 'active':
+                where_conditions.append("is_active = TRUE")
+            elif status == 'inactive':
+                where_conditions.append("is_active = FALSE")
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         

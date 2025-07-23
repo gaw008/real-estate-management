@@ -52,22 +52,22 @@
     <div class="control-row">
         <div class="search-box">
             <i class="fas fa-search search-icon"></i>
-            <input type="text" class="search-input" id="searchInput" placeholder="搜索用户名、姓名或邮箱...">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索用户名、姓名或邮箱..." value="{{ request.args.get('search', '') }}">
         </div>
         <div class="filter-tabs">
-            <button type="button" class="filter-tab active" onclick="filterUsers('all')">
+            <button type="button" class="filter-tab {{ 'active' if not request.args.get('filter') }}" onclick="filterUsers('all')">
                 <span class="tab-text">全部</span>
                 <span class="tab-count">{{ stats.total_users }}</span>
             </button>
-            <button type="button" class="filter-tab" onclick="filterUsers('admin')">
+            <button type="button" class="filter-tab {{ 'active' if request.args.get('filter') == 'admin' }}" onclick="filterUsers('admin')">
                 <span class="tab-text">管理员</span>
                 <span class="tab-count">{{ stats.admin_users }}</span>
             </button>
-            <button type="button" class="filter-tab" onclick="filterUsers('active')">
+            <button type="button" class="filter-tab {{ 'active' if request.args.get('filter') == 'active' }}" onclick="filterUsers('active')">
                 <span class="tab-text">活跃</span>
                 <span class="tab-count">{{ stats.active_users }}</span>
             </button>
-            <button type="button" class="filter-tab" onclick="filterUsers('inactive')">
+            <button type="button" class="filter-tab {{ 'active' if request.args.get('filter') == 'inactive' }}" onclick="filterUsers('inactive')">
                 <span class="tab-text">非活跃</span>
                 <span class="tab-count">{{ stats.total_users - stats.active_users }}</span>
             </button>
@@ -196,7 +196,7 @@
         </div>
         <div class="pagination-controls">
             {% if pagination.has_prev %}
-                <a href="?page={{ pagination.prev_num }}" class="pagination-btn">
+                <a href="?page={{ pagination.prev_num }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}{% if request.args.get('filter') %}&filter={{ request.args.get('filter') }}{% endif %}" class="pagination-btn">
                     <i class="fas fa-chevron-left"></i> 上一页
                 </a>
             {% endif %}
@@ -206,7 +206,7 @@
                     {% if page_num == pagination.page %}
                         <span class="pagination-btn active">{{ page_num }}</span>
                     {% else %}
-                        <a href="?page={{ page_num }}" class="pagination-btn">{{ page_num }}</a>
+                        <a href="?page={{ page_num }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}{% if request.args.get('filter') %}&filter={{ request.args.get('filter') }}{% endif %}" class="pagination-btn">{{ page_num }}</a>
                     {% endif %}
                 {% else %}
                     <span class="pagination-ellipsis">...</span>
@@ -214,7 +214,7 @@
             {% endfor %}
             
             {% if pagination.has_next %}
-                <a href="?page={{ pagination.next_num }}" class="pagination-btn">
+                <a href="?page={{ pagination.next_num }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}{% if request.args.get('filter') %}&filter={{ request.args.get('filter') }}{% endif %}" class="pagination-btn">
                     下一页 <i class="fas fa-chevron-right"></i>
                 </a>
             {% endif %}
@@ -522,38 +522,19 @@ document.addEventListener('click', function(e) {
 function filterUsers(filterType) {
     const search = document.getElementById('searchInput').value;
     
-    // 更新按钮状态
-    document.querySelectorAll('.filter-tab').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
+    // 构建URL参数
+    const params = new URLSearchParams();
     
-    // 筛选表格行
-    const rows = document.querySelectorAll('.user-row');
+    if (search) {
+        params.append('search', search);
+    }
     
-    rows.forEach(row => {
-        const userType = row.getAttribute('data-type');
-        const status = row.getAttribute('data-status');
-        const searchText = row.textContent.toLowerCase();
-        
-        let showRow = true;
-        
-        // 搜索筛选
-        if (search && !searchText.includes(search.toLowerCase())) {
-            showRow = false;
-        }
-        
-        // 类型筛选
-        if (filterType === 'admin' && userType !== 'admin') {
-            showRow = false;
-        } else if (filterType === 'active' && status !== 'active') {
-            showRow = false;
-        } else if (filterType === 'inactive' && status !== 'inactive') {
-            showRow = false;
-        }
-        
-        row.style.display = showRow ? '' : 'none';
-    });
+    if (filterType !== 'all') {
+        params.append('filter', filterType);
+    }
+    
+    // 重新加载页面
+    window.location.href = '/admin/user_management?' + params.toString();
 }
 
 function viewUser(userId) {
@@ -806,14 +787,24 @@ document.getElementById('resetPasswordForm').addEventListener('submit', function
 // 搜索功能
 document.getElementById('searchInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
-        filterUsers('all');
+        const search = document.getElementById('searchInput').value;
+        const currentFilter = new URLSearchParams(window.location.search).get('filter') || 'all';
+        
+        // 构建URL参数
+        const params = new URLSearchParams();
+        if (search) {
+            params.append('search', search);
+        }
+        if (currentFilter !== 'all') {
+            params.append('filter', currentFilter);
+        }
+        
+        // 重新加载页面
+        window.location.href = '/admin/user_management?' + params.toString();
     }
 });
 
-// 实时搜索
-document.getElementById('searchInput').addEventListener('input', function() {
-    filterUsers('all');
-});
+// 移除实时搜索，改为按回车键搜索
 
 // 模块权限管理相关变量
 let currentModulesUserId = null;
