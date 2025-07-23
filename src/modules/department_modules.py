@@ -28,6 +28,26 @@ DEPARTMENT_PERMISSIONS = {
     'Accounting Department': {
         'modules': ['financial_records', 'owner_info', 'financial_reports'],
         'description': '财务部 - 财务管理专精'
+    },
+    # 添加中文部门名称支持
+    '管理员': {
+        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
+                   'cleaning_records', 'financial_records', 'financial_records_view', 'owner_info', 
+                   'user_management', 'employee_departments', 'system_settings'],
+        'description': '系统管理员 - 拥有全部权限'
+    },
+    '房产管理': {
+        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
+                   'cleaning_records', 'financial_records_view', 'employee_departments'],
+        'description': '房产管理部 - 房产运营核心'
+    },
+    '销售部': {
+        'modules': ['property_info', 'customer_management', 'customer_tracking', 'owner_info'],
+        'description': '销售部 - 客户关系管理'
+    },
+    '会计': {
+        'modules': ['financial_records', 'owner_info', 'financial_reports'],
+        'description': '财务部 - 财务管理专精'
     }
 }
 
