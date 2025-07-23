@@ -1110,6 +1110,18 @@ def admin_user_management():
             
             user['department_display'] = user['department'] or '未分配'
         
+        # 获取统计数据（不受分页影响）
+        stats_sql = """
+        SELECT 
+            COUNT(*) as total_users,
+            SUM(CASE WHEN is_active = TRUE THEN 1 ELSE 0 END) as active_users,
+            SUM(CASE WHEN user_type = 'admin' THEN 1 ELSE 0 END) as admin_users,
+            SUM(CASE WHEN user_type != 'admin' AND user_type != 'owner' THEN 1 ELSE 0 END) as staff_users
+        FROM users
+        """
+        cursor.execute(stats_sql)
+        stats = cursor.fetchone()
+        
         # 创建分页对象
         total_pages = (total_count + per_page - 1) // per_page
         pagination = {
@@ -1126,7 +1138,8 @@ def admin_user_management():
         
         return render_template('new_ui/user_management.html', 
                              users=users, 
-                             pagination=pagination)
+                             pagination=pagination,
+                             stats=stats)
         
     except Exception as e:
         print(f"❌ 获取用户列表失败: {e}")

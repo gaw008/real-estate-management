@@ -13,7 +13,7 @@
                 <i class="fas fa-users"></i>
             </div>
             <div class="overview-content">
-                <div class="overview-number">{{ users|length }}</div>
+                <div class="overview-number">{{ stats.total_users }}</div>
                 <div class="overview-label">总用户数</div>
             </div>
         </div>
@@ -22,7 +22,7 @@
                 <i class="fas fa-user-check"></i>
             </div>
             <div class="overview-content">
-                <div class="overview-number">{{ users|selectattr('is_active', 'equalto', true)|list|length }}</div>
+                <div class="overview-number">{{ stats.active_users }}</div>
                 <div class="overview-label">活跃用户</div>
             </div>
         </div>
@@ -31,7 +31,7 @@
                 <i class="fas fa-user-shield"></i>
             </div>
             <div class="overview-content">
-                <div class="overview-number">{{ users|selectattr('user_type', 'equalto', 'admin')|list|length }}</div>
+                <div class="overview-number">{{ stats.admin_users }}</div>
                 <div class="overview-label">管理员</div>
             </div>
         </div>
@@ -40,7 +40,7 @@
                 <i class="fas fa-user-tie"></i>
             </div>
             <div class="overview-content">
-                <div class="overview-number">{{ users|selectattr('user_type', 'ne', 'admin')|selectattr('user_type', 'ne', 'owner')|list|length }}</div>
+                <div class="overview-number">{{ stats.staff_users }}</div>
                 <div class="overview-label">员工用户</div>
             </div>
         </div>
@@ -57,19 +57,19 @@
         <div class="filter-tabs">
             <button type="button" class="filter-tab active" onclick="filterUsers('all')">
                 <span class="tab-text">全部</span>
-                <span class="tab-count">{{ users|length }}</span>
+                <span class="tab-count">{{ stats.total_users }}</span>
             </button>
             <button type="button" class="filter-tab" onclick="filterUsers('admin')">
                 <span class="tab-text">管理员</span>
-                <span class="tab-count">{{ users|selectattr('user_type', 'equalto', 'admin')|list|length }}</span>
+                <span class="tab-count">{{ stats.admin_users }}</span>
             </button>
             <button type="button" class="filter-tab" onclick="filterUsers('active')">
                 <span class="tab-text">活跃</span>
-                <span class="tab-count">{{ users|selectattr('is_active', 'equalto', true)|list|length }}</span>
+                <span class="tab-count">{{ stats.active_users }}</span>
             </button>
             <button type="button" class="filter-tab" onclick="filterUsers('inactive')">
                 <span class="tab-text">非活跃</span>
-                <span class="tab-count">{{ users|selectattr('is_active', 'equalto', false)|list|length }}</span>
+                <span class="tab-count">{{ stats.total_users - stats.active_users }}</span>
             </button>
         </div>
         <div class="action-buttons">
@@ -85,7 +85,7 @@
 <div class="users-section">
     <div class="section-header">
         <h3>用户列表</h3>
-        <span class="users-count">{{ users|length }} 个用户</span>
+        <span class="users-count">{{ stats.total_users }} 个用户</span>
     </div>
     
     {% if users %}
