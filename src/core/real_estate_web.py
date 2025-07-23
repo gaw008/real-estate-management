@@ -5462,18 +5462,15 @@ def admin_create_user():
         if not all([user_data['username'], user_data['email'], 
                    user_data['password'], user_data['full_name'], 
                    user_data['user_type'], user_data['department']]):
-            flash('请填写所有必填字段', 'error')
-            return render_template('new_ui/create_user.html')
+            return jsonify({'success': False, 'message': '请填写所有必填字段'})
         
         # 创建用户
         result = create_user_directly(user_data)
         
         if result['success']:
-            flash(f'用户创建成功！用户名: {user_data["username"]}', 'success')
-            return redirect(url_for('admin_user_management'))
+            return jsonify({'success': True, 'message': f'用户创建成功！用户名: {user_data["username"]}'})
         else:
-            flash(f'用户创建失败：{result["message"]}', 'error')
-            return render_template('new_ui/create_user.html')
+            return jsonify({'success': False, 'message': result['message']})
     
     return render_template('new_ui/create_user.html')
 
