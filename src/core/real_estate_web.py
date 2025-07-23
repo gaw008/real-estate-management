@@ -5650,9 +5650,9 @@ def announcements():
         
         # 获取所有活跃的公告，按优先级和创建时间排序
         cursor.execute("""
-            SELECT a.*, p.name as property_display_name 
+            SELECT a.*, p.name COLLATE utf8mb4_unicode_ci as property_display_name 
             FROM announcements a 
-            LEFT JOIN properties p ON a.property_id = p.id 
+            LEFT JOIN properties p ON a.property_id = p.id COLLATE utf8mb4_unicode_ci
             WHERE a.status = 'active' 
             ORDER BY 
                 CASE a.priority 
@@ -5666,7 +5666,7 @@ def announcements():
         announcements = cursor.fetchall()
         
         # 获取所有房产用于选择
-        cursor.execute("SELECT id, name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+        cursor.execute("SELECT id, name COLLATE utf8mb4_unicode_ci as name FROM properties WHERE deleted_at IS NULL ORDER BY name")
         properties = cursor.fetchall()
         
     except Exception as e:
@@ -5693,12 +5693,12 @@ def add_announcement():
         
         if not title or not content:
             flash('请填写标题和内容', 'error')
-            return redirect(url_for('announcements'))
+            return redirect(url_for('dashboard'))
         
         connection = get_db_connection()
         if not connection:
             flash('数据库连接失败', 'error')
-            return redirect(url_for('announcements'))
+            return redirect(url_for('dashboard'))
         
         cursor = connection.cursor()
         
@@ -5729,7 +5729,7 @@ def add_announcement():
             cursor.close()
             connection.close()
     
-    return redirect(url_for('announcements'))
+    return redirect(url_for('dashboard'))
 
 @app.route('/announcements/edit/<int:announcement_id>', methods=['GET', 'POST'])
 @login_required
@@ -5738,7 +5738,7 @@ def edit_announcement(announcement_id):
     connection = get_db_connection()
     if not connection:
         flash('数据库连接失败', 'error')
-        return redirect(url_for('announcements'))
+        return redirect(url_for('dashboard'))
     
     try:
         cursor = connection.cursor(dictionary=True)
@@ -5749,29 +5749,53 @@ def edit_announcement(announcement_id):
             property_id = request.form.get('property_id', '').strip() or None
             priority = request.form.get('priority', 'medium')
             
+            print(f"调试 - 接收到的表单数据:")
+            print(f"  title: '{title}'")
+            print(f"  content: '{content}'")
+            print(f"  priority: '{priority}'")
+            print(f"  property_id: '{property_id}'")
+            print(f"  request.form: {dict(request.form)}")
+            print(f"  request.form.get('property_id'): '{request.form.get('property_id')}'")
+            print(f"  request.form.get('property_id', '').strip(): '{request.form.get('property_id', '').strip()}'")
+            print(f"  request.form.get('property_id', '').strip() or None: {request.form.get('property_id', '').strip() or None}")
+            
             if not title or not content:
-                flash('请填写标题和内容', 'error')
-                return redirect(url_for('edit_announcement', announcement_id=announcement_id))
+                return jsonify({'success': False, 'message': '请填写标题和内容'})
             
             # 检查权限（只有作者或管理员可以编辑）
             cursor.execute("SELECT author_id FROM announcements WHERE id = %s", (announcement_id,))
             announcement = cursor.fetchone()
             
             if not announcement:
-                flash('公告不存在', 'error')
-                return redirect(url_for('announcements'))
+                return jsonify({'success': False, 'message': '公告不存在'})
             
             if session['user_type'] != 'admin' and announcement['author_id'] != session['user_id']:
-                flash('您没有权限编辑此公告', 'error')
-                return redirect(url_for('announcements'))
+                return jsonify({'success': False, 'message': '您没有权限编辑此公告'})
             
             # 获取房产名称
             property_name = None
-            if property_id:
-                cursor.execute("SELECT name FROM properties WHERE id = %s", (property_id,))
-                property_result = cursor.fetchone()
-                if property_result:
-                    property_name = property_result[0]
+            if property_id and property_id.strip():
+                try:
+                    # 确保property_id是有效的
+                    cursor.execute("SELECT name FROM properties WHERE id = %s", (property_id,))
+                    property_result = cursor.fetchone()
+                    if property_result:
+                        # 检查property_result的类型
+                        if isinstance(property_result, dict):
+                            property_name = property_result['name']
+                        else:
+                            property_name = property_result[0]
+                        print(f"调试 - 找到房产: {property_name}")
+                    else:
+                        # 如果找不到房产，清空property_id
+                        print(f"调试 - 未找到房产ID: {property_id}")
+                        property_id = None
+                except Exception as e:
+                    print(f"调试 - 房产查询异常: {e}")
+                    property_id = None
+            else:
+                print(f"调试 - property_id为空: {property_id}")
+                property_id = None
             
             # 更新公告
             cursor.execute("""
@@ -5781,8 +5805,7 @@ def edit_announcement(announcement_id):
             """, (title, content, property_id, property_name, priority, announcement_id))
             
             connection.commit()
-            flash('公告更新成功！', 'success')
-            return redirect(url_for('announcements'))
+            return jsonify({'success': True, 'message': '公告更新成功！'})
         
         else:
             # GET请求，显示编辑表单
@@ -5791,12 +5814,12 @@ def edit_announcement(announcement_id):
             
             if not announcement:
                 flash('公告不存在', 'error')
-                return redirect(url_for('announcements'))
+                return redirect(url_for('dashboard'))
             
             # 检查权限
             if session['user_type'] != 'admin' and announcement['author_id'] != session['user_id']:
                 flash('您没有权限编辑此公告', 'error')
-                return redirect(url_for('announcements'))
+                return redirect(url_for('dashboard'))
             
             # 获取所有房产
             cursor.execute("SELECT id, name FROM properties WHERE deleted_at IS NULL ORDER BY name")
@@ -5807,8 +5830,11 @@ def edit_announcement(announcement_id):
                                  properties=properties)
     
     except Exception as e:
-        flash(f'操作失败: {e}', 'error')
-        return redirect(url_for('announcements'))
+        if request.method == 'POST':
+            return jsonify({'success': False, 'message': f'操作失败: {e}'})
+        else:
+            flash(f'操作失败: {e}', 'error')
+            return redirect(url_for('dashboard'))
     finally:
         cursor.close()
         connection.close()
@@ -5819,8 +5845,7 @@ def delete_announcement(announcement_id):
     """删除公告"""
     connection = get_db_connection()
     if not connection:
-        flash('数据库连接失败', 'error')
-        return redirect(url_for('announcements'))
+        return jsonify({'success': False, 'message': '数据库连接失败'})
     
     try:
         cursor = connection.cursor(dictionary=True)
@@ -5830,26 +5855,22 @@ def delete_announcement(announcement_id):
         announcement = cursor.fetchone()
         
         if not announcement:
-            flash('公告不存在', 'error')
-            return redirect(url_for('announcements'))
+            return jsonify({'success': False, 'message': '公告不存在'})
         
         if session['user_type'] != 'admin' and announcement['author_id'] != session['user_id']:
-            flash('您没有权限删除此公告', 'error')
-            return redirect(url_for('announcements'))
+            return jsonify({'success': False, 'message': '您没有权限删除此公告'})
         
         # 软删除（标记为已归档）
         cursor.execute("UPDATE announcements SET status = 'archived' WHERE id = %s", (announcement_id,))
         connection.commit()
         
-        flash('公告已删除', 'success')
+        return jsonify({'success': True, 'message': '公告已删除'})
         
     except Exception as e:
-        flash(f'删除失败: {e}', 'error')
+        return jsonify({'success': False, 'message': f'删除失败: {e}'})
     finally:
         cursor.close()
         connection.close()
-    
-    return redirect(url_for('announcements'))
 
 @app.route('/api/announcements')
 @login_required
@@ -5866,7 +5887,7 @@ def api_announcements():
         cursor.execute("""
             SELECT a.*, p.name as property_display_name 
             FROM announcements a 
-            LEFT JOIN properties p ON a.property_id = p.id 
+            LEFT JOIN properties p ON a.property_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci
             WHERE a.status = 'active' 
             ORDER BY 
                 CASE a.priority 
@@ -5905,7 +5926,7 @@ def api_properties():
         cursor = connection.cursor(dictionary=True)
         
         # 获取所有未删除的房产
-        cursor.execute("SELECT id, name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+        cursor.execute("SELECT id, name COLLATE utf8mb4_unicode_ci as name FROM properties WHERE deleted_at IS NULL ORDER BY name")
         properties = cursor.fetchall()
         
         return jsonify({'success': True, 'properties': properties})
@@ -5915,6 +5936,121 @@ def api_properties():
     finally:
         cursor.close()
         connection.close()
+
+# ==================== 管理员公告管理功能 ====================
+
+@app.route('/admin/announcements')
+@admin_required
+def admin_announcements():
+    """管理员公告管理页面 - 显示所有公告（包括已删除的）"""
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败', 'error')
+        return render_template('new_ui/admin_announcements.html', announcements=[], properties=[])
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # 获取所有公告（包括已删除的），按状态和创建时间排序
+        cursor.execute("""
+            SELECT a.*, p.name COLLATE utf8mb4_unicode_ci as property_display_name 
+            FROM announcements a 
+            LEFT JOIN properties p ON a.property_id = p.id COLLATE utf8mb4_unicode_ci
+            ORDER BY 
+                CASE a.status 
+                    WHEN 'active' THEN 1 
+                    WHEN 'archived' THEN 2 
+                END,
+                a.created_at DESC
+        """)
+        announcements = cursor.fetchall()
+        
+        # 获取所有房产用于选择
+        cursor.execute("SELECT id, name COLLATE utf8mb4_unicode_ci as name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+        properties = cursor.fetchall()
+        
+        return render_template('new_ui/admin_announcements.html', 
+                             announcements=announcements, 
+                             properties=properties)
+        
+    except Exception as e:
+        flash(f'加载公告失败: {e}', 'error')
+        return render_template('new_ui/admin_announcements.html', announcements=[], properties=[])
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/admin/announcements/restore/<int:announcement_id>', methods=['POST'])
+@admin_required
+def restore_announcement(announcement_id):
+    """恢复已删除的公告"""
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('admin_announcements'))
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # 检查公告是否存在
+        cursor.execute("SELECT id, status FROM announcements WHERE id = %s", (announcement_id,))
+        announcement = cursor.fetchone()
+        
+        if not announcement:
+            flash('公告不存在', 'error')
+            return redirect(url_for('admin_announcements'))
+        
+        if announcement['status'] == 'active':
+            flash('公告已经是活跃状态', 'info')
+            return redirect(url_for('admin_announcements'))
+        
+        # 恢复公告
+        cursor.execute("UPDATE announcements SET status = 'active' WHERE id = %s", (announcement_id,))
+        connection.commit()
+        
+        flash('公告已恢复', 'success')
+        
+    except Exception as e:
+        flash(f'恢复失败: {e}', 'error')
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return redirect(url_for('admin_announcements'))
+
+@app.route('/admin/announcements/permanent_delete/<int:announcement_id>', methods=['POST'])
+@admin_required
+def permanent_delete_announcement(announcement_id):
+    """永久删除公告（仅管理员）"""
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('admin_announcements'))
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # 检查公告是否存在
+        cursor.execute("SELECT id, title FROM announcements WHERE id = %s", (announcement_id,))
+        announcement = cursor.fetchone()
+        
+        if not announcement:
+            flash('公告不存在', 'error')
+            return redirect(url_for('admin_announcements'))
+        
+        # 永久删除公告
+        cursor.execute("DELETE FROM announcements WHERE id = %s", (announcement_id,))
+        connection.commit()
+        
+        flash(f'公告 "{announcement["title"]}" 已永久删除', 'success')
+        
+    except Exception as e:
+        flash(f'删除失败: {e}', 'error')
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return redirect(url_for('admin_announcements'))
 
 if __name__ == '__main__':
     import os

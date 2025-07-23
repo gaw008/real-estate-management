@@ -24,6 +24,13 @@
             <h3>州数量</h3>
             <p>{{ stats.states_count }}</p>
         </div>
+        <div class="card announcement-management-card">
+            <h3><i class="fas fa-bullhorn"></i> 公告管理</h3>
+            <p>管理公司公告</p>
+            <button class="btn btn-primary btn-sm" onclick="showAddAnnouncementModal()">
+                <i class="fas fa-plus"></i> 发布公告
+            </button>
+        </div>
     {% elif session.user_type in ['sales', 'accounting', 'property_manager'] %}
         <!-- 员工统计 -->
         <div class="card">
@@ -68,12 +75,11 @@
     <div class="announcements-header">
         <h2><i class="fas fa-bullhorn"></i> 公司公告栏</h2>
         <div class="announcements-actions">
-            <a href="{{ url_for('announcements') }}" class="btn btn-primary">
-                <i class="fas fa-eye"></i> 查看全部
-            </a>
+            {% if session.user_type == 'admin' %}
             <button class="btn btn-success" onclick="showAddAnnouncementModal()">
                 <i class="fas fa-plus"></i> 发布公告
             </button>
+            {% endif %}
         </div>
     </div>
     
@@ -132,10 +138,63 @@
     </div>
 </div>
 
+<!-- 编辑公告模态框 -->
+<div id="editAnnouncementModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-edit"></i> 编辑公告</h3>
+            <span class="close" onclick="closeEditAnnouncementModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="editAnnouncementForm">
+                <input type="hidden" id="edit_announcement_id" name="announcement_id">
+                <div class="form-group">
+                    <label for="edit_title">公告标题 <span class="text-danger">*</span></label>
+                    <input type="text" id="edit_title" name="title" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit_content">公告内容 <span class="text-danger">*</span></label>
+                    <textarea id="edit_content" name="content" class="form-control" rows="4" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit_property_id">关联房产（可选）</label>
+                    <select id="edit_property_id" name="property_id" class="form-control">
+                        <option value="">不关联特定房产</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit_priority">优先级</label>
+                    <select id="edit_priority" name="priority" class="form-control">
+                        <option value="low">低</option>
+                        <option value="medium" selected>中</option>
+                        <option value="high">高</option>
+                        <option value="urgent">紧急</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 保存修改
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditAnnouncementModal()">
+                        <i class="fas fa-times"></i> 取消
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+// 检查是否为管理员
+const isAdmin = {{ 'true' if session.user_type == 'admin' else 'false' }};
+
 // 加载公告列表
 function loadAnnouncements() {
     fetch('/api/announcements')
@@ -154,6 +213,16 @@ function loadAnnouncements() {
                             <div class="announcement-header">
                                 <h4>${announcement.title}</h4>
                                 <span class="priority-badge ${priorityClass}">${priorityText}</span>
+                                ${isAdmin ? `
+                                    <div class="announcement-actions">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editAnnouncement(${announcement.id})">
+                                            <i class="fas fa-edit"></i> 编辑
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteAnnouncement(${announcement.id}, '${announcement.title}')">
+                                            <i class="fas fa-trash"></i> 删除
+                                        </button>
+                                    </div>
+                                ` : ''}
                             </div>
                             <div class="announcement-content">
                                 <p>${announcement.content}</p>
@@ -212,6 +281,12 @@ function closeAddAnnouncementModal() {
     document.getElementById('addAnnouncementForm').reset();
 }
 
+// 关闭编辑公告模态框
+function closeEditAnnouncementModal() {
+    document.getElementById('editAnnouncementModal').style.display = 'none';
+    document.getElementById('editAnnouncementForm').reset();
+}
+
 // 加载房产列表
 function loadProperties() {
     fetch('/api/properties')
@@ -234,6 +309,85 @@ function loadProperties() {
         });
 }
 
+// 加载编辑模态框的房产列表
+function loadPropertiesForEdit() {
+    return fetch('/api/properties')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('edit_property_id');
+            select.innerHTML = '<option value="">不关联特定房产</option>';
+            
+            if (data.success && data.properties) {
+                data.properties.forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property.id;
+                    option.textContent = property.name;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('加载房产列表失败:', error);
+        });
+}
+
+// 编辑公告
+function editAnnouncement(announcementId) {
+    // 获取当前公告数据
+    fetch(`/api/announcements`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.announcements) {
+                const announcement = data.announcements.find(a => a.id === announcementId);
+                if (announcement) {
+                    // 先加载房产列表，然后填充表单
+                    loadPropertiesForEdit().then(() => {
+                        // 填充编辑表单
+                        document.getElementById('edit_title').value = announcement.title;
+                        document.getElementById('edit_content').value = announcement.content;
+                        document.getElementById('edit_priority').value = announcement.priority;
+                        if (announcement.property_id) {
+                            document.getElementById('edit_property_id').value = announcement.property_id;
+                        }
+                        
+                        // 显示编辑模态框
+                        document.getElementById('editAnnouncementModal').style.display = 'block';
+                        document.getElementById('edit_announcement_id').value = announcementId;
+                    });
+                }
+            }
+        })
+        .catch(error => {
+            console.error('获取公告数据失败:', error);
+            alert('获取公告数据失败，请稍后重试');
+        });
+}
+
+// 删除公告
+function deleteAnnouncement(announcementId, title) {
+    if (confirm(`确定要删除公告"${title}"吗？`)) {
+        fetch(`/announcements/delete/${announcementId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('公告删除成功！');
+                loadAnnouncements(); // 重新加载公告列表
+            } else {
+                alert('删除失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('删除公告失败:', error);
+            alert('删除失败，请稍后重试');
+        });
+    }
+}
+
 // 页面加载时执行
 document.addEventListener('DOMContentLoaded', function() {
     loadAnnouncements();
@@ -244,7 +398,38 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.target === modal) {
             closeAddAnnouncementModal();
         }
+        const editModal = document.getElementById('editAnnouncementModal');
+        if (event.target === editModal) {
+            closeEditAnnouncementModal();
+        }
     }
+    
+    // 编辑表单提交处理
+    document.getElementById('editAnnouncementForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const announcementId = document.getElementById('edit_announcement_id').value;
+        const formData = new FormData(this);
+        
+        fetch(`/announcements/edit/${announcementId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('公告更新成功！');
+                closeEditAnnouncementModal();
+                loadAnnouncements(); // 重新加载公告列表
+            } else {
+                alert('更新失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('更新公告失败:', error);
+            alert('更新失败，请稍后重试');
+        });
+    });
 });
 </script>
 {% endblock %} 

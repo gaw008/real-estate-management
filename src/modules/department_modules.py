@@ -12,7 +12,7 @@ from flask import session, flash, redirect, url_for
 DEPARTMENT_PERMISSIONS = {
     'Admin': {
         'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
-                   'cleaning_records', 'financial_records', 'owner_info', 
+                   'cleaning_records', 'financial_records', 'financial_records_view', 'owner_info', 
                    'user_management', 'employee_departments', 'system_settings'],
         'description': '系统管理员 - 拥有全部权限'
     },

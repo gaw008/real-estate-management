@@ -428,7 +428,7 @@ class MaintenanceOrdersManager:
             conn.close()
     
     def get_users_for_select(self) -> List[Dict]:
-        """获取用户列表用于下拉选择"""
+        """获取用户列表用于下拉选择（排除业主账户）"""
         conn = self.get_db_connection()
         if not conn:
             return []
@@ -439,7 +439,7 @@ class MaintenanceOrdersManager:
             sql = """
             SELECT id, username, full_name, user_type 
             FROM users 
-            WHERE is_active = 1
+            WHERE is_active = 1 AND user_type != 'owner'
             ORDER BY full_name, username
             """
             cursor.execute(sql)
