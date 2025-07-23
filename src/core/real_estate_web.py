@@ -1088,7 +1088,7 @@ def admin_user_management():
             elif status == 'inactive':
                 where_conditions.append("is_active = FALSE")
         
-        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        where_clause = " AND ".join(where_conditions) if where_conditions else "is_active = TRUE"
         
         # 获取总数
         count_sql = f"SELECT COUNT(*) as count FROM users WHERE {where_clause}"
@@ -1342,17 +1342,21 @@ def admin_delete_user():
         if int(user_id) == session.get('user_id'):
             return jsonify({'success': False, 'message': '不能删除自己的账号'})
         
-        # 获取用户信息
+        # 获取用户信息（包括已删除的用户）
         cursor.execute("""
-            SELECT id, username, full_name, user_type
+            SELECT id, username, full_name, user_type, is_active
             FROM users 
-            WHERE id = %s AND is_active = TRUE
+            WHERE id = %s
         """, (user_id,))
         
         user = cursor.fetchone()
         
         if not user:
-            return jsonify({'success': False, 'message': '用户不存在或已被删除'})
+            return jsonify({'success': False, 'message': '用户不存在'})
+        
+        # 检查用户是否已经被删除
+        if not user['is_active']:
+            return jsonify({'success': False, 'message': '用户已被删除'})
         
         # 验证用户名确认
         if user['username'] != confirm_username:
