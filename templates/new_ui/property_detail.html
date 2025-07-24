@@ -34,9 +34,9 @@
         </tr>
         <tr>
             <td><strong>床位配置</strong></td>
-            <td>{{ property.description or '未设置' }}</td>
+            <td>{{ property.description.split(', 床位: ')[1] if property.description and ', 床位: ' in property.description else '未设置' }}</td>
             <td><strong>最大入住人数</strong></td>
-            <td>{{ property.description or 'N/A' }} 人</td>
+            <td>{{ property.description.split(', 入住人数: ')[1].split(',')[0] if property.description and ', 入住人数: ' in property.description else 'N/A' }} 人</td>
         </tr>
     </table>
 
