@@ -22,21 +22,21 @@
         </tr>
         <tr>
             <td><strong>房型布局</strong></td>
-            <td>{{ property.layout or 'N/A' }}</td>
+            <td>{{ property.property_type or 'N/A' }}</td>
             <td><strong>面积</strong></td>
-            <td>{{ property.property_size or 'N/A' }} sqft</td>
+            <td>{{ property.square_feet or 'N/A' }} sqft</td>
         </tr>
         <tr>
             <td><strong>卧室数</strong></td>
-            <td>{{ parse_layout(property.layout).bedrooms }}</td>
+            <td>{{ property.bedrooms or 'N/A' }}</td>
             <td><strong>浴室数</strong></td>
-            <td>{{ parse_layout(property.layout).bathrooms }}</td>
+            <td>{{ property.bathrooms or 'N/A' }}</td>
         </tr>
         <tr>
             <td><strong>床位配置</strong></td>
-            <td>{{ format_beds(property.beds) }}</td>
+            <td>{{ property.description or '未设置' }}</td>
             <td><strong>最大入住人数</strong></td>
-            <td>{{ property.occupancy or 'N/A' }} 人</td>
+            <td>{{ property.description or 'N/A' }} 人</td>
         </tr>
     </table>
 
@@ -44,9 +44,9 @@
     <table class="table">
         <tr>
             <td><strong>清洁费</strong></td>
-            <td>${{ property.cleaning_fee or 'N/A' }}</td>
+            <td>${{ property.price or 'N/A' }}</td>
             <td><strong>管理费</strong></td>
-            <td>{{ format_management_fee(property.management_fee_rate, property.management_fee_type) }}</td>
+            <td>{{ property.status or '未设置' }}</td>
         </tr>
     </table>
 
@@ -64,10 +64,10 @@
         <tbody>
             {% for owner in owners %}
             <tr>
-                <td>{{ owner.name }}</td>
+                <td>{{ owner.full_name }}</td>
                 <td>{{ owner.phone or 'N/A' }}</td>
                 <td>{{ owner.email or 'N/A' }}</td>
-                <td><a href="{{ url_for('owner_detail_fixed', owner_id=owner.owner_id) }}" class="btn btn-sm btn-secondary">查看</a></td>
+                <td><a href="{{ url_for('owner_detail_fixed', owner_id=owner.id) }}" class="btn btn-sm btn-secondary">查看</a></td>
             </tr>
             {% endfor %}
         </tbody>
