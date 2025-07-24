@@ -75,11 +75,9 @@
     <div class="announcements-header">
         <h2><i class="fas fa-bullhorn"></i> 公司公告栏</h2>
         <div class="announcements-actions">
-            {% if session.user_type == 'admin' %}
             <button class="btn btn-success" onclick="showAddAnnouncementModal()">
                 <i class="fas fa-plus"></i> 发布公告
             </button>
-            {% endif %}
         </div>
     </div>
     
@@ -194,6 +192,7 @@
 <script>
 // 检查是否为管理员
 const isAdmin = {{ 'true' if session.user_type == 'admin' else 'false' }};
+const currentUserId = {{ session.user_id }};
 
 // 加载公告列表
 function loadAnnouncements() {
@@ -213,16 +212,21 @@ function loadAnnouncements() {
                             <div class="announcement-header">
                                 <h4>${announcement.title}</h4>
                                 <span class="priority-badge ${priorityClass}">${priorityText}</span>
-                                ${isAdmin ? `
-                                    <div class="announcement-actions">
+                                <div class="announcement-actions">
+                                    ${announcement.author_id == currentUserId ? `
                                         <button class="btn btn-sm btn-outline-primary" onclick="editAnnouncement(${announcement.id})">
                                             <i class="fas fa-edit"></i> 编辑
                                         </button>
                                         <button class="btn btn-sm btn-outline-danger" onclick="deleteAnnouncement(${announcement.id}, '${announcement.title}')">
                                             <i class="fas fa-trash"></i> 删除
                                         </button>
-                                    </div>
-                                ` : ''}
+                                    ` : ''}
+                                    ${isAdmin && announcement.author_id != currentUserId ? `
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteAnnouncement(${announcement.id}, '${announcement.title}')">
+                                            <i class="fas fa-trash"></i> 删除
+                                        </button>
+                                    ` : ''}
+                                </div>
                             </div>
                             <div class="announcement-content">
                                 <p>${announcement.content}</p>

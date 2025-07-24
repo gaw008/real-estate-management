@@ -5909,9 +5909,10 @@ def api_announcements():
         
         # 获取活跃的公告
         cursor.execute("""
-            SELECT a.*, p.name as property_display_name 
+            SELECT a.*, p.name as property_display_name, u.username as author_name, u.id as author_id
             FROM announcements a 
             LEFT JOIN properties p ON a.property_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci
+            LEFT JOIN users u ON a.author_id = u.id
             WHERE a.status = 'active' 
             ORDER BY 
                 CASE a.priority 
