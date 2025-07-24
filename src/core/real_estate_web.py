@@ -430,7 +430,7 @@ def dashboard():
                 print(f"👤 获取业主统计数据，业主ID: {owner_id}")
                 
                 # 获取业主信息
-                cursor.execute("SELECT * FROM owners WHERE owner_id = %s", (owner_id,))
+                cursor.execute("SELECT * FROM owners WHERE id = %s", (owner_id,))
                 owner_info = cursor.fetchone()
                 
                 # 获取业主统计数据
@@ -1466,7 +1466,7 @@ def properties_fixed():
         params = []
         
         if filters['search']:
-            base_query += " AND (name LIKE %s OR street_address LIKE %s)"
+            base_query += " AND (property_name LIKE %s OR address LIKE %s)"
             params.extend([f"%{filters['search']}%", f"%{filters['search']}%"])
         if filters['state']:
             base_query += " AND state = %s"
@@ -1484,7 +1484,7 @@ def properties_fixed():
 
         # 获取当前页的房产数据
         offset = (page - 1) * per_page
-        query = f"SELECT * {base_query} ORDER BY name LIMIT %s OFFSET %s"
+        query = f"SELECT * {base_query} ORDER BY property_name LIMIT %s OFFSET %s"
         cursor.execute(query, tuple(params + [per_page, offset]))
         properties = cursor.fetchall()
 
@@ -1631,7 +1631,7 @@ def delete_property():
     
     try:
         # 检查房产是否存在且未被删除
-        cursor.execute("SELECT name FROM properties WHERE id = %s AND deleted_at IS NULL", (property_id,))
+        cursor.execute("SELECT property_name FROM properties WHERE id = %s AND deleted_at IS NULL", (property_id,))
         property_info = cursor.fetchone()
         
         if not property_info:
@@ -1713,7 +1713,7 @@ def undo_delete_property():
     
     try:
         # 检查房产是否存在且已被删除
-        cursor.execute("SELECT name, deleted_at FROM properties WHERE id = %s AND deleted_at IS NOT NULL", (property_id,))
+        cursor.execute("SELECT property_name, deleted_at FROM properties WHERE id = %s AND deleted_at IS NOT NULL", (property_id,))
         property_info = cursor.fetchone()
         
         if not property_info:
@@ -2094,11 +2094,11 @@ def owners_fixed():
             'strategy': request.args.get('strategy', '')
         }
 
-        base_query = "FROM owners o LEFT JOIN (SELECT po.owner_id, COUNT(*) as property_count FROM property_owners po GROUP BY po.owner_id) p ON o.owner_id = p.owner_id WHERE o.deleted_at IS NULL"
+        base_query = "FROM owners o LEFT JOIN (SELECT po.owner_id, COUNT(*) as property_count FROM property_owners po GROUP BY po.owner_id) p ON o.id = p.owner_id WHERE o.deleted_at IS NULL"
         params = []
         
         if filters['search']:
-            base_query += " AND (o.name LIKE %s OR o.email LIKE %s OR o.phone LIKE %s)"
+            base_query += " AND (o.full_name LIKE %s OR o.email LIKE %s OR o.phone LIKE %s)"
             params.extend([f"%{filters['search']}%"] * 3)
         if filters['strategy']:
             base_query += " AND o.preferences_strategy = %s"
@@ -2111,7 +2111,7 @@ def owners_fixed():
         total_pages = (total_count + per_page - 1) // per_page
 
         offset = (page - 1) * per_page
-        query = f"SELECT o.*, COALESCE(p.property_count, 0) as property_count {base_query} ORDER BY o.name LIMIT %s OFFSET %s"
+        query = f"SELECT o.*, COALESCE(p.property_count, 0) as property_count {base_query} ORDER BY o.full_name LIMIT %s OFFSET %s"
         cursor.execute(query, tuple(params + [per_page, offset]))
         owners = cursor.fetchall()
 
@@ -2156,19 +2156,19 @@ def delete_owner():
     
     try:
         # 检查业主是否存在且未被删除
-        cursor.execute("SELECT name FROM owners WHERE owner_id = %s AND deleted_at IS NULL", (owner_id,))
+        cursor.execute("SELECT full_name FROM owners WHERE id = %s AND deleted_at IS NULL", (owner_id,))
         owner_info = cursor.fetchone()
         
         if not owner_info:
             return jsonify({'success': False, 'message': '业主不存在或已被删除'})
         
         # 软删除业主 - 使用数据库的NOW()函数确保时间一致性
-        cursor.execute("UPDATE owners SET deleted_at = NOW() WHERE owner_id = %s", (owner_id,))
+        cursor.execute("UPDATE owners SET deleted_at = NOW() WHERE id = %s", (owner_id,))
         
         conn.commit()
         
         # 获取删除时间用于日志
-        cursor.execute("SELECT deleted_at FROM owners WHERE owner_id = %s", (owner_id,))
+        cursor.execute("SELECT deleted_at FROM owners WHERE id = %s", (owner_id,))
         deleted_time = cursor.fetchone()[0]
         print(f"✅ 业主 '{owner_info[0]}' 软删除成功，删除时间: {deleted_time}")
         return jsonify({
@@ -5726,7 +5726,7 @@ def announcements():
         announcements = cursor.fetchall()
         
         # 获取所有房产用于选择
-        cursor.execute("SELECT id, name COLLATE utf8mb4_unicode_ci as name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+        cursor.execute("SELECT id, property_name COLLATE utf8mb4_unicode_ci as name FROM properties WHERE deleted_at IS NULL ORDER BY property_name")
         properties = cursor.fetchall()
         
     except Exception as e:
@@ -5765,7 +5765,7 @@ def add_announcement():
         # 获取房产名称
         property_name = None
         if property_id:
-            cursor.execute("SELECT name FROM properties WHERE id = %s", (property_id,))
+            cursor.execute("SELECT property_name FROM properties WHERE id = %s", (property_id,))
             property_result = cursor.fetchone()
             if property_result:
                 property_name = property_result[0]
@@ -5837,12 +5837,12 @@ def edit_announcement(announcement_id):
             if property_id and property_id.strip():
                 try:
                     # 确保property_id是有效的
-                    cursor.execute("SELECT name FROM properties WHERE id = %s", (property_id,))
+                    cursor.execute("SELECT property_name FROM properties WHERE id = %s", (property_id,))
                     property_result = cursor.fetchone()
                     if property_result:
                         # 检查property_result的类型
                         if isinstance(property_result, dict):
-                            property_name = property_result['name']
+                            property_name = property_result['property_name']
                         else:
                             property_name = property_result[0]
                         print(f"调试 - 找到房产: {property_name}")
@@ -5882,7 +5882,7 @@ def edit_announcement(announcement_id):
                 return redirect(url_for('dashboard'))
             
             # 获取所有房产
-            cursor.execute("SELECT id, name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+            cursor.execute("SELECT id, property_name FROM properties WHERE deleted_at IS NULL ORDER BY property_name")
             properties = cursor.fetchall()
             
             return render_template('new_ui/edit_announcement.html', 
@@ -5987,7 +5987,7 @@ def api_properties():
         cursor = connection.cursor(dictionary=True)
         
         # 获取所有未删除的房产
-        cursor.execute("SELECT id, name COLLATE utf8mb4_unicode_ci as name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+        cursor.execute("SELECT id, property_name COLLATE utf8mb4_unicode_ci as name FROM properties WHERE deleted_at IS NULL ORDER BY property_name")
         properties = cursor.fetchall()
         
         return jsonify({'success': True, 'properties': properties})
@@ -6027,7 +6027,7 @@ def admin_announcements():
         announcements = cursor.fetchall()
         
         # 获取所有房产用于选择
-        cursor.execute("SELECT id, name COLLATE utf8mb4_unicode_ci as name FROM properties WHERE deleted_at IS NULL ORDER BY name")
+        cursor.execute("SELECT id, property_name COLLATE utf8mb4_unicode_ci as name FROM properties WHERE deleted_at IS NULL ORDER BY property_name")
         properties = cursor.fetchall()
         
         return render_template('new_ui/admin_announcements.html', 
