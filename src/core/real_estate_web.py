@@ -2795,20 +2795,43 @@ def delete_customer(customer_id):
 @module_required('customer_management')
 def customer_detail(customer_id):
     """客户详情"""
-    # 模拟客户详情数据
-    customer = {
-        'id': customer_id,
-        'name': '张先生',
-        'company': '科技有限公司',
-        'phone': '138****5678',
-        'email': 'zhang@example.com',
-        'type': '购房客户',
-        'status': 'active',
-        'notes': '意向购买办公楼',
-        'created_at': '2024-01-10',
-        'last_contact': '2024-01-15'
-    }
-    return jsonify({'success': True, 'customer': customer})
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('customer_tracking'))
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # 获取客户信息
+        cursor.execute("""
+            SELECT * FROM customer_tracking 
+            WHERE id = %s AND deleted_at IS NULL
+        """, (customer_id,))
+        customer = cursor.fetchone()
+        
+        if not customer:
+            flash('客户不存在', 'error')
+            return redirect(url_for('customer_tracking'))
+        
+        # 获取跟踪记录
+        cursor.execute("""
+            SELECT * FROM tracking_records 
+            WHERE customer_id = %s AND deleted_at IS NULL
+            ORDER BY record_date DESC, created_at DESC
+        """, (customer_id,))
+        tracking_records = cursor.fetchall()
+        
+        return render_template('new_ui/customer_detail.html', 
+                             customer=customer, 
+                             tracking_records=tracking_records)
+        
+    except Exception as e:
+        flash(f'获取客户详情失败: {e}', 'error')
+        return redirect(url_for('customer_tracking'))
+    finally:
+        cursor.close()
+        connection.close()
 
 @app.route('/customers/<int:customer_id>/edit', methods=['GET', 'POST'])
 @module_required('customer_management')
