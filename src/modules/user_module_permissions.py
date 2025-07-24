@@ -39,12 +39,7 @@ SYSTEM_MODULES = {
         'icon': 'fas fa-tools',
         'color': '#ffc107'
     },
-    'cleaning_records': {
-        'name': '清洁记录',
-        'description': '管理房屋清洁记录',
-        'icon': 'fas fa-broom',
-        'color': '#6f42c1'
-    },
+
     'financial_records': {
         'name': '财务记录',
         'description': '查看和管理财务数据',
@@ -313,11 +308,11 @@ class UserModulePermissions:
             # 基于部门权限的默认模块分配
             department_modules = {
                 'admin': ['property_info', 'customer_management', 'customer_tracking', 
-                         'maintenance_records', 'cleaning_records', 'financial_records', 
+                         'maintenance_records', 'financial_records', 
                          'owner_info', 'user_management', 'employee_departments', 
                          'system_settings', 'registration_management'],
                 'property_manager': ['property_info', 'customer_management', 'customer_tracking', 
-                                   'maintenance_records', 'cleaning_records', 'financial_records_view', 
+                                   'maintenance_records', 'financial_records_view', 
                                    'employee_departments'],
                 'sales': ['property_info', 'customer_management', 'customer_tracking', 'owner_info'],
                 'accounting': ['financial_records', 'owner_info', 'financial_records_view'],

@@ -12,13 +12,13 @@ from flask import session, flash, redirect, url_for
 DEPARTMENT_PERMISSIONS = {
     'Admin': {
         'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
-                   'cleaning_records', 'financial_records', 'financial_records_view', 'owner_info', 
+                   'financial_records', 'financial_records_view', 'owner_info', 
                    'user_management', 'employee_departments', 'system_settings'],
         'description': '系统管理员 - 拥有全部权限'
     },
     'Property Management Department': {
         'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
-                   'cleaning_records', 'financial_records_view', 'employee_departments'],
+                   'financial_records_view', 'employee_departments'],
         'description': '房产管理部 - 房产运营核心'
     },
     'Sales Department': {
@@ -32,13 +32,13 @@ DEPARTMENT_PERMISSIONS = {
     # 添加中文部门名称支持
     '管理员': {
         'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
-                   'cleaning_records', 'financial_records', 'financial_records_view', 'owner_info', 
+                   'financial_records', 'financial_records_view', 'owner_info', 
                    'user_management', 'employee_departments', 'system_settings'],
         'description': '系统管理员 - 拥有全部权限'
     },
     '房产管理': {
         'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
-                   'cleaning_records', 'financial_records_view', 'employee_departments'],
+                   'financial_records_view', 'employee_departments'],
         'description': '房产管理部 - 房产运营核心'
     },
     '销售部': {
@@ -77,12 +77,7 @@ MODULE_DESCRIPTIONS = {
         'icon': '🔧',
         'color': 'warning'
     },
-    'cleaning_records': {
-        'name': '清洁记录管理',
-        'description': '清洁服务、保洁工单、环境维护',
-        'icon': '🧹',
-        'color': 'info'
-    },
+
     'financial_records': {
         'name': '财务记录管理',
         'description': '收支管理、账目记录、财务分析',
@@ -265,7 +260,7 @@ MODULE_ROUTES = {
     'customer_management': '/customers',
     'customer_tracking': '/customer_tracking',
     'maintenance_records': '/maintenance_orders',
-    'cleaning_records': '/cleaning',
+
     'financial_records': '/admin/financial_reports',
     'financial_records_view': '/admin/financial_reports',  # 共享财务报表，但只读
     'owner_info': '/owners',

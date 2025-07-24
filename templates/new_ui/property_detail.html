@@ -77,10 +77,10 @@
     {% endif %}
 
     <!-- 附加信息模块 -->
-    <h3 style="margin-top: 20px;">附加信息</h3>
-    <div class="action-bar" style="margin-bottom: 15px;">
-        <button class="btn btn-primary" onclick="showAddInfoModal()">
-            ➕ 添加信息
+    <div class="section-header">
+        <h3><i class="fas fa-info-circle"></i> 附加信息</h3>
+        <button class="btn btn-primary btn-add" onclick="showAddInfoModal()">
+            <i class="fas fa-plus"></i> 添加信息
         </button>
     </div>
 
@@ -89,26 +89,40 @@
         {% for info in additional_info %}
         <div class="info-card" data-info-id="{{ info.id }}">
             <div class="info-header">
-                <h4>{{ info.title }}</h4>
-                <div class="info-meta">
-                    <span class="info-type-badge info-type-{{ info.info_type }}">
-                        {% if info.info_type == 'general' %}一般信息
-                        {% elif info.info_type == 'maintenance' %}维护记录
-                        {% elif info.info_type == 'rules' %}规则说明
-                        {% elif info.info_type == 'amenities' %}设施说明
-                        {% else %}其他
+                <div class="info-title-section">
+                    <h4 class="info-title">{{ info.title }}</h4>
+                    <div class="info-badges">
+                        <span class="info-type-badge info-type-{{ info.info_type }}">
+                            {% if info.info_type == 'general' %}一般信息
+                            {% elif info.info_type == 'maintenance' %}维护记录
+                            {% elif info.info_type == 'rules' %}规则说明
+                            {% elif info.info_type == 'amenities' %}设施说明
+                            {% else %}其他
+                            {% endif %}
+                        </span>
+                        {% if info.priority > 0 %}
+                        <span class="priority-badge priority-{{ 'high' if info.priority >= 8 else 'medium' if info.priority >= 4 else 'low' }}">
+                            优先级: {{ info.priority }}
+                        </span>
                         {% endif %}
-                    </span>
-                    <span class="priority-badge">优先级: {{ info.priority }}</span>
-                    <span class="created-by">创建者: {{ info.created_by_name or '未知' }}</span>
-                    <span class="created-at">{{ info.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                </div>
+                <div class="info-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-user"></i>
+                        <span>{{ info.created_by_name or '未知' }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-clock"></i>
+                        <span>{{ info.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
                 </div>
                 <div class="info-actions">
                     <button class="btn btn-sm btn-outline-primary" onclick="editInfo({{ info.id }}, '{{ info.title }}', '{{ info.content }}', '{{ info.info_type }}', {{ info.priority }})">
-                        ✏️ 编辑
+                        <i class="fas fa-edit"></i> 编辑
                     </button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteInfo({{ info.id }}, '{{ info.title }}')">
-                        🗑️ 删除
+                        <i class="fas fa-trash"></i> 删除
                     </button>
                 </div>
             </div>
@@ -119,45 +133,56 @@
         {% endfor %}
     </div>
     {% else %}
-    <p>暂无附加信息</p>
+    <div class="empty-state">
+        <i class="fas fa-info-circle"></i>
+        <p>暂无附加信息</p>
+        <small>点击上方"添加信息"按钮开始添加</small>
+    </div>
     {% endif %}
 </div>
 
 <!-- 添加信息模态框 -->
 <div id="addInfoModal" class="modal" style="display: none;">
-    <div class="modal-content">
+    <div class="modal-content large-modal">
         <div class="modal-header">
-            <h4>添加附加信息</h4>
+            <h4><i class="fas fa-plus-circle"></i> 添加附加信息</h4>
             <span class="close" onclick="closeAddInfoModal()">&times;</span>
         </div>
         <form action="{{ url_for('add_property_additional_info', property_id=property.id) }}" method="POST">
-            <div class="form-group">
-                <label for="title">标题 *</label>
-                <input type="text" id="title" name="title" required class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="content">内容 *</label>
-                <textarea id="content" name="content" required class="form-control" rows="6" placeholder="请输入附加信息内容..."></textarea>
-            </div>
-            <div class="form-row">
+            <div class="form-body">
                 <div class="form-group">
-                    <label for="info_type">信息类型</label>
-                    <select id="info_type" name="info_type" class="form-control">
-                        <option value="general">一般信息</option>
-                        <option value="maintenance">维护记录</option>
-                        <option value="rules">规则说明</option>
-                        <option value="amenities">设施说明</option>
-                        <option value="other">其他</option>
-                    </select>
+                    <label for="title"><i class="fas fa-heading"></i> 标题 *</label>
+                    <input type="text" id="title" name="title" required class="form-control" placeholder="请输入信息标题...">
                 </div>
                 <div class="form-group">
-                    <label for="priority">优先级</label>
-                    <input type="number" id="priority" name="priority" value="0" min="0" max="100" class="form-control">
+                    <label for="content"><i class="fas fa-align-left"></i> 内容 *</label>
+                    <textarea id="content" name="content" required class="form-control" rows="10" placeholder="请输入附加信息内容...&#10;&#10;支持换行格式，可以输入：&#10;• 入住须知&#10;• 设施说明&#10;• 维护记录&#10;• 其他重要信息"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="info_type"><i class="fas fa-tag"></i> 信息类型</label>
+                        <select id="info_type" name="info_type" class="form-control">
+                            <option value="general">📋 一般信息</option>
+                            <option value="maintenance">🔧 维护记录</option>
+                            <option value="rules">📜 规则说明</option>
+                            <option value="amenities">🏠 设施说明</option>
+                            <option value="other">📝 其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="priority"><i class="fas fa-star"></i> 优先级</label>
+                        <input type="number" id="priority" name="priority" value="0" min="0" max="100" class="form-control" placeholder="0-100，数字越大优先级越高">
+                        <small class="form-text">0-100，数字越大优先级越高</small>
+                    </div>
                 </div>
             </div>
             <div class="form-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeAddInfoModal()">取消</button>
-                <button type="submit" class="btn btn-primary">添加</button>
+                <button type="button" class="btn btn-secondary" onclick="closeAddInfoModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 添加
+                </button>
             </div>
         </form>
     </div>
@@ -165,39 +190,46 @@
 
 <!-- 编辑信息模态框 -->
 <div id="editInfoModal" class="modal" style="display: none;">
-    <div class="modal-content">
+    <div class="modal-content large-modal">
         <div class="modal-header">
-            <h4>编辑附加信息</h4>
+            <h4><i class="fas fa-edit"></i> 编辑附加信息</h4>
             <span class="close" onclick="closeEditInfoModal()">&times;</span>
         </div>
         <form id="editInfoForm" method="POST">
-            <div class="form-group">
-                <label for="edit_title">标题 *</label>
-                <input type="text" id="edit_title" name="title" required class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="edit_content">内容 *</label>
-                <textarea id="edit_content" name="content" required class="form-control" rows="6"></textarea>
-            </div>
-            <div class="form-row">
+            <div class="form-body">
                 <div class="form-group">
-                    <label for="edit_info_type">信息类型</label>
-                    <select id="edit_info_type" name="info_type" class="form-control">
-                        <option value="general">一般信息</option>
-                        <option value="maintenance">维护记录</option>
-                        <option value="rules">规则说明</option>
-                        <option value="amenities">设施说明</option>
-                        <option value="other">其他</option>
-                    </select>
+                    <label for="edit_title"><i class="fas fa-heading"></i> 标题 *</label>
+                    <input type="text" id="edit_title" name="title" required class="form-control" placeholder="请输入信息标题...">
                 </div>
                 <div class="form-group">
-                    <label for="edit_priority">优先级</label>
-                    <input type="number" id="edit_priority" name="priority" min="0" max="100" class="form-control">
+                    <label for="edit_content"><i class="fas fa-align-left"></i> 内容 *</label>
+                    <textarea id="edit_content" name="content" required class="form-control" rows="10" placeholder="请输入附加信息内容..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_info_type"><i class="fas fa-tag"></i> 信息类型</label>
+                        <select id="edit_info_type" name="info_type" class="form-control">
+                            <option value="general">📋 一般信息</option>
+                            <option value="maintenance">🔧 维护记录</option>
+                            <option value="rules">📜 规则说明</option>
+                            <option value="amenities">🏠 设施说明</option>
+                            <option value="other">📝 其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_priority"><i class="fas fa-star"></i> 优先级</label>
+                        <input type="number" id="edit_priority" name="priority" min="0" max="100" class="form-control" placeholder="0-100，数字越大优先级越高">
+                        <small class="form-text">0-100，数字越大优先级越高</small>
+                    </div>
                 </div>
             </div>
             <div class="form-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeEditInfoModal()">取消</button>
-                <button type="submit" class="btn btn-primary">保存</button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditInfoModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 保存
+                </button>
             </div>
         </form>
     </div>
@@ -261,76 +293,188 @@ window.onclick = function(event) {
 </script>
 
 <style>
+/* 附加信息模块样式 */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 30px 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.section-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.section-header h3 i {
+    margin-right: 8px;
+    color: #3498db;
+}
+
+.btn-add {
+    padding: 8px 16px;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.btn-add:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
 .additional-info-container {
-    margin-top: 15px;
+    margin-top: 20px;
 }
 
 .info-card {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #3498db;
 }
 
 .info-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     flex-wrap: wrap;
+    gap: 15px;
 }
 
-.info-header h4 {
-    margin: 0 0 10px 0;
-    color: #333;
+.info-title-section {
     flex: 1;
+    min-width: 0;
 }
 
-.info-meta {
+.info-title {
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+    font-size: 1.2rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.info-badges {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 10px;
 }
 
 .info-type-badge {
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.info-type-general { background: #e3f2fd; color: #1976d2; }
-.info-type-maintenance { background: #fff3e0; color: #f57c00; }
-.info-type-rules { background: #f3e5f5; color: #7b1fa2; }
-.info-type-amenities { background: #e8f5e8; color: #388e3c; }
-.info-type-other { background: #f5f5f5; color: #616161; }
+.info-type-general { background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
+.info-type-maintenance { background: #fff3e0; color: #f57c00; border: 1px solid #ffcc02; }
+.info-type-rules { background: #f3e5f5; color: #7b1fa2; border: 1px solid #e1bee7; }
+.info-type-amenities { background: #e8f5e8; color: #388e3c; border: 1px solid #c8e6c9; }
+.info-type-other { background: #f5f5f5; color: #616161; border: 1px solid #e0e0e0; }
 
 .priority-badge {
-    background: #ffebee;
-    color: #c62828;
-    padding: 2px 8px;
-    border-radius: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.priority-high { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+.priority-medium { background: #fff3e0; color: #f57c00; border: 1px solid #ffcc02; }
+.priority-low { background: #e8f5e8; color: #388e3c; border: 1px solid #c8e6c9; }
+
+.info-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 150px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #6c757d;
     font-size: 12px;
 }
 
-.created-by, .created-at {
-    color: #666;
-    font-size: 12px;
+.meta-item i {
+    width: 12px;
+    color: #adb5bd;
 }
 
 .info-actions {
     display: flex;
-    gap: 5px;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.info-actions .btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.info-actions .btn:hover {
+    transform: translateY(-1px);
 }
 
 .info-content {
-    color: #333;
-    line-height: 1.6;
+    color: #495057;
+    line-height: 1.7;
     white-space: pre-line;
+    font-size: 14px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
 }
 
+/* 空状态样式 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: #adb5bd;
+    margin-bottom: 15px;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin: 10px 0 5px 0;
+    color: #495057;
+}
+
+.empty-state small {
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* 模态框样式 */
 .modal {
     display: none;
     position: fixed;
@@ -339,49 +483,137 @@ window.onclick = function(event) {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.4);
+    background-color: rgba(0,0,0,0.5);
+    backdrop-filter: blur(2px);
 }
 
 .modal-content {
-    background-color: #fefefe;
-    margin: 5% auto;
+    background-color: #ffffff;
+    margin: 3% auto;
     padding: 0;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 600px;
-    border-radius: 8px;
+    border: none;
+    width: 90%;
+    max-width: 800px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    animation: modalSlideIn 0.3s ease;
+}
+
+.large-modal {
+    max-width: 900px;
+    margin: 2% auto;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .modal-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid #dee2e6;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e9ecef;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
 }
 
 .modal-header h4 {
     margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.modal-header h4 i {
+    margin-right: 8px;
 }
 
 .close {
-    color: #aaa;
+    color: rgba(255,255,255,0.8);
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+    transition: color 0.2s ease;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 
 .close:hover {
-    color: #000;
+    color: white;
+    background: rgba(255,255,255,0.1);
+}
+
+.form-body {
+    padding: 25px;
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.form-group label i {
+    margin-right: 6px;
+    color: #3498db;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: #ffffff;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-control::placeholder {
+    color: #adb5bd;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 120px;
+    font-family: inherit;
+    line-height: 1.6;
+}
+
+.form-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
 }
 
 .form-row {
     display: flex;
-    gap: 15px;
+    gap: 20px;
 }
 
 .form-row .form-group {
@@ -389,29 +621,101 @@ window.onclick = function(event) {
 }
 
 .form-actions {
-    padding: 15px 20px;
-    border-top: 1px solid #dee2e6;
+    padding: 20px 25px;
+    border-top: 1px solid #e9ecef;
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 12px;
+    background: #f8f9fa;
+    border-radius: 0 0 12px 12px;
 }
 
+.form-actions .btn {
+    padding: 10px 20px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.form-actions .btn i {
+    margin-right: 6px;
+}
+
+.form-actions .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
     .info-header {
         flex-direction: column;
+        gap: 10px;
     }
     
     .info-meta {
         order: 2;
+        flex-direction: row;
+        flex-wrap: wrap;
     }
     
     .info-actions {
         order: 3;
         margin-top: 10px;
+        justify-content: flex-start;
     }
     
     .form-row {
         flex-direction: column;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+    }
+    
+    .large-modal {
+        margin: 5% auto;
+    }
+    
+    .form-body {
+        padding: 20px;
+    }
+    
+    .form-actions {
+        padding: 15px 20px;
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .info-card {
+        padding: 15px;
+    }
+    
+    .info-title {
+        font-size: 1.1rem;
+    }
+    
+    .info-badges {
+        gap: 6px;
+    }
+    
+    .info-type-badge,
+    .priority-badge {
+        font-size: 10px;
+        padding: 3px 8px;
     }
 }
 </style>
