@@ -138,9 +138,14 @@ def has_module_access(module_name):
     """检查用户是否有访问指定模块的权限"""
     # 优先使用新的用户模块权限系统
     try:
-        from src.modules.user_module_permissions import get_user_module_permissions
+        from src.modules.user_module_permissions import get_user_module_permissions, init_user_module_permissions
+        from core.config_loader import DB_CONFIG
         
         user_module_permissions = get_user_module_permissions()
+        if not user_module_permissions:
+            # 如果全局实例不存在，尝试重新初始化
+            user_module_permissions = init_user_module_permissions(DB_CONFIG)
+        
         if user_module_permissions:
             # 获取当前用户ID
             user_id = session.get('user_id')
