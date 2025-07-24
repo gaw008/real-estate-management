@@ -313,7 +313,7 @@ class UserModulePermissions:
                          'system_settings', 'registration_management'],
                 'property_manager': ['property_info', 'customer_management', 'customer_tracking', 
                                    'maintenance_records', 'financial_records_view', 
-                                   'employee_departments'],
+                                   'owner_info', 'employee_departments'],
                 'sales': ['property_info', 'customer_management', 'customer_tracking', 'owner_info'],
                 'accounting': ['financial_records', 'owner_info', 'financial_records_view'],
                 'marketing': ['property_info', 'customer_management', 'customer_tracking'],

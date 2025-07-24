@@ -41,6 +41,11 @@ DEPARTMENT_PERMISSIONS = {
                    'financial_records_view', 'employee_departments'],
         'description': '房产管理部 - 房产运营核心'
     },
+    '房产管理部': {
+        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
+                   'financial_records_view', 'owner_info', 'employee_departments'],
+        'description': '房产管理部 - 房产运营核心'
+    },
     '销售部': {
         'modules': ['property_info', 'customer_management', 'customer_tracking', 'owner_info'],
         'description': '销售部 - 客户关系管理'

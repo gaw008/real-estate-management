@@ -27,7 +27,9 @@
         <a href="{{ url_for('customer_tracking') }}" class="nav-item {% if 'customer_tracking' in request.endpoint %}active{% endif %}">客户追踪</a>
       {% endif %}
       
-
+      {% if check_module_access('customer_management') %}
+        <a href="{{ url_for('customer_management') }}" class="nav-item {% if 'customer_management' in request.endpoint %}active{% endif %}">客户管理</a>
+      {% endif %}
       
       {% if check_module_access('user_management') %}
         <a href="{{ url_for('admin_employee_departments') }}" class="nav-item {% if 'admin_employee_departments' in request.endpoint %}active{% endif %}">员工分组</a>
