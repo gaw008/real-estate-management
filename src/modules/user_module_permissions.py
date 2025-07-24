@@ -21,12 +21,7 @@ SYSTEM_MODULES = {
         'icon': 'fas fa-home',
         'color': '#007bff'
     },
-    'customer_management': {
-        'name': '客户管理',
-        'description': '管理客户信息和进度跟踪',
-        'icon': 'fas fa-users',
-        'color': '#28a745'
-    },
+
     'customer_tracking': {
         'name': '客户跟踪',
         'description': '跟踪客户看房进度',
@@ -307,16 +302,16 @@ class UserModulePermissions:
         try:
             # 基于部门权限的默认模块分配
             department_modules = {
-                'admin': ['property_info', 'customer_management', 'customer_tracking', 
+                'admin': ['property_info', 'customer_tracking', 
                          'maintenance_records', 'financial_records', 
                          'owner_info', 'user_management', 'employee_departments', 
                          'system_settings', 'registration_management'],
-                'property_manager': ['property_info', 'customer_management', 'customer_tracking', 
+                'property_manager': ['property_info', 'customer_tracking', 
                                    'maintenance_records', 'financial_records_view', 
                                    'owner_info', 'employee_departments'],
-                'sales': ['property_info', 'customer_management', 'customer_tracking', 'owner_info'],
+                'sales': ['property_info', 'customer_tracking', 'owner_info'],
                 'accounting': ['financial_records', 'owner_info', 'financial_records_view'],
-                'marketing': ['property_info', 'customer_management', 'customer_tracking'],
+                'marketing': ['property_info', 'customer_tracking'],
                 'owner': ['property_info', 'financial_records_view', 'owner_info']
             }
             

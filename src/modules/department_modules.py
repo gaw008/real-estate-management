@@ -11,18 +11,18 @@ from flask import session, flash, redirect, url_for
 # 部门权限映射表
 DEPARTMENT_PERMISSIONS = {
     'Admin': {
-        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
+        'modules': ['property_info', 'customer_tracking', 'maintenance_records', 
                    'financial_records', 'financial_records_view', 'owner_info', 
                    'user_management', 'employee_departments', 'system_settings'],
         'description': '系统管理员 - 拥有全部权限'
     },
     'Property Management Department': {
-        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
+        'modules': ['property_info', 'customer_tracking', 'maintenance_records', 
                    'financial_records_view', 'employee_departments'],
         'description': '房产管理部 - 房产运营核心'
     },
     'Sales Department': {
-        'modules': ['property_info', 'customer_management', 'customer_tracking', 'owner_info'],
+        'modules': ['property_info', 'customer_tracking', 'owner_info'],
         'description': '销售部 - 客户关系管理'
     },
     'Accounting Department': {
@@ -31,23 +31,23 @@ DEPARTMENT_PERMISSIONS = {
     },
     # 添加中文部门名称支持
     '管理员': {
-        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
+        'modules': ['property_info', 'customer_tracking', 'maintenance_records', 
                    'financial_records', 'financial_records_view', 'owner_info', 
                    'user_management', 'employee_departments', 'system_settings'],
         'description': '系统管理员 - 拥有全部权限'
     },
     '房产管理': {
-        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
+        'modules': ['property_info', 'customer_tracking', 'maintenance_records', 
                    'financial_records_view', 'employee_departments'],
         'description': '房产管理部 - 房产运营核心'
     },
     '房产管理部': {
-        'modules': ['property_info', 'customer_management', 'customer_tracking', 'maintenance_records', 
+        'modules': ['property_info', 'customer_tracking', 'maintenance_records', 
                    'financial_records_view', 'owner_info', 'employee_departments'],
         'description': '房产管理部 - 房产运营核心'
     },
     '销售部': {
-        'modules': ['property_info', 'customer_management', 'customer_tracking', 'owner_info'],
+        'modules': ['property_info', 'customer_tracking', 'owner_info'],
         'description': '销售部 - 客户关系管理'
     },
     '会计': {
@@ -64,12 +64,7 @@ MODULE_DESCRIPTIONS = {
         'icon': '🏠',
         'color': 'success'
     },
-    'customer_management': {
-        'name': '客户建档管理',
-        'description': '客户信息、租户管理、客户关系维护',
-        'icon': '👥',
-        'color': 'primary'
-    },
+
     'customer_tracking': {
         'name': '客户追踪管理',
         'description': '客户跟踪、进度管理、沟通记录',
@@ -262,7 +257,7 @@ def generate_department_dashboard_data():
 
 MODULE_ROUTES = {
     'property_info': '/properties',
-    'customer_management': '/customers',
+
     'customer_tracking': '/customer_tracking',
     'maintenance_records': '/maintenance_orders',
 
