@@ -75,5 +75,344 @@
     {% else %}
     <p>暂无关联业主</p>
     {% endif %}
+
+    <!-- 附加信息模块 -->
+    <h3 style="margin-top: 20px;">附加信息</h3>
+    <div class="action-bar" style="margin-bottom: 15px;">
+        <button class="btn btn-primary" onclick="showAddInfoModal()">
+            ➕ 添加信息
+        </button>
+    </div>
+
+    {% if additional_info %}
+    <div class="additional-info-container">
+        {% for info in additional_info %}
+        <div class="info-card" data-info-id="{{ info.id }}">
+            <div class="info-header">
+                <h4>{{ info.title }}</h4>
+                <div class="info-meta">
+                    <span class="info-type-badge info-type-{{ info.info_type }}">
+                        {% if info.info_type == 'general' %}一般信息
+                        {% elif info.info_type == 'maintenance' %}维护记录
+                        {% elif info.info_type == 'rules' %}规则说明
+                        {% elif info.info_type == 'amenities' %}设施说明
+                        {% else %}其他
+                        {% endif %}
+                    </span>
+                    <span class="priority-badge">优先级: {{ info.priority }}</span>
+                    <span class="created-by">创建者: {{ info.created_by_name or '未知' }}</span>
+                    <span class="created-at">{{ info.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                <div class="info-actions">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editInfo({{ info.id }}, '{{ info.title }}', '{{ info.content }}', '{{ info.info_type }}', {{ info.priority }})">
+                        ✏️ 编辑
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteInfo({{ info.id }}, '{{ info.title }}')">
+                        🗑️ 删除
+                    </button>
+                </div>
+            </div>
+            <div class="info-content">
+                {{ info.content|nl2br }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>暂无附加信息</p>
+    {% endif %}
 </div>
+
+<!-- 添加信息模态框 -->
+<div id="addInfoModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4>添加附加信息</h4>
+            <span class="close" onclick="closeAddInfoModal()">&times;</span>
+        </div>
+        <form action="{{ url_for('add_property_additional_info', property_id=property.id) }}" method="POST">
+            <div class="form-group">
+                <label for="title">标题 *</label>
+                <input type="text" id="title" name="title" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="content">内容 *</label>
+                <textarea id="content" name="content" required class="form-control" rows="6" placeholder="请输入附加信息内容..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="info_type">信息类型</label>
+                    <select id="info_type" name="info_type" class="form-control">
+                        <option value="general">一般信息</option>
+                        <option value="maintenance">维护记录</option>
+                        <option value="rules">规则说明</option>
+                        <option value="amenities">设施说明</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="priority">优先级</label>
+                    <input type="number" id="priority" name="priority" value="0" min="0" max="100" class="form-control">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeAddInfoModal()">取消</button>
+                <button type="submit" class="btn btn-primary">添加</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 编辑信息模态框 -->
+<div id="editInfoModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4>编辑附加信息</h4>
+            <span class="close" onclick="closeEditInfoModal()">&times;</span>
+        </div>
+        <form id="editInfoForm" method="POST">
+            <div class="form-group">
+                <label for="edit_title">标题 *</label>
+                <input type="text" id="edit_title" name="title" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="edit_content">内容 *</label>
+                <textarea id="edit_content" name="content" required class="form-control" rows="6"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit_info_type">信息类型</label>
+                    <select id="edit_info_type" name="info_type" class="form-control">
+                        <option value="general">一般信息</option>
+                        <option value="maintenance">维护记录</option>
+                        <option value="rules">规则说明</option>
+                        <option value="amenities">设施说明</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit_priority">优先级</label>
+                    <input type="number" id="edit_priority" name="priority" min="0" max="100" class="form-control">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEditInfoModal()">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// 显示添加信息模态框
+function showAddInfoModal() {
+    document.getElementById('addInfoModal').style.display = 'block';
+}
+
+// 关闭添加信息模态框
+function closeAddInfoModal() {
+    document.getElementById('addInfoModal').style.display = 'none';
+    document.getElementById('title').value = '';
+    document.getElementById('content').value = '';
+    document.getElementById('info_type').value = 'general';
+    document.getElementById('priority').value = '0';
+}
+
+// 编辑信息
+function editInfo(infoId, title, content, infoType, priority) {
+    document.getElementById('edit_title').value = title;
+    document.getElementById('edit_content').value = content;
+    document.getElementById('edit_info_type').value = infoType;
+    document.getElementById('edit_priority').value = priority;
+    
+    // 设置表单提交地址
+    document.getElementById('editInfoForm').action = '{{ url_for("edit_property_additional_info", property_id=property.id, info_id=0) }}'.replace('/0', '/' + infoId);
+    
+    document.getElementById('editInfoModal').style.display = 'block';
+}
+
+// 关闭编辑信息模态框
+function closeEditInfoModal() {
+    document.getElementById('editInfoModal').style.display = 'none';
+}
+
+// 删除信息
+function deleteInfo(infoId, title) {
+    if (confirm(`确定要删除"${title}"吗？`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("delete_property_additional_info", property_id=property.id, info_id=0) }}'.replace('/0', '/' + infoId);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// 点击模态框外部关闭
+window.onclick = function(event) {
+    const addModal = document.getElementById('addInfoModal');
+    const editModal = document.getElementById('editInfoModal');
+    if (event.target === addModal) {
+        closeAddInfoModal();
+    }
+    if (event.target === editModal) {
+        closeEditInfoModal();
+    }
+}
+</script>
+
+<style>
+.additional-info-container {
+    margin-top: 15px;
+}
+
+.info-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.info-header h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    flex: 1;
+}
+
+.info-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.info-type-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.info-type-general { background: #e3f2fd; color: #1976d2; }
+.info-type-maintenance { background: #fff3e0; color: #f57c00; }
+.info-type-rules { background: #f3e5f5; color: #7b1fa2; }
+.info-type-amenities { background: #e8f5e8; color: #388e3c; }
+.info-type-other { background: #f5f5f5; color: #616161; }
+
+.priority-badge {
+    background: #ffebee;
+    color: #c62828;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.created-by, .created-at {
+    color: #666;
+    font-size: 12px;
+}
+
+.info-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.info-content {
+    color: #333;
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 8px;
+}
+
+.modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h4 {
+    margin: 0;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.form-actions {
+    padding: 15px 20px;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .info-header {
+        flex-direction: column;
+    }
+    
+    .info-meta {
+        order: 2;
+    }
+    
+    .info-actions {
+        order: 3;
+        margin-top: 10px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+}
+</style>
 {% endblock %} 

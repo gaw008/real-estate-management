@@ -2055,7 +2055,20 @@ def property_detail_fixed(property_id):
         """, (property_id,))
         owners = cursor.fetchall()
 
-        return render_template('new_ui/property_detail.html', property=property_data, owners=owners)
+        # 获取房产附加信息
+        cursor.execute("""
+            SELECT pai.*, u.username as created_by_name
+            FROM property_additional_info pai
+            LEFT JOIN users u ON pai.created_by = u.id
+            WHERE pai.property_id = %s AND pai.is_active = TRUE AND pai.deleted_at IS NULL
+            ORDER BY pai.priority DESC, pai.created_at DESC
+        """, (property_id,))
+        additional_info = cursor.fetchall()
+
+        return render_template('new_ui/property_detail.html', 
+                             property=property_data, 
+                             owners=owners, 
+                             additional_info=additional_info)
 
     except Exception as e:
         flash(f'加载房产详情时出错: {e}', 'error')
@@ -6099,6 +6112,122 @@ def permanent_delete_announcement(announcement_id):
         connection.close()
     
     return redirect(url_for('admin_announcements'))
+
+# ==================== 房产附加信息管理路由 ====================
+
+@app.route('/property/<property_id>/additional_info/add', methods=['POST'])
+@module_required('property_info')
+def add_property_additional_info(property_id):
+    """添加房产附加信息"""
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('property_detail_fixed', property_id=property_id))
+    
+    try:
+        title = request.form.get('title')
+        content = request.form.get('content')
+        info_type = request.form.get('info_type', 'general')
+        priority = request.form.get('priority', 0, type=int)
+        
+        if not title or not content:
+            flash('标题和内容不能为空', 'error')
+            return redirect(url_for('property_detail_fixed', property_id=property_id))
+        
+        cursor = connection.cursor()
+        
+        # 插入附加信息
+        cursor.execute("""
+            INSERT INTO property_additional_info 
+            (property_id, title, content, info_type, priority, created_by) 
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (property_id, title, content, info_type, priority, session.get('user_id')))
+        
+        connection.commit()
+        flash('附加信息添加成功', 'success')
+        
+    except Exception as e:
+        flash(f'添加失败: {e}', 'error')
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return redirect(url_for('property_detail_fixed', property_id=property_id))
+
+@app.route('/property/<property_id>/additional_info/edit/<int:info_id>', methods=['POST'])
+@module_required('property_info')
+def edit_property_additional_info(property_id, info_id):
+    """编辑房产附加信息"""
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('property_detail_fixed', property_id=property_id))
+    
+    try:
+        title = request.form.get('title')
+        content = request.form.get('content')
+        info_type = request.form.get('info_type', 'general')
+        priority = request.form.get('priority', 0, type=int)
+        
+        if not title or not content:
+            flash('标题和内容不能为空', 'error')
+            return redirect(url_for('property_detail_fixed', property_id=property_id))
+        
+        cursor = connection.cursor()
+        
+        # 更新附加信息
+        cursor.execute("""
+            UPDATE property_additional_info 
+            SET title = %s, content = %s, info_type = %s, priority = %s, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s AND property_id = %s
+        """, (title, content, info_type, priority, info_id, property_id))
+        
+        if cursor.rowcount == 0:
+            flash('附加信息不存在或无权编辑', 'error')
+        else:
+            connection.commit()
+            flash('附加信息更新成功', 'success')
+        
+    except Exception as e:
+        flash(f'更新失败: {e}', 'error')
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return redirect(url_for('property_detail_fixed', property_id=property_id))
+
+@app.route('/property/<property_id>/additional_info/delete/<int:info_id>', methods=['POST'])
+@module_required('property_info')
+def delete_property_additional_info(property_id, info_id):
+    """删除房产附加信息（软删除）"""
+    connection = get_db_connection()
+    if not connection:
+        flash('数据库连接失败', 'error')
+        return redirect(url_for('property_detail_fixed', property_id=property_id))
+    
+    try:
+        cursor = connection.cursor()
+        
+        # 软删除附加信息
+        cursor.execute("""
+            UPDATE property_additional_info 
+            SET deleted_at = CURRENT_TIMESTAMP, is_active = FALSE
+            WHERE id = %s AND property_id = %s
+        """, (info_id, property_id))
+        
+        if cursor.rowcount == 0:
+            flash('附加信息不存在或无权删除', 'error')
+        else:
+            connection.commit()
+            flash('附加信息删除成功', 'success')
+        
+    except Exception as e:
+        flash(f'删除失败: {e}', 'error')
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return redirect(url_for('property_detail_fixed', property_id=property_id))
 
 if __name__ == '__main__':
     import os
