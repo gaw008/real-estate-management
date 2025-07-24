@@ -1,8 +1,8 @@
 {% extends "new_ui/base.html" %}
 
-{% block title %}业主详情: {{ owner.name }}{% endblock %}
+{% block title %}业主详情: {{ owner.full_name }}{% endblock %}
 
-{% block page_title %}业主详情: {{ owner.name }}{% endblock %}
+{% block page_title %}业主详情: {{ owner.full_name }}{% endblock %}
 
 {% block content %}
 <div class="table-container">
@@ -38,8 +38,8 @@
         <tbody>
             {% for property in properties %}
             <tr>
-                <td>{{ property.name or '未命名' }}</td>
-                <td>{{ property.street_address or 'N/A' }}, {{ property.city }}</td>
+                            <td>{{ property.property_name or '未命名' }}</td>
+            <td>{{ property.address or 'N/A' }}, {{ property.city }}</td>
                 <td>{{ property.beds or 'N/A' }}</td>
                 <td><a href="{{ url_for('property_detail_fixed', property_id=property.id) }}" class="btn btn-sm btn-secondary">查看</a></td>
             </tr>

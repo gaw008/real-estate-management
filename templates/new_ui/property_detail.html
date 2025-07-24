@@ -1,8 +1,8 @@
 {% extends "new_ui/base.html" %}
 
-{% block title %}房产详情: {{ property.name }}{% endblock %}
+{% block title %}房产详情: {{ property.property_name }}{% endblock %}
 
-{% block page_title %}房产详情: {{ property.name }}{% endblock %}
+{% block page_title %}房产详情: {{ property.property_name }}{% endblock %}
 
 {% block content %}
 <div class="action-bar" style="margin-bottom: 20px;">
@@ -18,7 +18,7 @@
             <td><strong>房产ID</strong></td>
             <td>{{ property.id }}</td>
             <td><strong>地址</strong></td>
-            <td>{{ property.street_address or 'N/A' }}, {{ property.city }}, {{ property.state }}</td>
+            <td>{{ property.address or 'N/A' }}, {{ property.city }}, {{ property.state }}</td>
         </tr>
         <tr>
             <td><strong>房型布局</strong></td>

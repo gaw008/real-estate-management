@@ -49,18 +49,18 @@
                     <th>地址</th>
                     <th>城市</th>
                     <th>州</th>
-                    <th>房型布局</th>
+                    <th>卧室/浴室</th>
                     <th>操作</th>
                 </tr>
             </thead>
             <tbody>
                 {% for property in properties %}
                 <tr>
-                    <td>{{ property.name or '未命名' }}</td>
-                    <td>{{ property.street_address or 'N/A' }}</td>
+                    <td>{{ property.property_name or '未命名' }}</td>
+                    <td>{{ property.address or 'N/A' }}</td>
                     <td>{{ property.city or 'N/A' }}</td>
                     <td>{{ property.state or 'N/A' }}</td>
-                    <td>{{ property.layout or 'N/A' }}</td>
+                    <td>{{ (property.bedrooms or 'N/A') ~ '/' ~ (property.bathrooms or 'N/A') }}</td>
                     <td class="action-buttons">
                         <a href="{{ url_for('property_detail_fixed', property_id=property.id) }}" 
                            class="btn btn-sm btn-secondary">查看</a>
@@ -68,7 +68,7 @@
                         <a href="{{ url_for('edit_property', property_id=property.id) }}" 
                            class="btn btn-sm btn-primary">编辑</a>
                         <button class="btn btn-sm btn-danger" 
-                                onclick="deleteProperty('{{ property.id }}', '{{ property.name|replace("'", "\\'")|replace('"', '\\"') }}')">
+                                onclick="deleteProperty('{{ property.id }}', '{{ property.property_name|replace("'", "\\'")|replace('"', '\\"') }}')">
                             删除
                         </button>
                         {% endif %}

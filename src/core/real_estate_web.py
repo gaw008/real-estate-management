@@ -1174,7 +1174,7 @@ def admin_user_details(user_id):
     try:
         cursor.execute("""
             SELECT id, username, email, user_type, department, full_name, 
-                   is_active, created_at, updated_at
+                   is_active, created_at
             FROM users 
             WHERE id = %s
         """, (user_id,))
@@ -2050,7 +2050,7 @@ def property_detail_fixed(property_id):
         # 获取关联的业主信息
         cursor.execute("""
             SELECT o.* FROM owners o
-            JOIN property_owners po ON o.owner_id = po.owner_id
+            JOIN property_owners po ON o.id = po.owner_id
             WHERE po.property_id = %s
         """, (property_id,))
         owners = cursor.fetchall()
@@ -2268,7 +2268,7 @@ def deleted_owners():
                 SELECT po.owner_id, COUNT(*) as property_count 
                 FROM property_owners po 
                 GROUP BY po.owner_id
-            ) p ON o.owner_id = p.owner_id
+            ) p ON o.id = p.owner_id
             WHERE o.deleted_at IS NOT NULL
             ORDER BY o.deleted_at DESC
             LIMIT %s OFFSET %s
@@ -2327,10 +2327,9 @@ def add_owner():
             
             # 插入业主信息
             cursor.execute("""
-                INSERT INTO owners (owner_id, name, email, phone, preferences_strategy)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO owners (full_name, email, phone, preferences_strategy)
+                VALUES (%s, %s, %s, %s)
             """, (
-                owner_id,
                 owner_data['name'],
                 owner_data['email'],
                 owner_data['phone'],
@@ -2363,7 +2362,7 @@ def owner_detail_fixed(owner_id):
         cursor = connection.cursor(dictionary=True)
         
         # 获取业主信息
-        cursor.execute("SELECT * FROM owners WHERE owner_id = %s", (owner_id,))
+        cursor.execute("SELECT * FROM owners WHERE id = %s", (owner_id,))
         owner_data = cursor.fetchone()
 
         if not owner_data:
