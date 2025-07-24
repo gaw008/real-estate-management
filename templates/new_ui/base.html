@@ -51,7 +51,7 @@
       <h1>{% block page_title %}{% endblock %}</h1>
       <div>
         {% if 'user_id' in session %}
-          欢迎, {{ session['user_id'] }}
+          欢迎, {{ session['username'] }}
         {% else %}
           📅 {{ "2025-07-17" }}
         {% endif %}
