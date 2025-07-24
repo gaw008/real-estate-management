@@ -136,27 +136,25 @@ def get_user_accessible_modules():
 
 def has_module_access(module_name):
     """检查用户是否有访问指定模块的权限"""
-    # 使用新的用户模块权限系统
+    # 优先使用新的用户模块权限系统
     try:
         from src.modules.user_module_permissions import get_user_module_permissions
         
         user_module_permissions = get_user_module_permissions()
-        if not user_module_permissions:
-            # 如果新系统未初始化，回退到旧系统
-            accessible_modules = get_user_accessible_modules()
-            return module_name in accessible_modules
+        if user_module_permissions:
+            # 获取当前用户ID
+            user_id = session.get('user_id')
+            if user_id:
+                # 使用新系统检查权限
+                return user_module_permissions.has_module_access(user_id, module_name)
         
-        # 获取当前用户ID
-        user_id = session.get('user_id')
-        if not user_id:
-            return False
-        
-        # 使用新系统检查权限
-        return user_module_permissions.has_module_access(user_id, module_name)
+        # 如果新系统不可用，才回退到旧系统
+        accessible_modules = get_user_accessible_modules()
+        return module_name in accessible_modules
         
     except Exception as e:
         print(f"⚠️ 模块权限检查失败: {e}")
-        # 回退到旧系统
+        # 异常情况下回退到旧系统
         accessible_modules = get_user_accessible_modules()
         return module_name in accessible_modules
 
