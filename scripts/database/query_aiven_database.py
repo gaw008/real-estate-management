@@ -46,7 +46,7 @@ class AivenMySQLQuery:
             
             # 1. 数据统计总览
             print("\n📊 数据统计总览:")
-            tables = ['properties', 'owners_master', 'property_owners', 'finance']
+            tables = ['properties', 'owners', 'property_owners', 'finance']
             for table in tables:
                 cursor.execute(f"SELECT COUNT(*) FROM {table}")
                 count = cursor.fetchone()[0]
@@ -119,7 +119,7 @@ class AivenMySQLQuery:
                         ELSE '6套以上房产'
                     END as property_range,
                     COUNT(*) as owner_count
-                FROM owners_master
+                FROM owners
                 WHERE total_properties > 0
                 GROUP BY property_range
                 ORDER BY owner_count DESC
@@ -141,7 +141,7 @@ class AivenMySQLQuery:
                     f.management_fee_rate
                 FROM properties p
                 LEFT JOIN property_owners po ON p.id = po.property_id
-                LEFT JOIN owners_master om ON po.owner_id = om.owner_id
+                LEFT JOIN owners om ON po.owner_id = om.owner_id
                 LEFT JOIN finance f ON p.id = f.property_id
                 ORDER BY p.id
                 LIMIT 3
@@ -171,7 +171,7 @@ class AivenMySQLQuery:
             start_time = time.time()
             cursor.execute("""
                 SELECT om.name, COUNT(po.property_id) as property_count
-                FROM owners_master om
+                FROM owners om
                 LEFT JOIN property_owners po ON om.owner_id = po.owner_id
                 GROUP BY om.owner_id, om.name
                 HAVING property_count > 0

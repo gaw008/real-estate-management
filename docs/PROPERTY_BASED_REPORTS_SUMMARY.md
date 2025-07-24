@@ -67,7 +67,7 @@ CREATE TABLE property_assignments (
     
     UNIQUE KEY unique_property_owner (property_id, owner_id),
     FOREIGN KEY (property_id) REFERENCES properties(id),
-    FOREIGN KEY (owner_id) REFERENCES owners_master(owner_id),
+    FOREIGN KEY (owner_id) REFERENCES owners(owner_id),
     FOREIGN KEY (assigned_by) REFERENCES users(id)
 );
 ```

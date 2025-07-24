@@ -95,7 +95,7 @@ class FinancialReportsManager:
                 INDEX idx_owner_id (owner_id),
                 INDEX idx_assigned_date (assigned_date),
                 FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
-                FOREIGN KEY (owner_id) REFERENCES owners_master(owner_id) ON DELETE CASCADE,
+                FOREIGN KEY (owner_id) REFERENCES owners(owner_id) ON DELETE CASCADE,
                 FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE RESTRICT
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """
@@ -353,7 +353,7 @@ class FinancialReportsManager:
                 LEFT JOIN users u ON fr.uploaded_by = u.id
                 LEFT JOIN properties p ON fr.property_id = p.id
                 LEFT JOIN property_assignments pa ON fr.property_id = pa.property_id AND pa.is_active = TRUE
-                LEFT JOIN owners_master om ON pa.owner_id = om.owner_id
+                LEFT JOIN owners om ON pa.owner_id = om.owner_id
                 WHERE {where_clause}
                 GROUP BY fr.id
                 ORDER BY fr.report_year DESC, fr.report_month DESC, fr.upload_date DESC
@@ -460,7 +460,7 @@ class FinancialReportsManager:
             conn.close()
     
     def get_owners_list(self):
-        """获取业主列表（从owners_master表）"""
+        """获取业主列表（从owners表）"""
         conn = self.get_db_connection()
         if not conn:
             return []
@@ -471,7 +471,7 @@ class FinancialReportsManager:
             query_sql = """
                 SELECT om.owner_id, om.name, om.phone, om.email,
                        COUNT(pa.id) as assigned_properties_count
-                FROM owners_master om
+                FROM owners om
                 LEFT JOIN property_assignments pa ON om.owner_id = pa.owner_id AND pa.is_active = TRUE
                 GROUP BY om.owner_id
                 ORDER BY om.name
@@ -544,7 +544,7 @@ class FinancialReportsManager:
                        u.full_name as assigned_by_name
                 FROM property_assignments pa
                 JOIN properties p ON pa.property_id = p.id
-                JOIN owners_master om ON pa.owner_id = om.owner_id
+                JOIN owners om ON pa.owner_id = om.owner_id
                 LEFT JOIN users u ON pa.assigned_by = u.id
                 WHERE {where_clause}
                 ORDER BY pa.assigned_date DESC

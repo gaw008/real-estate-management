@@ -47,7 +47,7 @@ class NaturalLanguageQuery:
                     'is_active': '是否活跃'
                 }
             },
-            'owners_master': {
+            'owners': {
                 'description': '业主信息表',
                 'columns': {
                     'owner_id': '业主ID',
@@ -93,7 +93,7 @@ class NaturalLanguageQuery:
             },
             {
                 'pattern': r'(有多少|多少个|总共|数量).*(业主|房东)',
-                'sql': 'SELECT COUNT(*) as total_owners FROM owners_master',
+                'sql': 'SELECT COUNT(*) as total_owners FROM owners',
                 'description': '查询业主总数'
             },
             {
@@ -193,7 +193,7 @@ class NaturalLanguageQuery:
         if any(word in question for word in ['业主', '房东', 'owner']):
             if any(word in question for word in ['列表', '显示', '查看', 'show', 'list']):
                 return {
-                    'sql': 'SELECT owner_id, name, total_properties FROM owners_master LIMIT 10',
+                    'sql': 'SELECT owner_id, name, total_properties FROM owners LIMIT 10',
                     'description': '显示业主列表',
                     'confidence': 0.7
                 }

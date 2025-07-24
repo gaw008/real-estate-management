@@ -195,7 +195,7 @@ class AuthSystem:
             # 获取所有业主信息
             cursor.execute("""
                 SELECT owner_id, name, email, phone 
-                FROM owners_master 
+                FROM owners 
                 WHERE email IS NOT NULL AND email != ''
             """)
             owners = cursor.fetchall()
@@ -313,7 +313,7 @@ class AuthSystem:
             # 获取仪表盘统计数据
             cursor.execute("SELECT COUNT(*) FROM properties")
             stats['total_properties'] = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM owners_master")
+            cursor.execute("SELECT COUNT(*) FROM owners")
             stats['total_owners'] = cursor.fetchone()[0]
             cursor.execute("SELECT COUNT(DISTINCT city) FROM properties")
             stats['total_cities'] = cursor.fetchone()[0]

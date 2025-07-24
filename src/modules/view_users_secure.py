@@ -126,7 +126,7 @@ def view_all_users():
                    u.full_name, u.is_active, u.last_login, u.created_at,
                    om.name as owner_master_name, om.phone as owner_phone
             FROM users u
-            LEFT JOIN owners_master om ON u.owner_id = om.owner_id
+            LEFT JOIN owners om ON u.owner_id = om.owner_id
             ORDER BY u.user_type, u.username
         """
         
@@ -256,7 +256,7 @@ def search_user(search_term):
         query_sql = """
             SELECT u.*, om.name as owner_master_name, om.phone as owner_phone
             FROM users u
-            LEFT JOIN owners_master om ON u.owner_id = om.owner_id
+            LEFT JOIN owners om ON u.owner_id = om.owner_id
             WHERE u.username LIKE %s OR u.email LIKE %s OR u.full_name LIKE %s
             ORDER BY u.username
         """

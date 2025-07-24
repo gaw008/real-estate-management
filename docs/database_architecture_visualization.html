@@ -647,7 +647,7 @@ FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE;
 
 ALTER TABLE property_owners 
 ADD CONSTRAINT fk_property_owners_owner 
-FOREIGN KEY (owner_id) REFERENCES owners_master(owner_id) ON DELETE CASCADE;
+FOREIGN KEY (owner_id) REFERENCES owners(owner_id) ON DELETE CASCADE;
 
 ALTER TABLE finance 
 ADD CONSTRAINT fk_finance_property 

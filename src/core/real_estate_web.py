@@ -405,7 +405,7 @@ def dashboard():
             stats['properties_count'] = result['count'] if result else 0
             print(f"✅ 房产总数: {stats['properties_count']}")
             
-            cursor.execute("SELECT COUNT(*) as count FROM owners_master")
+            cursor.execute("SELECT COUNT(*) as count FROM owners")
             result = cursor.fetchone()
             stats['owners_count'] = result['count'] if result else 0
             print(f"✅ 业主总数: {stats['owners_count']}")
@@ -430,7 +430,7 @@ def dashboard():
                 print(f"👤 获取业主统计数据，业主ID: {owner_id}")
                 
                 # 获取业主信息
-                cursor.execute("SELECT * FROM owners_master WHERE owner_id = %s", (owner_id,))
+                cursor.execute("SELECT * FROM owners WHERE owner_id = %s", (owner_id,))
                 owner_info = cursor.fetchone()
                 
                 # 获取业主统计数据
@@ -450,7 +450,7 @@ def dashboard():
             result = cursor.fetchone()
             stats['properties_count'] = result['count'] if result else 0
             
-            cursor.execute("SELECT COUNT(*) as count FROM owners_master")
+            cursor.execute("SELECT COUNT(*) as count FROM owners")
             result = cursor.fetchone()
             stats['owners_count'] = result['count'] if result else 0
             
@@ -515,7 +515,7 @@ def department_dashboard():
             stats['properties_count'] = cursor.fetchone()['count']
             
             # 业主总数
-            cursor.execute("SELECT COUNT(*) as count FROM owners_master")
+            cursor.execute("SELECT COUNT(*) as count FROM owners")
             stats['owners_count'] = cursor.fetchone()['count']
             
             # 用户总数
@@ -675,7 +675,7 @@ def admin_index():
     stats['properties_count'] = cursor.fetchone()['count']
     
     # 业主总数
-    cursor.execute("SELECT COUNT(*) as count FROM owners_master")
+    cursor.execute("SELECT COUNT(*) as count FROM owners")
     stats['owners_count'] = cursor.fetchone()['count']
     
     # 城市数量
@@ -2049,7 +2049,7 @@ def property_detail_fixed(property_id):
             
         # 获取关联的业主信息
         cursor.execute("""
-            SELECT o.* FROM owners_master o
+            SELECT o.* FROM owners o
             JOIN property_owners po ON o.owner_id = po.owner_id
             WHERE po.property_id = %s
         """, (property_id,))
@@ -2094,7 +2094,7 @@ def owners_fixed():
             'strategy': request.args.get('strategy', '')
         }
 
-        base_query = "FROM owners_master o LEFT JOIN (SELECT po.owner_id, COUNT(*) as property_count FROM property_owners po GROUP BY po.owner_id) p ON o.owner_id = p.owner_id WHERE o.deleted_at IS NULL"
+        base_query = "FROM owners o LEFT JOIN (SELECT po.owner_id, COUNT(*) as property_count FROM property_owners po GROUP BY po.owner_id) p ON o.owner_id = p.owner_id WHERE o.deleted_at IS NULL"
         params = []
         
         if filters['search']:
@@ -2115,7 +2115,7 @@ def owners_fixed():
         cursor.execute(query, tuple(params + [per_page, offset]))
         owners = cursor.fetchall()
 
-        cursor.execute("SELECT DISTINCT preferences_strategy FROM owners_master WHERE preferences_strategy IS NOT NULL ORDER BY preferences_strategy")
+        cursor.execute("SELECT DISTINCT preferences_strategy FROM owners WHERE preferences_strategy IS NOT NULL ORDER BY preferences_strategy")
         strategies = [row['preferences_strategy'] for row in cursor.fetchall()]
 
     except Exception as e:
@@ -2156,19 +2156,19 @@ def delete_owner():
     
     try:
         # 检查业主是否存在且未被删除
-        cursor.execute("SELECT name FROM owners_master WHERE owner_id = %s AND deleted_at IS NULL", (owner_id,))
+        cursor.execute("SELECT name FROM owners WHERE owner_id = %s AND deleted_at IS NULL", (owner_id,))
         owner_info = cursor.fetchone()
         
         if not owner_info:
             return jsonify({'success': False, 'message': '业主不存在或已被删除'})
         
         # 软删除业主 - 使用数据库的NOW()函数确保时间一致性
-        cursor.execute("UPDATE owners_master SET deleted_at = NOW() WHERE owner_id = %s", (owner_id,))
+        cursor.execute("UPDATE owners SET deleted_at = NOW() WHERE owner_id = %s", (owner_id,))
         
         conn.commit()
         
         # 获取删除时间用于日志
-        cursor.execute("SELECT deleted_at FROM owners_master WHERE owner_id = %s", (owner_id,))
+        cursor.execute("SELECT deleted_at FROM owners WHERE owner_id = %s", (owner_id,))
         deleted_time = cursor.fetchone()[0]
         print(f"✅ 业主 '{owner_info[0]}' 软删除成功，删除时间: {deleted_time}")
         return jsonify({
@@ -2201,7 +2201,7 @@ def undo_delete_owner():
     
     try:
         # 检查业主是否存在且已被删除
-        cursor.execute("SELECT name, deleted_at FROM owners_master WHERE owner_id = %s AND deleted_at IS NOT NULL", (owner_id,))
+        cursor.execute("SELECT name, deleted_at FROM owners WHERE owner_id = %s AND deleted_at IS NOT NULL", (owner_id,))
         owner_info = cursor.fetchone()
         
         if not owner_info:
@@ -2220,7 +2220,7 @@ def undo_delete_owner():
                 return jsonify({'success': False, 'message': f'删除时间超过30分钟，无法撤销。删除时间：{deleted_time}，相差：{minutes_diff}分钟'})
         
         # 撤销删除
-        cursor.execute("UPDATE owners_master SET deleted_at = NULL WHERE owner_id = %s", (owner_id,))
+        cursor.execute("UPDATE owners SET deleted_at = NULL WHERE owner_id = %s", (owner_id,))
         conn.commit()
         
         print(f"✅ 业主 '{owner_info[0]}' 撤销删除成功")
@@ -2253,7 +2253,7 @@ def deleted_owners():
         cursor = connection.cursor(dictionary=True)
         
         # 获取已删除的业主总数
-        cursor.execute("SELECT COUNT(*) as count FROM owners_master WHERE deleted_at IS NOT NULL")
+        cursor.execute("SELECT COUNT(*) as count FROM owners WHERE deleted_at IS NOT NULL")
         total_count = cursor.fetchone()['count']
         total_pages = (total_count + per_page - 1) // per_page
 
@@ -2263,7 +2263,7 @@ def deleted_owners():
         cursor.execute("""
             SELECT o.*, COALESCE(p.property_count, 0) as property_count,
                    TIMESTAMPDIFF(MINUTE, o.deleted_at, NOW()) as minutes_ago
-            FROM owners_master o 
+            FROM owners o 
             LEFT JOIN (
                 SELECT po.owner_id, COUNT(*) as property_count 
                 FROM property_owners po 
@@ -2327,7 +2327,7 @@ def add_owner():
             
             # 插入业主信息
             cursor.execute("""
-                INSERT INTO owners_master (owner_id, name, email, phone, preferences_strategy)
+                INSERT INTO owners (owner_id, name, email, phone, preferences_strategy)
                 VALUES (%s, %s, %s, %s, %s)
             """, (
                 owner_id,
@@ -2363,7 +2363,7 @@ def owner_detail_fixed(owner_id):
         cursor = connection.cursor(dictionary=True)
         
         # 获取业主信息
-        cursor.execute("SELECT * FROM owners_master WHERE owner_id = %s", (owner_id,))
+        cursor.execute("SELECT * FROM owners WHERE owner_id = %s", (owner_id,))
         owner_data = cursor.fetchone()
 
         if not owner_data:
@@ -4876,7 +4876,7 @@ def edit_owner(owner_id):
             cursor = connection.cursor()
             
             # 检查业主是否存在
-            cursor.execute("SELECT name FROM owners_master WHERE owner_id = %s", (owner_id,))
+            cursor.execute("SELECT name FROM owners WHERE owner_id = %s", (owner_id,))
             existing_owner = cursor.fetchone()
             
             if not existing_owner:
@@ -4885,7 +4885,7 @@ def edit_owner(owner_id):
             
             # 更新业主信息
             cursor.execute("""
-                UPDATE owners_master 
+                UPDATE owners 
                 SET name = %s, email = %s, phone = %s, preferences_strategy = %s
                 WHERE owner_id = %s
             """, (
@@ -4916,7 +4916,7 @@ def edit_owner(owner_id):
 
     try:
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM owners_master WHERE owner_id = %s", (owner_id,))
+        cursor.execute("SELECT * FROM owners WHERE owner_id = %s", (owner_id,))
         owner_data = cursor.fetchone()
         
         if not owner_data:

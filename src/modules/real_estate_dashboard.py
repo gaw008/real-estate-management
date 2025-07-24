@@ -111,7 +111,7 @@ def get_summary_stats():
     """获取数据概览统计"""
     queries = {
         'properties_count': "SELECT COUNT(*) as count FROM properties",
-        'owners_count': "SELECT COUNT(DISTINCT owner_id) as count FROM owners_master", 
+        'owners_count': "SELECT COUNT(DISTINCT owner_id) as count FROM owners", 
         'finance_count': "SELECT COUNT(*) as count FROM finance",
         'cities_count': "SELECT COUNT(DISTINCT city) as count FROM properties WHERE city IS NOT NULL"
     }
@@ -271,12 +271,12 @@ def show_predefined_queries():
     
     query_options = {
         "所有房产信息": "SELECT * FROM properties LIMIT 100",
-        "所有业主信息": "SELECT * FROM owners_master LIMIT 100", 
+        "所有业主信息": "SELECT * FROM owners LIMIT 100", 
         "所有财务记录": "SELECT * FROM finance LIMIT 100",
         "房产与业主关联": """
             SELECT p.id, p.name, p.city, p.state, p.layout, o.name as owner_name, o.email
             FROM properties p
-            LEFT JOIN owners_master o ON p.id = o.owner_id
+            LEFT JOIN owners o ON p.id = o.owner_id
             LIMIT 50
         """,
         "加州房产统计": """
@@ -676,7 +676,7 @@ def show_owner_analysis():
         COUNT(*) as total_records,
         COUNT(CASE WHEN email IS NOT NULL AND email != 'nan' THEN 1 END) as has_email,
         COUNT(CASE WHEN phone IS NOT NULL AND phone != 'nan' THEN 1 END) as has_phone
-    FROM owners_master
+    FROM owners
     """
     
     stats = load_data(owner_stats_query)

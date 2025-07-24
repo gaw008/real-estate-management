@@ -157,7 +157,7 @@ class EnhancedAIQueryAssistant:
                     r'(?:property\s+id|房产id|房产编号|id|房子|房产).{0,10}["\']?([^"\'?\n]+?)["\']?.{0,20}(?:owner|业主|房东|房主|的业主|的房东)',
                     r'([A-Za-z0-9]+(?:\s+[A-Za-z0-9]+)*).{0,10}(?:的|这个|房子|房产).{0,10}(?:owner|业主|房东|房主|是谁)',
                 ],
-                'template': "SELECT p.name as 房产名称, o.name as 业主姓名, o.phone as 联系电话, o.email as 邮箱地址, p.city as 城市, p.state as 州 FROM properties p LEFT JOIN owners_master o ON p.id = o.owner_id WHERE p.name ILIKE '%{id}%' OR p.id::text = '{id}'",
+                'template': "SELECT p.name as 房产名称, o.name as 业主姓名, o.phone as 联系电话, o.email as 邮箱地址, p.city as 城市, p.state as 州 FROM properties p LEFT JOIN owners o ON p.id = o.owner_id WHERE p.name ILIKE '%{id}%' OR p.id::text = '{id}'",
                 'description': '查询特定房产的业主信息',
                 'extract_id': True
             },
@@ -178,7 +178,7 @@ class EnhancedAIQueryAssistant:
                     r'业主.{0,5}(?:总数|数量|统计)',
                     r'(?:总共|一共).{0,5}(?:业主|房东)'
                 ],
-                'template': 'SELECT COUNT(DISTINCT owner_id) as 业主总数 FROM owners_master',
+                'template': 'SELECT COUNT(DISTINCT owner_id) as 业主总数 FROM owners',
                 'description': '统计业主总数'
             },
             
@@ -369,7 +369,7 @@ class EnhancedAIQueryAssistant:
                 return f"SELECT p.name as 房产名称, f.manegement_fee_pct as 管理费百分比, p.city as 城市, p.state as 州 FROM properties p JOIN finance f ON p.id = f.id WHERE p.name ILIKE '%{property_id}%' OR p.id::text = '{property_id}'", f"高级分析 - 查询房产{property_id}的管理费信息"
             
             elif any(word in question_lower for word in ['owner', 'who', '业主', '房东', '房主', '谁', '是谁']):
-                return f"SELECT p.name as 房产名称, o.name as 业主姓名, o.phone as 联系电话, o.email as 邮箱地址, p.city as 城市, p.state as 州 FROM properties p LEFT JOIN owners_master o ON p.id = o.owner_id WHERE p.name ILIKE '%{property_id}%' OR p.id::text = '{property_id}'", f"高级分析 - 查询房产{property_id}的业主信息"
+                return f"SELECT p.name as 房产名称, o.name as 业主姓名, o.phone as 联系电话, o.email as 邮箱地址, p.city as 城市, p.state as 州 FROM properties p LEFT JOIN owners o ON p.id = o.owner_id WHERE p.name ILIKE '%{property_id}%' OR p.id::text = '{property_id}'", f"高级分析 - 查询房产{property_id}的业主信息"
             
             elif any(word in question_lower for word in ['information', 'info', '信息', '详情', '全部']):
                 return f"SELECT name as 房产名称, street_address as 详细地址, city as 城市, state as 州, layout as 房型, property_size as 面积, occupancy as 入住人数, wifi_name as WiFi名称, trash_day as 垃圾收集日, front_door_code as 前门密码 FROM properties WHERE name ILIKE '%{property_id}%' OR id::text = '{property_id}'", f"高级分析 - 查询房产{property_id}的完整信息"
@@ -397,7 +397,7 @@ class EnhancedAIQueryAssistant:
                     return "SELECT COUNT(*) as 房产总数 FROM properties", "高级分析 - 房产总数统计"
             
             elif any(word in question_lower for word in owner_words):
-                return "SELECT COUNT(DISTINCT owner_id) as 业主总数 FROM owners_master", "高级分析 - 业主总数统计"
+                return "SELECT COUNT(DISTINCT owner_id) as 业主总数 FROM owners", "高级分析 - 业主总数统计"
         
         # 特殊地区查询
         if any(region in question_lower for region in ['加州', 'california', '加利福尼亚', '洛杉矶', 'los angeles']):
@@ -520,7 +520,7 @@ class EnhancedAIQueryAssistant:
             return "SELECT name as 房产名称, city as 城市, state as 州, layout as 房型 FROM properties LIMIT 20", "基础查询 - 房产基本信息"
         
         elif any(word in question.lower() for word in ['业主', '房东']):
-            return "SELECT name as 业主姓名, phone as 电话, email as 邮箱 FROM owners_master LIMIT 20", "基础查询 - 业主基本信息"
+            return "SELECT name as 业主姓名, phone as 电话, email as 邮箱 FROM owners LIMIT 20", "基础查询 - 业主基本信息"
         
         else:
             return "", "❌ 无法理解您的问题。请尝试：\n• 有多少房产？\n• 各个城市房产分布如何？\n• 加州有多少房产？\n• WiFi覆盖情况如何？"

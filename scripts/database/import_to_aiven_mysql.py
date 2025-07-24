@@ -28,7 +28,7 @@ class AivenMySQLImporter:
 
     # 定义表创建的正确顺序
     TABLES_CREATION_ORDER = [
-        'properties', 'owners_master', 'users', 'property_owners', 'property_assignments', 'financial_reports', 'password_change_log', 'password_reset_tokens', 'user_sessions'
+        'properties', 'owners', 'users', 'property_owners', 'property_assignments', 'financial_reports', 'password_change_log', 'password_reset_tokens', 'user_sessions'
     ]
 
     # 定义所有表的SQL创建语句
@@ -52,8 +52,8 @@ class AivenMySQLImporter:
             trash_day VARCHAR(50)
         )
         """,
-        'owners_master': """
-        CREATE TABLE owners_master (
+        'owners': """
+        CREATE TABLE owners (
             owner_id VARCHAR(10) PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             phone VARCHAR(20),
@@ -80,7 +80,7 @@ class AivenMySQLImporter:
             is_primary BOOLEAN,
             PRIMARY KEY (property_id, owner_id),
             FOREIGN KEY (property_id) REFERENCES properties(id),
-            FOREIGN KEY (owner_id) REFERENCES owners_master(owner_id)
+            FOREIGN KEY (owner_id) REFERENCES owners(owner_id)
         )
         """,
         'property_assignments': """
@@ -411,7 +411,7 @@ class AivenMySQLImporter:
             
             # 插入业主数据
             owners_insert_sql = """
-            INSERT INTO owners_master (
+            INSERT INTO owners (
                 owner_id, name, phone, email, preferences_strategy,
                 hobbies, residence, language
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -550,7 +550,7 @@ class AivenMySQLImporter:
         try:
             # 更新业主的房产统计
             update_sql = """
-            UPDATE owners_master om
+            UPDATE owners om
             SET total_properties = (
                 SELECT COUNT(*) FROM property_owners po WHERE po.owner_id = om.owner_id
             )
@@ -574,7 +574,7 @@ class AivenMySQLImporter:
         
         try:
             # 检查各表的记录数
-            tables = ['properties', 'owners_master', 'property_owners', 'financial_reports']
+            tables = ['properties', 'owners', 'property_owners', 'financial_reports']
             
             for table in tables:
                 cursor.execute(f"SELECT COUNT(*) FROM {table}")
@@ -586,7 +586,7 @@ class AivenMySQLImporter:
                 SELECT p.id, p.name, om.name as owner_name, f.management_fee_rate
                 FROM properties p
                 LEFT JOIN property_owners po ON p.id = po.property_id
-                LEFT JOIN owners_master om ON po.owner_id = om.owner_id
+                LEFT JOIN owners om ON po.owner_id = om.owner_id
                 LEFT JOIN financial_reports f ON p.id = f.property_id
                 LIMIT 5
             """)
