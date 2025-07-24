@@ -43,6 +43,8 @@
         <a href="{{ url_for('admin_user_management') }}" class="nav-item {% if 'admin_user_management' in request.endpoint %}active{% endif %}">用户管理</a>
       {% endif %}
       
+      <a href="{{ url_for('announcements') }}" class="nav-item {% if 'announcements' in request.endpoint %}active{% endif %}">公告栏</a>
+      
       <a href="{{ url_for('logout') }}" class="nav-item">登出</a>
     </nav>
   </div>
