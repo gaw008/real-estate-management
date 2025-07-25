@@ -1,0 +1,342 @@
+{% extends "new_ui/base.html" %}
+
+{% block title %}CRM销售仪表板{% endblock %}
+
+{% block page_title %}CRM销售仪表板{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-chart-line mr-2 text-primary"></i>CRM销售仪表板
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">首页</a></li>
+                    <li class="breadcrumb-item active">CRM仪表板</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt mr-1"></i>刷新数据
+            </button>
+        </div>
+    </div>
+
+    <!-- 快速统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                总客户数
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_customers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                今日任务
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.today_tasks }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                本月活动
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.month_activities }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                转化率
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.conversion_rate }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 销售漏斗 -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">销售漏斗</h6>
+                </div>
+                <div class="card-body">
+                    <div class="sales-funnel">
+                        {% for stage in funnel.stages %}
+                        <div class="funnel-stage">
+                            <div class="stage-header">
+                                <span class="stage-name">{{ stage }}</span>
+                                <span class="stage-count">{{ funnel.funnel_data[stage].count }}</span>
+                            </div>
+                            <div class="funnel-bar">
+                                <div class="funnel-fill" style="width: {{ funnel.funnel_data[stage].percentage }}%"></div>
+                            </div>
+                            <div class="stage-percentage">{{ funnel.funnel_data[stage].percentage }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">今日任务</h6>
+                </div>
+                <div class="card-body">
+                    {% if today_tasks %}
+                    <div class="task-list">
+                        {% for task in today_tasks %}
+                        <div class="task-item">
+                            <div class="task-header">
+                                <span class="task-title">{{ task.title }}</span>
+                                <span class="task-priority priority-{{ task.priority }}">{{ task.priority }}</span>
+                            </div>
+                            <div class="task-customer">{{ task.customer_name }}</div>
+                            <div class="task-time">{{ task.due_date|la_time_str('%H:%M') }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">今日暂无任务</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速操作 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">快速操作</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('customer_tracking') }}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-users mr-2"></i>客户管理
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('crm_activities') }}" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-calendar-plus mr-2"></i>活动管理
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('crm_tasks') }}" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-tasks mr-2"></i>任务管理
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('crm_reports') }}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-chart-bar mr-2"></i>销售报告
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.sales-funnel {
+    padding: 20px 0;
+}
+
+.funnel-stage {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-width: 200px;
+}
+
+.stage-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.stage-count {
+    background: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.funnel-bar {
+    flex: 1;
+    height: 20px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.funnel-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    transition: width 0.3s ease;
+}
+
+.stage-percentage {
+    min-width: 60px;
+    text-align: right;
+    font-weight: 500;
+    color: #666;
+}
+
+.task-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.task-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 10px;
+}
+
+.task-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.task-title {
+    font-weight: 500;
+    color: #333;
+}
+
+.task-priority {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.priority-urgent {
+    background: #dc3545;
+    color: white;
+}
+
+.priority-high {
+    background: #fd7e14;
+    color: white;
+}
+
+.priority-medium {
+    background: #ffc107;
+    color: #212529;
+}
+
+.priority-low {
+    background: #28a745;
+    color: white;
+}
+
+.task-customer {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.task-time {
+    font-size: 11px;
+    color: #999;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #007bff !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #28a745 !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #17a2b8 !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #ffc107 !important;
+}
+</style>
+
+<script>
+function refreshDashboard() {
+    location.reload();
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('CRM仪表板加载完成');
+});
+</script>
+{% endblock %} 

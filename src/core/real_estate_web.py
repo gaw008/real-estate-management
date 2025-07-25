@@ -53,6 +53,9 @@ from modules.maintenance_orders import maintenance_orders_manager
 # 导入客户追踪系统
 from modules.customer_tracking import customer_tracking_manager
 
+# 导入CRM系统
+from modules.crm_system import crm_system
+
 # 设置洛杉矶时区
 LOS_ANGELES_TZ = pytz.timezone('America/Los_Angeles')
 
@@ -5255,6 +5258,50 @@ def delete_maintenance_order():
 
 # ==================== 客户追踪路由 ====================
 
+@app.route('/crm_dashboard')
+@module_required('customer_tracking')
+def crm_dashboard():
+    """CRM销售仪表板"""
+    try:
+        # 获取销售漏斗统计
+        funnel_stats = crm_system.get_sales_funnel_stats()
+        
+        # 获取当前用户的任务
+        current_user = session.get('user', {})
+        user_id = current_user.get('id')
+        
+        today_tasks = []
+        if user_id:
+            today_tasks = crm_system.get_user_tasks(user_id, 'pending', 10)
+        
+        # 计算基础统计
+        total_customers = funnel_stats.get('total_customers', 0)
+        today_tasks_count = len(today_tasks)
+        
+        # 计算转化率（签约完成 / 总客户数）
+        completed_customers = funnel_stats.get('funnel_data', {}).get('签约完成', {}).get('count', 0)
+        conversion_rate = round((completed_customers / total_customers * 100) if total_customers > 0 else 0, 1)
+        
+        # 模拟本月活动数（后续可以从数据库获取）
+        month_activities = 45
+        
+        stats = {
+            'total_customers': total_customers,
+            'today_tasks': today_tasks_count,
+            'month_activities': month_activities,
+            'conversion_rate': conversion_rate
+        }
+        
+        return render_template('new_ui/crm_dashboard.html', 
+                             stats=stats,
+                             funnel=funnel_stats,
+                             today_tasks=today_tasks)
+        
+    except Exception as e:
+        print(f"❌ CRM仪表板加载失败: {e}")
+        flash('加载CRM仪表板失败', 'error')
+        return redirect(url_for('dashboard'))
+
 @app.route('/customer_tracking')
 @module_required('customer_tracking')
 def customer_tracking():
@@ -5462,6 +5509,136 @@ def delete_customer_tracking():
     except Exception as e:
         print(f"删除客户失败: {e}")
         return jsonify({'success': False, 'message': f'删除客户失败: {e}'})
+
+@app.route('/api/crm/add_activity', methods=['POST'])
+@module_required('customer_tracking')
+def api_add_sales_activity():
+    """API: 添加销售活动"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'message': '无效的数据'})
+        
+        # 获取当前用户
+        current_user = session.get('user', {})
+        user_id = current_user.get('id')
+        
+        activity_data = {
+            'customer_id': data.get('customer_id'),
+            'activity_type': data.get('activity_type'),
+            'subject': data.get('subject', ''),
+            'content': data.get('content', ''),
+            'scheduled_time': data.get('scheduled_time'),
+            'completed_time': data.get('completed_time'),
+            'result': data.get('result', 'neutral'),
+            'next_action': data.get('next_action', ''),
+            'assigned_to': user_id
+        }
+        
+        activity_id = crm_system.add_sales_activity(activity_data)
+        
+        if activity_id:
+            return jsonify({'success': True, 'activity_id': activity_id})
+        else:
+            return jsonify({'success': False, 'message': '添加活动失败'})
+            
+    except Exception as e:
+        print(f"❌ 添加销售活动失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/crm/add_task', methods=['POST'])
+@module_required('customer_tracking')
+def api_add_sales_task():
+    """API: 添加销售任务"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'message': '无效的数据'})
+        
+        # 获取当前用户
+        current_user = session.get('user', {})
+        user_id = current_user.get('id')
+        
+        task_data = {
+            'customer_id': data.get('customer_id'),
+            'task_type': data.get('task_type'),
+            'title': data.get('title'),
+            'description': data.get('description', ''),
+            'priority': data.get('priority', 'medium'),
+            'due_date': data.get('due_date'),
+            'assigned_to': user_id
+        }
+        
+        task_id = crm_system.add_sales_task(task_data)
+        
+        if task_id:
+            return jsonify({'success': True, 'task_id': task_id})
+        else:
+            return jsonify({'success': False, 'message': '添加任务失败'})
+            
+    except Exception as e:
+        print(f"❌ 添加销售任务失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/crm/update_task_status', methods=['POST'])
+@module_required('customer_tracking')
+def api_update_task_status():
+    """API: 更新任务状态"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'message': '无效的数据'})
+        
+        task_id = data.get('task_id')
+        status = data.get('status')
+        
+        if not task_id or not status:
+            return jsonify({'success': False, 'message': '缺少必要参数'})
+        
+        success = crm_system.update_task_status(task_id, status)
+        
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'message': '更新任务状态失败'})
+            
+    except Exception as e:
+        print(f"❌ 更新任务状态失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/crm/get_customer_activities/<int:customer_id>')
+@module_required('customer_tracking')
+def api_get_customer_activities(customer_id):
+    """API: 获取客户活动列表"""
+    try:
+        activities = crm_system.get_customer_activities(customer_id)
+        return jsonify({'success': True, 'activities': activities})
+    except Exception as e:
+        print(f"❌ 获取客户活动失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/crm/get_user_tasks')
+@module_required('customer_tracking')
+def api_get_user_tasks():
+    """API: 获取用户任务列表"""
+    try:
+        current_user = session.get('user', {})
+        user_id = current_user.get('id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'message': '用户未登录'})
+        
+        status = request.args.get('status', 'pending')
+        limit = int(request.args.get('limit', 50))
+        
+        tasks = crm_system.get_user_tasks(user_id, status, limit)
+        return jsonify({'success': True, 'tasks': tasks})
+    except Exception as e:
+        print(f"❌ 获取用户任务失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/add_tracking_record/<int:customer_id>', methods=['POST'])
 @module_required('customer_tracking')
@@ -6328,6 +6505,14 @@ if __name__ == '__main__':
                 print("✅ 客户追踪表创建成功")
             except Exception as e:
                 print(f"⚠️  初始化客户追踪表时出现问题: {e}")
+                
+            # 自动初始化CRM表
+            print("🔧 初始化CRM表...")
+            try:
+                crm_system.create_crm_tables()
+                print("✅ CRM表创建成功")
+            except Exception as e:
+                print(f"⚠️  初始化CRM表时出现问题: {e}")
                 
         else:
             print("⚠️  启动时数据库连接测试失败，但继续启动")
