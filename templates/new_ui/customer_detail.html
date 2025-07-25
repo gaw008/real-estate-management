@@ -98,41 +98,7 @@
     </div>
     {% endif %}
 
-    <!-- 状态变更记录 -->
-    {% if status_changes %}
-    <h3 style="margin-top: 20px;">状态变更记录</h3>
-    <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>变更时间</th>
-                    <th>原状态</th>
-                    <th>新状态</th>
-                    <th>备注</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for change in status_changes %}
-                <tr>
-                    <td>{{ change.changed_at|local_time if change.changed_at else '' }}</td>
-                    <td>{{ change.old_status or '初始状态' }}</td>
-                    <td>
-                        <span class="status-badge status-{{ 
-                            'completed' if change.new_status in ['签约完成'] 
-                            else 'active' if change.new_status in ['跟进服务', '价格谈判', '合同准备', '合同答疑'] 
-                            else 'pending' if change.new_status in ['看房安排', '初始接触'] 
-                            else 'default' 
-                        }}">
-                            {{ change.new_status }}
-                        </span>
-                    </td>
-                    <td>{{ change.notes or '-' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
+
 
     <!-- 跟踪记录 -->
     <h3 style="margin-top: 20px;">跟踪记录</h3>

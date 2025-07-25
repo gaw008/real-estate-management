@@ -227,14 +227,20 @@ class CustomerTrackingManager:
             conn.close()
     
     def _record_status_change(self, cursor, customer_id: int, old_status: str, new_status: str, notes: str = ''):
-        """记录状态变更"""
+        """记录状态变更到跟踪记录中"""
         try:
+            # 创建状态变更的跟踪记录
+            status_change_content = f"状态变更：{old_status} → {new_status}"
+            if notes:
+                status_change_content += f"（备注：{notes}）"
+            
             query = """
-                INSERT INTO customer_status_changes (customer_id, old_status, new_status, notes)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO customer_tracking_records 
+                (customer_id, content, created_at, created_by)
+                VALUES (%s, %s, CURRENT_TIMESTAMP, %s)
             """
-            cursor.execute(query, (customer_id, old_status, new_status, notes))
-            print(f"✅ 状态变更记录: {old_status} -> {new_status}")
+            cursor.execute(query, (customer_id, status_change_content, 1))
+            print(f"✅ 状态变更已记录到跟踪记录: {old_status} → {new_status}")
         except Exception as e:
             print(f"❌ 记录状态变更失败: {e}")
     
@@ -484,32 +490,7 @@ class CustomerTrackingManager:
             cursor.close()
             conn.close()
     
-    def get_status_changes(self, customer_id: int) -> List[Dict[str, Any]]:
-        """获取客户的状态变更记录"""
-        conn = self.get_db_connection()
-        if not conn:
-            return []
-        
-        cursor = conn.cursor(dictionary=True)
-        
-        try:
-            query = """
-                SELECT id, old_status, new_status, changed_at, notes
-                FROM customer_status_changes 
-                WHERE customer_id = %s
-                ORDER BY changed_at DESC
-            """
-            cursor.execute(query, (customer_id,))
-            changes = cursor.fetchall()
-            
-            return changes
-            
-        except Exception as e:
-            print(f"❌ 获取状态变更记录失败: {e}")
-            return []
-        finally:
-            cursor.close()
-            conn.close()
+
     
     def get_tracking_status_options(self) -> List[str]:
         """获取跟踪状态选项"""

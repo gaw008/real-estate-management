@@ -1823,4 +1823,89 @@ input:checked + .slider:before {
         flex-wrap: wrap;
         justify-content: center;
     }
+}
+
+/* 编辑客户页面样式 */
+.border-left-primary {
+  border-left: 4px solid #007bff !important;
+}
+
+.border-left-info {
+  border-left: 4px solid #17a2b8 !important;
+}
+
+.border-left-success {
+  border-left: 4px solid #28a745 !important;
+}
+
+.border-left-warning {
+  border-left: 4px solid #ffc107 !important;
+}
+
+.border-left-danger {
+  border-left: 4px solid #dc3545 !important;
+}
+
+.border-left-secondary {
+  border-left: 4px solid #6c757d !important;
+}
+
+/* 面包屑导航样式 */
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.breadcrumb-item a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
+}
+
+/* 表单标签样式 */
+.form-group label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.form-group label i {
+  margin-right: 0.5rem;
+  color: #007bff;
+}
+
+/* 卡片样式优化 */
+.card.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+.card-header.bg-primary {
+  background-color: #007bff !important;
+  color: white;
+}
+
+/* 按钮样式优化 */
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.btn-outline-secondary {
+  color: #6c757d;
+  border-color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+  color: white;
+  background-color: #6c757d;
+  border-color: #6c757d;
 } 
