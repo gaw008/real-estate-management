@@ -325,7 +325,7 @@ class CustomerTrackingManager:
             
         except Exception as e:
             print(f"❌ 获取客户列表失败: {e}")
-            return {'customers': [], 'total': 0, 'pages': 0}
+            return {'customers': [], 'total': 0, 'pages': 0, 'current_page': page}
         finally:
             cursor.close()
             conn.close()
