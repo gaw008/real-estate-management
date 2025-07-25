@@ -31,6 +31,13 @@
                 <i class="fas fa-plus"></i> 发布公告
             </button>
         </div>
+        <div class="card crm-dashboard-card">
+            <h3><i class="fas fa-chart-line"></i> CRM仪表板</h3>
+            <p>销售漏斗和客户管理</p>
+            <a href="{{ url_for('crm_dashboard') }}" class="btn btn-success btn-sm">
+                <i class="fas fa-arrow-right"></i> 进入CRM
+            </a>
+        </div>
     {% elif session.user_type in ['sales', 'accounting', 'property_manager'] %}
         <!-- 员工统计 -->
         <div class="card">
