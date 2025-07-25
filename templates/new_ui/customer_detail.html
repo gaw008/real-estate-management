@@ -140,7 +140,7 @@
                 <tr>
                     <td>{{ record.record_date.strftime('%Y年%m月%d日') }}</td>
                     <td>{{ record.content|nl2br }}</td>
-                    <td>{{ record.created_at.strftime('%H:%M') if record.created_at else '' }}</td>
+                    <td>{{ record.created_at|local_time if record.created_at else '' }}</td>
                     <td class="action-buttons">
                         <button type="button" class="btn btn-sm btn-primary" 
                                 data-record-id="{{ record.id }}"

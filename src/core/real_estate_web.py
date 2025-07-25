@@ -84,6 +84,24 @@ def nl2br_filter(text):
         return ''
     return text.replace('\n', '<br>')
 
+@app.template_filter('local_time')
+def local_time_filter(dt):
+    """将UTC时间转换为本地时间"""
+    if dt is None:
+        return ''
+    try:
+        # 如果dt已经是时区感知的，直接转换
+        if dt.tzinfo is not None:
+            local_dt = dt.astimezone(pacific_tz)
+        else:
+            # 如果dt是naive datetime，假设是UTC时间
+            utc_dt = dt.replace(tzinfo=timezone.utc)
+            local_dt = utc_dt.astimezone(pacific_tz)
+        return local_dt.strftime('%H:%M')
+    except Exception as e:
+        print(f"时区转换错误: {e}")
+        return dt.strftime('%H:%M') if dt else ''
+
 # 注册多语言模板函数
 @app.template_global()
 def _(key, language=None):
@@ -5326,13 +5344,13 @@ def customer_tracking_detail(customer_id):
         tracking_records = customer_tracking_manager.get_tracking_records(customer_id)
         
         # 获取今天日期
-        from datetime import date
-        today = date.today().strftime('%Y-%m-%d')
+        today = get_local_date().strftime('%Y-%m-%d')
         
         return render_template('new_ui/customer_detail.html',
                              customer=customer,
                              tracking_records=tracking_records,
-                             today=today)
+                             today=today,
+                             get_local_time=get_local_datetime_str)
                              
     except Exception as e:
         print(f"获取客户详情失败: {e}")
