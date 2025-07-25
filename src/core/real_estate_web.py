@@ -5305,6 +5305,7 @@ def add_customer_tracking():
             'property_address': request.form.get('property_address', ''),
             'rental_types': request.form.getlist('rental_types'),
             'tracking_status': request.form.get('tracking_status', '初始接触'),
+            'contract_date': request.form.get('contract_date', ''),
             'notes': request.form.get('notes', '')
         }
         
@@ -5346,9 +5347,13 @@ def customer_tracking_detail(customer_id):
         # 获取今天日期
         today = get_local_date().strftime('%Y-%m-%d')
         
+        # 获取状态变更记录
+        status_changes = customer_tracking_manager.get_status_changes(customer_id)
+        
         return render_template('new_ui/customer_detail.html',
                              customer=customer,
                              tracking_records=tracking_records,
+                             status_changes=status_changes,
                              today=today,
                              get_local_time=get_local_datetime_str)
                              
@@ -5371,6 +5376,8 @@ def edit_customer_tracking(customer_id):
                 'property_address': request.form.get('property_address', ''),
                 'rental_types': request.form.getlist('rental_types'),
                 'tracking_status': request.form.get('tracking_status', '初始接触'),
+                'contract_date': request.form.get('contract_date', ''),
+                'status_change_notes': request.form.get('status_change_notes', ''),
                 'notes': request.form.get('notes', '')
             }
             

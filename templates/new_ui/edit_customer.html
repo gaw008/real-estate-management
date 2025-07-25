@@ -72,6 +72,23 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="contract_date">签约时间</label>
+                                    <input type="date" class="form-control" id="contract_date" name="contract_date" 
+                                           value="{{ customer.contract_date.strftime('%Y-%m-%d') if customer.contract_date else '' }}" 
+                                           placeholder="选择签约日期">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="status_change_notes">状态变更备注</label>
+                                    <input type="text" class="form-control" id="status_change_notes" name="status_change_notes" 
+                                           placeholder="状态变更时的备注说明（可选）">
+                                </div>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label for="property_address">房产地址</label>
                             <textarea class="form-control" id="property_address" name="property_address" 

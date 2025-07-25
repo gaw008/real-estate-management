@@ -84,6 +84,13 @@
                     </div>
                 </div>
                 
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contract_date">签约时间</label>
+                        <input type="date" name="contract_date" id="contract_date" placeholder="选择签约日期">
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label for="notes">备注</label>
                     <textarea name="notes" id="notes" rows="3" placeholder="其他备注信息"></textarea>
@@ -116,6 +123,7 @@
                     <th>房产地址</th>
                     <th>租赁类别</th>
                     <th>跟踪状态</th>
+                    <th>签约时间</th>
                     <th>最后更新</th>
                     <th>操作</th>
                 </tr>
@@ -153,13 +161,14 @@
                     <td>
                         <span class="status-badge status-{{ 
                             'completed' if customer.tracking_status in ['签约完成'] 
-                            else 'active' if customer.tracking_status in ['跟进服务', '价格谈判', '合同准备'] 
+                            else 'active' if customer.tracking_status in ['跟进服务', '价格谈判', '合同准备', '合同答疑'] 
                             else 'pending' if customer.tracking_status in ['看房安排', '初始接触'] 
                             else 'default' 
                         }}">
                             {{ customer.tracking_status }}
                         </span>
                     </td>
+                    <td>{{ customer.contract_date.strftime('%Y-%m-%d') if customer.contract_date else '未签约' }}</td>
                     <td>{{ customer.updated_at.strftime('%Y-%m-%d %H:%M') if customer.updated_at else '-' }}</td>
                     <td class="action-buttons">
                         <a href="{{ url_for('customer_tracking_detail', customer_id=customer.id) }}" 
