@@ -139,7 +139,7 @@ def has_module_access(module_name):
     # 优先使用新的用户模块权限系统
     try:
         from src.modules.user_module_permissions import get_user_module_permissions, init_user_module_permissions
-        from core.config_loader import DB_CONFIG
+        from src.core.config_loader import DB_CONFIG
         
         user_module_permissions = get_user_module_permissions()
         if not user_module_permissions:

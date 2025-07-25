@@ -25,7 +25,6 @@
       
       {% if check_module_access('customer_tracking') %}
         <a href="{{ url_for('customer_tracking') }}" class="nav-item {% if 'customer_tracking' in request.endpoint %}active{% endif %}">客户追踪</a>
-        <a href="{{ url_for('crm_dashboard') }}" class="nav-item {% if 'crm_dashboard' in request.endpoint %}active{% endif %}">CRM仪表板</a>
       {% endif %}
       
 
