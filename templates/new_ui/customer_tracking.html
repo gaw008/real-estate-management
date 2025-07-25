@@ -116,6 +116,8 @@
                     <th>房产地址</th>
                     <th>租赁类别</th>
                     <th>跟踪状态</th>
+                    <th>签约时间</th>
+                    <th>解约时间</th>
                     <th>最后更新</th>
                     <th>操作</th>
                 </tr>
@@ -160,6 +162,8 @@
                             {{ customer.tracking_status }}
                         </span>
                     </td>
+                    <td>{{ customer.contract_date.strftime('%Y-%m-%d') if customer.contract_date else '-' }}</td>
+                    <td>{{ customer.termination_date.strftime('%Y-%m-%d') if customer.termination_date else '-' }}</td>
                     <td>{{ customer.updated_at.strftime('%Y-%m-%d %H:%M') if customer.updated_at else '-' }}</td>
                     <td class="action-buttons">
                         <a href="{{ url_for('customer_tracking_detail', customer_id=customer.id) }}" 

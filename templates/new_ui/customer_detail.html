@@ -46,6 +46,12 @@
             <td><strong>最后更新</strong></td>
             <td>{{ customer.updated_at.strftime('%Y-%m-%d %H:%M') if customer.updated_at else '-' }}</td>
         </tr>
+        <tr>
+            <td><strong>签约时间</strong></td>
+            <td>{{ customer.contract_date.strftime('%Y年%m月%d日') if customer.contract_date else '未签约' }}</td>
+            <td><strong>解约时间</strong></td>
+            <td>{{ customer.termination_date.strftime('%Y年%m月%d日') if customer.termination_date else '未解约' }}</td>
+        </tr>
     </table>
 
     <!-- 房产信息 -->

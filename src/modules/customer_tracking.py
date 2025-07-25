@@ -100,9 +100,19 @@ class CustomerTrackingManager:
             else:
                 rental_types_json = json.dumps([], ensure_ascii=False)
             
+            # 处理日期字段
+            contract_date = customer_data.get('contract_date')
+            termination_date = customer_data.get('termination_date')
+            
+            # 如果日期字段为空字符串，设为None
+            if contract_date == '':
+                contract_date = None
+            if termination_date == '':
+                termination_date = None
+            
             query = """
-                INSERT INTO customers (name, phone, email, property_address, rental_types, tracking_status, notes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO customers (name, phone, email, property_address, rental_types, tracking_status, notes, contract_date, termination_date)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
                 customer_data['name'],
@@ -111,7 +121,9 @@ class CustomerTrackingManager:
                 customer_data.get('property_address', ''),
                 rental_types_json,
                 customer_data.get('tracking_status', '初始接触'),
-                customer_data.get('notes', '')
+                customer_data.get('notes', ''),
+                contract_date,
+                termination_date
             )
             
             cursor.execute(query, values)
@@ -159,11 +171,22 @@ class CustomerTrackingManager:
             else:
                 rental_types_json = json.dumps([], ensure_ascii=False)
             
+            # 处理日期字段
+            contract_date = customer_data.get('contract_date')
+            termination_date = customer_data.get('termination_date')
+            
+            # 如果日期字段为空字符串，设为None
+            if contract_date == '':
+                contract_date = None
+            if termination_date == '':
+                termination_date = None
+            
             # 更新客户信息
             update_query = """
                 UPDATE customers 
                 SET name = %s, phone = %s, email = %s, property_address = %s, 
-                    rental_types = %s, tracking_status = %s, notes = %s
+                    rental_types = %s, tracking_status = %s, notes = %s,
+                    contract_date = %s, termination_date = %s
                 WHERE id = %s AND deleted_at IS NULL
             """
             update_values = (
@@ -174,6 +197,8 @@ class CustomerTrackingManager:
                 rental_types_json,
                 new_status,
                 customer_data.get('notes', ''),
+                contract_date,
+                termination_date,
                 customer_id
             )
             
@@ -272,7 +297,8 @@ class CustomerTrackingManager:
             offset = (page - 1) * per_page
             query = f"""
                 SELECT id, name, phone, email, property_address, rental_types, 
-                       tracking_status, notes, created_at, updated_at
+                       tracking_status, notes, contract_date, termination_date,
+                       created_at, updated_at
                 FROM customers 
                 WHERE {where_clause}
                 ORDER BY updated_at DESC
@@ -318,7 +344,8 @@ class CustomerTrackingManager:
         try:
             query = """
                 SELECT id, name, phone, email, property_address, rental_types, 
-                       tracking_status, notes, created_at, updated_at
+                       tracking_status, notes, contract_date, termination_date, 
+                       created_at, updated_at
                 FROM customers 
                 WHERE id = %s AND deleted_at IS NULL
             """

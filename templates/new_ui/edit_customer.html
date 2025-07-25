@@ -72,6 +72,24 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="contract_date">签约时间</label>
+                                    <input type="date" class="form-control" id="contract_date" name="contract_date" 
+                                           value="{{ customer.contract_date.strftime('%Y-%m-%d') if customer.contract_date else '' }}" 
+                                           placeholder="选择签约日期">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="termination_date">解约时间</label>
+                                    <input type="date" class="form-control" id="termination_date" name="termination_date" 
+                                           value="{{ customer.termination_date.strftime('%Y-%m-%d') if customer.termination_date else '' }}" 
+                                           placeholder="选择解约日期">
+                                </div>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label for="property_address">房产地址</label>
                             <textarea class="form-control" id="property_address" name="property_address" 
