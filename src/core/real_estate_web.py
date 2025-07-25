@@ -5,22 +5,28 @@ import os
 from datetime import datetime, timezone
 import json
 from dotenv import load_dotenv
+import pytz
 
 # 设置时区为太平洋时间 (PDT/PST)
-import time
-os.environ['TZ'] = 'America/Los_Angeles'
-time.tzset()
+pacific_tz = pytz.timezone('America/Los_Angeles')
 
 # 加载环境变量
 load_dotenv()
 
 def get_local_datetime():
     """获取本地时区的当前时间"""
-    return datetime.now()
+    utc_now = datetime.now(timezone.utc)
+    return utc_now.astimezone(pacific_tz)
 
 def get_local_datetime_str():
     """获取本地时区的当前时间字符串"""
-    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    local_now = get_local_datetime()
+    return local_now.strftime('%Y-%m-%d %H:%M:%S')
+
+def get_local_date():
+    """获取本地时区的当前日期"""
+    local_now = get_local_datetime()
+    return local_now.date()
 
 # 设置Flask应用，指定正确的模板和静态文件路径
 import os
