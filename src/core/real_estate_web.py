@@ -2,31 +2,12 @@ from flask import Flask, render_template, render_template_string, request, jsoni
 import mysql.connector
 import ssl
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 import json
 from dotenv import load_dotenv
-import pytz
-
-# 设置时区为太平洋时间 (PDT/PST)
-pacific_tz = pytz.timezone('America/Los_Angeles')
 
 # 加载环境变量
 load_dotenv()
-
-def get_local_datetime():
-    """获取本地时区的当前时间"""
-    utc_now = datetime.now(timezone.utc)
-    return utc_now.astimezone(pacific_tz)
-
-def get_local_datetime_str():
-    """获取本地时区的当前时间字符串"""
-    local_now = get_local_datetime()
-    return local_now.strftime('%Y-%m-%d %H:%M:%S')
-
-def get_local_date():
-    """获取本地时区的当前日期"""
-    local_now = get_local_datetime()
-    return local_now.date()
 
 # 设置Flask应用，指定正确的模板和静态文件路径
 import os
@@ -83,24 +64,6 @@ def nl2br_filter(text):
     if text is None:
         return ''
     return text.replace('\n', '<br>')
-
-@app.template_filter('local_time')
-def local_time_filter(dt):
-    """将UTC时间转换为本地时间"""
-    if dt is None:
-        return ''
-    try:
-        # 如果dt已经是时区感知的，直接转换
-        if dt.tzinfo is not None:
-            local_dt = dt.astimezone(pacific_tz)
-        else:
-            # 如果dt是naive datetime，假设是UTC时间
-            utc_dt = dt.replace(tzinfo=timezone.utc)
-            local_dt = utc_dt.astimezone(pacific_tz)
-        return local_dt.strftime('%H:%M')
-    except Exception as e:
-        print(f"时区转换错误: {e}")
-        return dt.strftime('%H:%M') if dt else ''
 
 # 注册多语言模板函数
 @app.template_global()
@@ -5242,16 +5205,20 @@ def customer_tracking():
         # 获取查询参数
         page = int(request.args.get('page', 1))
         search = request.args.get('search', '')
+        status = request.args.get('status', '')
         
         # 获取客户列表
         result = customer_tracking_manager.get_all_customers(
             page=page, 
             per_page=20, 
-            search=search
+            search=search, 
+            status=status
         )
         
         # 获取统计数据
         total_customers = result['total']
+        active_customers = len([c for c in result['customers'] if c['tracking_status'] in ['签约完成', '跟进服务']])
+        following_customers = len([c for c in result['customers'] if c['tracking_status'] in ['看房安排', '价格谈判', '合同准备']])
         
         # 计算本月新增（简化计算）
         from datetime import datetime
@@ -5260,14 +5227,18 @@ def customer_tracking():
                             if c['created_at'] and c['created_at'].month == current_month])
         
         # 获取选项数据
+        status_options = customer_tracking_manager.get_tracking_status_options()
         rental_type_options = customer_tracking_manager.get_rental_type_options()
         
         return render_template('new_ui/customer_tracking.html',
                              customers=result['customers'],
                              total_customers=total_customers,
+                             active_customers=active_customers,
+                             following_customers=following_customers,
                              new_this_month=new_this_month,
                              pages=result['pages'],
                              current_page=result['current_page'],
+                             status_options=status_options,
                              rental_type_options=rental_type_options)
                              
     except Exception as e:
@@ -5276,9 +5247,12 @@ def customer_tracking():
         return render_template('new_ui/customer_tracking.html',
                              customers=[],
                              total_customers=0,
+                             active_customers=0,
+                             following_customers=0,
                              new_this_month=0,
                              pages=0,
                              current_page=1,
+                             status_options=[],
                              rental_type_options=[])
 
 @app.route('/add_customer_tracking', methods=['POST'])
@@ -5293,7 +5267,7 @@ def add_customer_tracking():
             'email': request.form.get('email', ''),
             'property_address': request.form.get('property_address', ''),
             'rental_types': request.form.getlist('rental_types'),
-            'contract_date': request.form.get('contract_date', ''),
+            'tracking_status': request.form.get('tracking_status', '初始接触'),
             'notes': request.form.get('notes', '')
         }
         
@@ -5333,13 +5307,13 @@ def customer_tracking_detail(customer_id):
         tracking_records = customer_tracking_manager.get_tracking_records(customer_id)
         
         # 获取今天日期
-        today = get_local_date().strftime('%Y-%m-%d')
+        from datetime import date
+        today = date.today().strftime('%Y-%m-%d')
         
         return render_template('new_ui/customer_detail.html',
                              customer=customer,
                              tracking_records=tracking_records,
-                             today=today,
-                             get_local_time=get_local_datetime_str)
+                             today=today)
                              
     except Exception as e:
         print(f"获取客户详情失败: {e}")
@@ -5359,7 +5333,7 @@ def edit_customer_tracking(customer_id):
                 'email': request.form.get('email', ''),
                 'property_address': request.form.get('property_address', ''),
                 'rental_types': request.form.getlist('rental_types'),
-                'contract_date': request.form.get('contract_date', ''),
+                'tracking_status': request.form.get('tracking_status', '初始接触'),
                 'notes': request.form.get('notes', '')
             }
             
@@ -5392,10 +5366,12 @@ def edit_customer_tracking(customer_id):
             return redirect(url_for('customer_tracking'))
         
         # 获取选项数据
+        status_options = customer_tracking_manager.get_tracking_status_options()
         rental_type_options = customer_tracking_manager.get_rental_type_options()
         
         return render_template('new_ui/edit_customer.html',
                              customer=customer,
+                             status_options=status_options,
                              rental_type_options=rental_type_options)
                              
     except Exception as e:
@@ -5438,7 +5414,7 @@ def add_tracking_record(customer_id):
         # 验证必填字段
         if not record_data['record_date'] or not record_data['content']:
             flash('请填写记录日期和内容', 'error')
-            return redirect(url_for('customer_tracking_detail', customer_id=customer_id))
+            return redirect(url_for('customer_detail', customer_id=customer_id))
         
         # 转换日期格式
         from datetime import datetime
@@ -5448,7 +5424,7 @@ def add_tracking_record(customer_id):
             ).date()
         except ValueError:
             flash('日期格式错误', 'error')
-            return redirect(url_for('customer_tracking_detail', customer_id=customer_id))
+            return redirect(url_for('customer_detail', customer_id=customer_id))
         
         # 添加记录
         record_id = customer_tracking_manager.add_tracking_record(customer_id, record_data)
@@ -5458,12 +5434,12 @@ def add_tracking_record(customer_id):
         else:
             flash('添加跟踪记录失败', 'error')
             
-        return redirect(url_for('customer_tracking_detail', customer_id=customer_id))
+        return redirect(url_for('customer_detail', customer_id=customer_id))
         
     except Exception as e:
         print(f"添加跟踪记录失败: {e}")
         flash(f'添加跟踪记录失败: {e}', 'error')
-        return redirect(url_for('customer_tracking_detail', customer_id=customer_id))
+        return redirect(url_for('customer_detail', customer_id=customer_id))
 
 @app.route('/update_tracking_record', methods=['POST'])
 @module_required('customer_tracking')

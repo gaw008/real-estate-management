@@ -50,46 +50,6 @@
         </tr>
     </table>
 
-    <h3 style="margin-top: 20px;">访问信息</h3>
-    <table class="table">
-        <tr>
-            <td><strong>WiFi名称</strong></td>
-            <td>{{ property.wifi_name or 'N/A' }}</td>
-            <td><strong>WiFi密码</strong></td>
-            <td>
-                {% if property.wifi_password %}
-                    <span class="password-field">{{ property.wifi_password }}</span>
-                {% else %}
-                    N/A
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td><strong>前门密码</strong></td>
-            <td>
-                {% if property.front_door_code %}
-                    <span class="password-field">{{ property.front_door_code }}</span>
-                {% else %}
-                    N/A
-                {% endif %}
-            </td>
-            <td><strong>储藏室密码</strong></td>
-            <td>
-                {% if property.storage_code %}
-                    <span class="password-field">{{ property.storage_code }}</span>
-                {% else %}
-                    N/A
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td><strong>垃圾日</strong></td>
-            <td>{{ property.trash_day or 'N/A' }}</td>
-            <td><strong>土地面积</strong></td>
-            <td>{{ property.land_size or 'N/A' }} sqft</td>
-        </tr>
-    </table>
-
     <h3 style="margin-top: 20px;">业主信息</h3>
     {% if owners %}
     <table class="table">
@@ -330,8 +290,6 @@ window.onclick = function(event) {
         closeEditInfoModal();
     }
 }
-
-
 </script>
 
 <style>
@@ -759,17 +717,6 @@ textarea.form-control {
         font-size: 10px;
         padding: 3px 8px;
     }
-}
-
-/* 密码字段样式 */
-.password-field {
-    font-family: 'Courier New', monospace;
-    background: #f8f9fa;
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px solid #dee2e6;
-    font-weight: 500;
-    color: #495057;
 }
 </style>
 {% endblock %} 

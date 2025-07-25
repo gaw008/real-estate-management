@@ -15,6 +15,14 @@
                        placeholder="搜索客户姓名、电话、邮箱或地址">
             </div>
             <div class="filter-group">
+                <select class="filter-select" id="status" name="status">
+                    <option value="">所有状态</option>
+                    {% for status in status_options %}
+                    <option value="{{ status }}" {% if request.args.get('status') == status %}selected{% endif %}>
+                        {{ status }}
+                    </option>
+                    {% endfor %}
+                </select>
                 <button type="submit" class="search-btn">搜索</button>
             </div>
             <div class="action-group">
@@ -66,13 +74,13 @@
                             {% endfor %}
                         </div>
                     </div>
-
-                </div>
-                
-                <div class="form-row">
                     <div class="form-group">
-                        <label for="contract_date">签约时间</label>
-                        <input type="date" name="contract_date" id="contract_date" placeholder="选择签约日期">
+                        <label for="tracking_status">跟踪状态</label>
+                        <select name="tracking_status" id="tracking_status">
+                            {% for status in status_options %}
+                            <option value="{{ status }}">{{ status }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
                 
@@ -107,7 +115,7 @@
                     <th>邮箱</th>
                     <th>房产地址</th>
                     <th>租赁类别</th>
-                    <th>签约时间</th>
+                    <th>跟踪状态</th>
                     <th>最后更新</th>
                     <th>操作</th>
                 </tr>
@@ -142,8 +150,16 @@
                         -
                         {% endif %}
                     </td>
-
-                    <td>{{ customer.contract_date.strftime('%Y-%m-%d') if customer.contract_date else '未签约' }}</td>
+                    <td>
+                        <span class="status-badge status-{{ 
+                            'completed' if customer.tracking_status in ['签约完成'] 
+                            else 'active' if customer.tracking_status in ['跟进服务', '价格谈判', '合同准备'] 
+                            else 'pending' if customer.tracking_status in ['看房安排', '初始接触'] 
+                            else 'default' 
+                        }}">
+                            {{ customer.tracking_status }}
+                        </span>
+                    </td>
                     <td>{{ customer.updated_at.strftime('%Y-%m-%d %H:%M') if customer.updated_at else '-' }}</td>
                     <td class="action-buttons">
                         <a href="{{ url_for('customer_tracking_detail', customer_id=customer.id) }}" 
