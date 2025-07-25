@@ -2,7 +2,8 @@ from flask import Flask, render_template, render_template_string, request, jsoni
 import mysql.connector
 import ssl
 import os
-from datetime import datetime
+from datetime import datetime, timezone
+import pytz
 import json
 from dotenv import load_dotenv
 
@@ -52,6 +53,43 @@ from modules.maintenance_orders import maintenance_orders_manager
 # 导入客户追踪系统
 from modules.customer_tracking import customer_tracking_manager
 
+# 设置洛杉矶时区
+LOS_ANGELES_TZ = pytz.timezone('America/Los_Angeles')
+
+def convert_to_la_time(utc_datetime):
+    """将UTC时间转换为洛杉矶时间"""
+    if utc_datetime is None:
+        return None
+    
+    # 如果datetime对象没有时区信息，假设为UTC
+    if utc_datetime.tzinfo is None:
+        utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
+    
+    # 转换为洛杉矶时区
+    la_time = utc_datetime.astimezone(LOS_ANGELES_TZ)
+    return la_time
+
+def get_la_time_str(utc_datetime, format_str='%Y-%m-%d %H:%M'):
+    """将UTC时间转换为洛杉矶时间字符串"""
+    la_time = convert_to_la_time(utc_datetime)
+    if la_time is None:
+        return ''
+    return la_time.strftime(format_str)
+
+def get_la_date_str(utc_datetime, format_str='%Y年%m月%d日'):
+    """将UTC时间转换为洛杉矶日期字符串"""
+    la_time = convert_to_la_time(utc_datetime)
+    if la_time is None:
+        return ''
+    return la_time.strftime(format_str)
+
+def get_la_time_only_str(utc_datetime, format_str='%H:%M'):
+    """将UTC时间转换为洛杉矶时间（仅时间部分）字符串"""
+    la_time = convert_to_la_time(utc_datetime)
+    if la_time is None:
+        return ''
+    return la_time.strftime(format_str)
+
 # 注册模板函数
 @app.template_filter('format_fee')
 def format_fee_filter(rate, fee_type=None):
@@ -64,6 +102,26 @@ def nl2br_filter(text):
     if text is None:
         return ''
     return text.replace('\n', '<br>')
+
+@app.template_filter('la_time')
+def la_time_filter(utc_datetime):
+    """将UTC时间转换为洛杉矶时间"""
+    return convert_to_la_time(utc_datetime)
+
+@app.template_filter('la_time_str')
+def la_time_str_filter(utc_datetime, format_str='%Y-%m-%d %H:%M'):
+    """将UTC时间转换为洛杉矶时间字符串"""
+    return get_la_time_str(utc_datetime, format_str)
+
+@app.template_filter('la_date_str')
+def la_date_str_filter(utc_datetime, format_str='%Y年%m月%d日'):
+    """将UTC时间转换为洛杉矶日期字符串"""
+    return get_la_date_str(utc_datetime, format_str)
+
+@app.template_filter('la_time_only_str')
+def la_time_only_str_filter(utc_datetime, format_str='%H:%M'):
+    """将UTC时间转换为洛杉矶时间（仅时间部分）字符串"""
+    return get_la_time_only_str(utc_datetime, format_str)
 
 # 注册多语言模板函数
 @app.template_global()
