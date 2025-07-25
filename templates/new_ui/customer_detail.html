@@ -28,38 +28,14 @@
         <tr>
             <td><strong>邮箱地址</strong></td>
             <td>{{ customer.email or '未提供' }}</td>
-            <td><strong>跟踪状态</strong></td>
-            <td>
-                <span class="status-badge status-{{ 
-                    'completed' if customer.tracking_status in ['签约完成'] 
-                    else 'active' if customer.tracking_status in ['跟进服务', '价格谈判', '合同准备'] 
-                    else 'pending' if customer.tracking_status in ['看房安排', '初始接触'] 
-                    else 'default' 
-                }}">
-                    {{ customer.tracking_status }}
-                </span>
-            </td>
-        </tr>
-        <tr>
             <td><strong>创建时间</strong></td>
             <td>{{ customer.created_at.strftime('%Y-%m-%d %H:%M') if customer.created_at else '-' }}</td>
-            <td><strong>最后更新</strong></td>
-            <td>{{ customer.updated_at.strftime('%Y-%m-%d %H:%M') if customer.updated_at else '-' }}</td>
         </tr>
         <tr>
+            <td><strong>最后更新</strong></td>
+            <td>{{ customer.updated_at.strftime('%Y-%m-%d %H:%M') if customer.updated_at else '-' }}</td>
             <td><strong>签约时间</strong></td>
             <td>{{ customer.contract_date.strftime('%Y-%m-%d') if customer.contract_date else '未签约' }}</td>
-            <td><strong>状态</strong></td>
-            <td>
-                <span class="status-badge status-{{ 
-                    'completed' if customer.tracking_status in ['签约完成'] 
-                    else 'active' if customer.tracking_status in ['跟进服务', '价格谈判', '合同准备', '合同答疑'] 
-                    else 'pending' if customer.tracking_status in ['看房安排', '初始接触'] 
-                    else 'default' 
-                }}">
-                    {{ customer.tracking_status }}
-                </span>
-            </td>
         </tr>
     </table>
 

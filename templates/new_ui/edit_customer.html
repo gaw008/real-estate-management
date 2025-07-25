@@ -80,20 +80,7 @@
                                            value="{{ customer.email or '' }}" placeholder="请输入邮箱地址">
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="tracking_status" class="font-weight-bold text-gray-700">
-                                        <i class="fas fa-chart-line mr-1"></i>跟踪状态
-                                    </label>
-                                    <select class="form-control border-left-warning" id="tracking_status" name="tracking_status">
-                                        {% for status in status_options %}
-                                        <option value="{{ status }}" {% if customer.tracking_status == status %}selected{% endif %}>
-                                            {{ status }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
+
                         </div>
                         <div class="row">
                             <div class="col-md-6">
@@ -106,15 +93,7 @@
                                            placeholder="选择签约日期">
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="status_change_notes" class="font-weight-bold text-gray-700">
-                                        <i class="fas fa-sticky-note mr-1"></i>状态变更备注
-                                    </label>
-                                    <input type="text" class="form-control border-left-secondary" id="status_change_notes" name="status_change_notes" 
-                                           placeholder="状态变更时的备注说明（可选）">
-                                </div>
-                            </div>
+
                         </div>
                         <div class="form-group">
                             <label for="property_address" class="font-weight-bold text-gray-700">

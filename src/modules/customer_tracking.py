@@ -45,14 +45,12 @@ class CustomerTrackingManager:
                     email VARCHAR(100),
                     property_address TEXT,
                     rental_types JSON,
-                    tracking_status VARCHAR(50) DEFAULT '初始接触',
                     contract_date DATE NULL,
                     notes TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     deleted_at TIMESTAMP NULL,
                     INDEX idx_deleted_at (deleted_at),
-                    INDEX idx_tracking_status (tracking_status),
                     INDEX idx_contract_date (contract_date)
                 )
             """)
@@ -74,22 +72,7 @@ class CustomerTrackingManager:
                 )
             """)
             
-            # 创建状态变更记录表
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS customer_status_changes (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    customer_id INT NOT NULL,
-                    old_status VARCHAR(50),
-                    new_status VARCHAR(50) NOT NULL,
-                    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    changed_by INT,
-                    notes TEXT,
-                    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
-                    INDEX idx_customer_id (customer_id),
-                    INDEX idx_changed_at (changed_at),
-                    INDEX idx_new_status (new_status)
-                )
-            """)
+
             
             conn.commit()
             print("✅ 客户追踪表创建成功")
@@ -128,8 +111,8 @@ class CustomerTrackingManager:
                     contract_date = None
             
             query = """
-                INSERT INTO customers (name, phone, email, property_address, rental_types, tracking_status, contract_date, notes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO customers (name, phone, email, property_address, rental_types, contract_date, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
             values = (
                 customer_data['name'],
@@ -137,7 +120,6 @@ class CustomerTrackingManager:
                 customer_data.get('email', ''),
                 customer_data.get('property_address', ''),
                 rental_types_json,
-                customer_data.get('tracking_status', '初始接触'),
                 contract_date,
                 customer_data.get('notes', '')
             )
@@ -166,15 +148,6 @@ class CustomerTrackingManager:
         cursor = conn.cursor()
         
         try:
-            # 获取当前客户状态
-            cursor.execute("SELECT tracking_status FROM customers WHERE id = %s", (customer_id,))
-            current_customer = cursor.fetchone()
-            if not current_customer:
-                return False
-            
-            old_status = current_customer[0]
-            new_status = customer_data.get('tracking_status', old_status)
-            
             # 处理租赁类别（多选）
             rental_types = customer_data.get('rental_types', [])
             if isinstance(rental_types, list):
@@ -193,7 +166,7 @@ class CustomerTrackingManager:
             query = """
                 UPDATE customers 
                 SET name = %s, phone = %s, email = %s, property_address = %s, 
-                    rental_types = %s, tracking_status = %s, contract_date = %s, notes = %s
+                    rental_types = %s, contract_date = %s, notes = %s
                 WHERE id = %s
             """
             values = (
@@ -202,18 +175,12 @@ class CustomerTrackingManager:
                 customer_data.get('email', ''),
                 customer_data.get('property_address', ''),
                 rental_types_json,
-                new_status,
                 contract_date,
                 customer_data.get('notes', ''),
                 customer_id
             )
             
             cursor.execute(query, values)
-            
-            # 如果状态发生变化，记录状态变更
-            if old_status != new_status:
-                self._record_status_change(cursor, customer_id, old_status, new_status, customer_data.get('status_change_notes', ''))
-            
             conn.commit()
             print(f"✅ 客户 '{customer_data['name']}' 更新成功")
             return True
@@ -226,23 +193,7 @@ class CustomerTrackingManager:
             cursor.close()
             conn.close()
     
-    def _record_status_change(self, cursor, customer_id: int, old_status: str, new_status: str, notes: str = ''):
-        """记录状态变更到跟踪记录中"""
-        try:
-            # 创建状态变更的跟踪记录
-            status_change_content = f"状态变更：{old_status} → {new_status}"
-            if notes:
-                status_change_content += f"（备注：{notes}）"
-            
-            query = """
-                INSERT INTO customer_tracking_records 
-                (customer_id, content, created_at, created_by)
-                VALUES (%s, %s, CURRENT_TIMESTAMP, %s)
-            """
-            cursor.execute(query, (customer_id, status_change_content, 1))
-            print(f"✅ 状态变更已记录到跟踪记录: {old_status} → {new_status}")
-        except Exception as e:
-            print(f"❌ 记录状态变更失败: {e}")
+
     
     def delete_customer(self, customer_id: int) -> bool:
         """删除客户（软删除）"""
@@ -268,7 +219,7 @@ class CustomerTrackingManager:
             cursor.close()
             conn.close()
     
-    def get_all_customers(self, page: int = 1, per_page: int = 20, search: str = '', status: str = '') -> Dict[str, Any]:
+    def get_all_customers(self, page: int = 1, per_page: int = 20, search: str = '') -> Dict[str, Any]:
         """获取所有客户（分页）"""
         conn = self.get_db_connection()
         if not conn:
@@ -286,10 +237,6 @@ class CustomerTrackingManager:
                 search_param = f"%{search}%"
                 params.extend([search_param, search_param, search_param])
             
-            if status:
-                where_conditions.append("tracking_status = %s")
-                params.append(status)
-            
             where_clause = " AND ".join(where_conditions)
             
             # 获取总数
@@ -301,7 +248,7 @@ class CustomerTrackingManager:
             offset = (page - 1) * per_page
             query = f"""
                 SELECT id, name, phone, email, property_address, rental_types, 
-                       tracking_status, contract_date, notes, created_at, updated_at
+                       contract_date, notes, created_at, updated_at
                 FROM customers 
                 WHERE {where_clause}
                 ORDER BY updated_at DESC
@@ -347,7 +294,7 @@ class CustomerTrackingManager:
         try:
             query = """
                 SELECT id, name, phone, email, property_address, rental_types, 
-                       tracking_status, contract_date, notes, created_at, updated_at
+                       contract_date, notes, created_at, updated_at
                 FROM customers 
                 WHERE id = %s AND deleted_at IS NULL
             """
@@ -492,19 +439,7 @@ class CustomerTrackingManager:
     
 
     
-    def get_tracking_status_options(self) -> List[str]:
-        """获取跟踪状态选项"""
-        return [
-            '初始接触',
-            '需求了解',
-            '看房安排',
-            '价格谈判',
-            '合同准备',
-            '合同答疑',
-            '签约完成',
-            '跟进服务',
-            '已流失'
-        ]
+
     
     def get_rental_type_options(self) -> List[str]:
         """获取租赁类别选项"""

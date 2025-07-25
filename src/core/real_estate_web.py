@@ -5254,8 +5254,6 @@ def customer_tracking():
         
         # 获取统计数据
         total_customers = result['total']
-        active_customers = len([c for c in result['customers'] if c['tracking_status'] in ['签约完成', '跟进服务']])
-        following_customers = len([c for c in result['customers'] if c['tracking_status'] in ['看房安排', '价格谈判', '合同准备']])
         
         # 计算本月新增（简化计算）
         from datetime import datetime
@@ -5264,18 +5262,14 @@ def customer_tracking():
                             if c['created_at'] and c['created_at'].month == current_month])
         
         # 获取选项数据
-        status_options = customer_tracking_manager.get_tracking_status_options()
         rental_type_options = customer_tracking_manager.get_rental_type_options()
         
         return render_template('new_ui/customer_tracking.html',
                              customers=result['customers'],
                              total_customers=total_customers,
-                             active_customers=active_customers,
-                             following_customers=following_customers,
                              new_this_month=new_this_month,
                              pages=result['pages'],
                              current_page=result['current_page'],
-                             status_options=status_options,
                              rental_type_options=rental_type_options)
                              
     except Exception as e:
@@ -5284,12 +5278,9 @@ def customer_tracking():
         return render_template('new_ui/customer_tracking.html',
                              customers=[],
                              total_customers=0,
-                             active_customers=0,
-                             following_customers=0,
                              new_this_month=0,
                              pages=0,
                              current_page=1,
-                             status_options=[],
                              rental_type_options=[])
 
 @app.route('/add_customer_tracking', methods=['POST'])
@@ -5304,7 +5295,6 @@ def add_customer_tracking():
             'email': request.form.get('email', ''),
             'property_address': request.form.get('property_address', ''),
             'rental_types': request.form.getlist('rental_types'),
-            'tracking_status': request.form.get('tracking_status', '初始接触'),
             'contract_date': request.form.get('contract_date', ''),
             'notes': request.form.get('notes', '')
         }
@@ -5371,9 +5361,7 @@ def edit_customer_tracking(customer_id):
                 'email': request.form.get('email', ''),
                 'property_address': request.form.get('property_address', ''),
                 'rental_types': request.form.getlist('rental_types'),
-                'tracking_status': request.form.get('tracking_status', '初始接触'),
                 'contract_date': request.form.get('contract_date', ''),
-                'status_change_notes': request.form.get('status_change_notes', ''),
                 'notes': request.form.get('notes', '')
             }
             
@@ -5406,12 +5394,10 @@ def edit_customer_tracking(customer_id):
             return redirect(url_for('customer_tracking'))
         
         # 获取选项数据
-        status_options = customer_tracking_manager.get_tracking_status_options()
         rental_type_options = customer_tracking_manager.get_rental_type_options()
         
         return render_template('new_ui/edit_customer.html',
                              customer=customer,
-                             status_options=status_options,
                              rental_type_options=rental_type_options)
                              
     except Exception as e:
