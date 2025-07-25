@@ -2,12 +2,25 @@ from flask import Flask, render_template, render_template_string, request, jsoni
 import mysql.connector
 import ssl
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from dotenv import load_dotenv
 
+# 设置时区为太平洋时间 (PDT/PST)
+import time
+os.environ['TZ'] = 'America/Los_Angeles'
+time.tzset()
+
 # 加载环境变量
 load_dotenv()
+
+def get_local_datetime():
+    """获取本地时区的当前时间"""
+    return datetime.now()
+
+def get_local_datetime_str():
+    """获取本地时区的当前时间字符串"""
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 # 设置Flask应用，指定正确的模板和静态文件路径
 import os
