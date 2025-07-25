@@ -5342,8 +5342,13 @@ def edit_customer_tracking(customer_id):
                 flash('请填写客户姓名', 'error')
                 return redirect(url_for('edit_customer', customer_id=customer_id))
             
+            # 获取当前用户信息
+            current_user = session.get('user', {})
+            username = current_user.get('username', '未知用户')
+            user_id = current_user.get('id')
+            
             # 更新客户
-            success = customer_tracking_manager.update_customer(customer_id, customer_data)
+            success = customer_tracking_manager.update_customer(customer_id, customer_data, user_id, username)
             
             if success:
                 flash(f'客户 "{customer_data["name"]}" 更新成功', 'success')
