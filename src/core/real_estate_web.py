@@ -5242,14 +5242,12 @@ def customer_tracking():
         # 获取查询参数
         page = int(request.args.get('page', 1))
         search = request.args.get('search', '')
-        status = request.args.get('status', '')
         
         # 获取客户列表
         result = customer_tracking_manager.get_all_customers(
             page=page, 
             per_page=20, 
-            search=search, 
-            status=status
+            search=search
         )
         
         # 获取统计数据
