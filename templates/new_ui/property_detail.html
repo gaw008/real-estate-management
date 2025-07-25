@@ -1,8 +1,8 @@
 {% extends "new_ui/base.html" %}
 
-{% block title %}房产详情: {{ property.property_name }}{% endblock %}
+{% block title %}房产详情: {{ property.name }}{% endblock %}
 
-{% block page_title %}房产详情: {{ property.property_name }}{% endblock %}
+{% block page_title %}房产详情: {{ property.name }}{% endblock %}
 
 {% block content %}
 <div class="action-bar" style="margin-bottom: 20px;">
@@ -18,25 +18,25 @@
             <td><strong>房产ID</strong></td>
             <td>{{ property.id }}</td>
             <td><strong>地址</strong></td>
-            <td>{{ property.address or 'N/A' }}, {{ property.city }}, {{ property.state }}</td>
+            <td>{{ property.street_address or 'N/A' }}, {{ property.city }}, {{ property.state }}</td>
         </tr>
         <tr>
             <td><strong>房型布局</strong></td>
-            <td>{{ property.property_type or 'N/A' }}</td>
+            <td>{{ property.layout or 'N/A' }}</td>
             <td><strong>面积</strong></td>
-            <td>{{ property.square_feet or 'N/A' }} sqft</td>
+            <td>{{ property.property_size or 'N/A' }} sqft</td>
         </tr>
         <tr>
             <td><strong>卧室数</strong></td>
-            <td>{{ property.bedrooms or 'N/A' }}</td>
+            <td>{{ parse_layout(property.layout).bedrooms }}</td>
             <td><strong>浴室数</strong></td>
-            <td>{{ property.bathrooms or 'N/A' }}</td>
+            <td>{{ parse_layout(property.layout).bathrooms }}</td>
         </tr>
         <tr>
             <td><strong>床位配置</strong></td>
-            <td>{{ property.description.split(', 床位: ')[1] if property.description and ', 床位: ' in property.description else '未设置' }}</td>
+            <td>{{ format_beds(property.beds) }}</td>
             <td><strong>最大入住人数</strong></td>
-            <td>{{ property.description.split(', 入住人数: ')[1].split(',')[0] if property.description and ', 入住人数: ' in property.description else 'N/A' }} 人</td>
+            <td>{{ property.occupancy or 'N/A' }} 人</td>
         </tr>
     </table>
 
@@ -44,9 +44,52 @@
     <table class="table">
         <tr>
             <td><strong>清洁费</strong></td>
-            <td>${{ property.price or 'N/A' }}</td>
+            <td>${{ property.cleaning_fee or 'N/A' }}</td>
             <td><strong>管理费</strong></td>
-            <td>{{ property.status or '未设置' }}</td>
+            <td>{{ format_management_fee(property.management_fee_rate, property.management_fee_type) }}</td>
+        </tr>
+    </table>
+
+    <h3 style="margin-top: 20px;">访问信息</h3>
+    <table class="table">
+        <tr>
+            <td><strong>WiFi名称</strong></td>
+            <td>{{ property.wifi_name or 'N/A' }}</td>
+            <td><strong>WiFi密码</strong></td>
+            <td>
+                {% if property.wifi_password %}
+                    <span class="password-field" onclick="togglePassword(this)" style="filter: blur(4px);">{{ property.wifi_password }}</span>
+                    <i class="fas fa-eye-slash toggle-password" onclick="togglePassword(this.previousElementSibling)" title="点击显示密码"></i>
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td><strong>前门密码</strong></td>
+            <td>
+                {% if property.front_door_code %}
+                    <span class="password-field" onclick="togglePassword(this)" style="filter: blur(4px);">{{ property.front_door_code }}</span>
+                    <i class="fas fa-eye-slash toggle-password" onclick="togglePassword(this.previousElementSibling)" title="点击显示密码"></i>
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+            <td><strong>储藏室密码</strong></td>
+            <td>
+                {% if property.storage_code %}
+                    <span class="password-field" onclick="togglePassword(this)" style="filter: blur(4px);">{{ property.storage_code }}</span>
+                    <i class="fas fa-eye-slash toggle-password" onclick="togglePassword(this.previousElementSibling)" title="点击显示密码"></i>
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td><strong>垃圾日</strong></td>
+            <td>{{ property.trash_day or 'N/A' }}</td>
+            <td><strong>土地面积</strong></td>
+            <td>{{ property.land_size or 'N/A' }} sqft</td>
         </tr>
     </table>
 
@@ -64,10 +107,10 @@
         <tbody>
             {% for owner in owners %}
             <tr>
-                <td>{{ owner.full_name }}</td>
+                <td>{{ owner.name }}</td>
                 <td>{{ owner.phone or 'N/A' }}</td>
                 <td>{{ owner.email or 'N/A' }}</td>
-                <td><a href="{{ url_for('owner_detail_fixed', owner_id=owner.id) }}" class="btn btn-sm btn-secondary">查看</a></td>
+                <td><a href="{{ url_for('owner_detail_fixed', owner_id=owner.owner_id) }}" class="btn btn-sm btn-secondary">查看</a></td>
             </tr>
             {% endfor %}
         </tbody>
@@ -288,6 +331,19 @@ window.onclick = function(event) {
     }
     if (event.target === editModal) {
         closeEditInfoModal();
+    }
+}
+
+// 密码显示/隐藏功能
+function togglePassword(element) {
+    if (element.style.filter === 'blur(4px)') {
+        element.style.filter = 'none';
+        element.nextElementSibling.className = 'fas fa-eye toggle-password';
+        element.nextElementSibling.title = '点击隐藏密码';
+    } else {
+        element.style.filter = 'blur(4px)';
+        element.nextElementSibling.className = 'fas fa-eye-slash toggle-password';
+        element.nextElementSibling.title = '点击显示密码';
     }
 }
 </script>
@@ -717,6 +773,37 @@ textarea.form-control {
         font-size: 10px;
         padding: 3px 8px;
     }
+}
+
+/* 密码字段样式 */
+.password-field {
+    cursor: pointer;
+    user-select: none;
+    transition: filter 0.3s ease;
+    font-family: 'Courier New', monospace;
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.password-field:hover {
+    background: #e9ecef;
+}
+
+.toggle-password {
+    cursor: pointer;
+    margin-left: 8px;
+    color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+    color: #007bff;
+}
+
+.toggle-password[title] {
+    position: relative;
 }
 </style>
 {% endblock %} 
